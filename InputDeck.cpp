@@ -14,27 +14,97 @@ InputDeck::InputDeck(string inputName){
 
 int InputDeck::loadInputDeck(){
     //Read in the file:
-    cout<<fileName<<endl;
+    cout<<"Reading input from "<<fileName<<endl;
     
-    X.push_back(1);
+    ifstream inputFile;
+    inputFile.open(fileName.c_str());
+    string line;
     
-    discret.push_back(5);
-    
-    sigma_s0.push_back(0);
-    
-    sigma_s1.push_back(0);
-    
-    sigma_a.push_back(1);
-    
-    Q.push_back(1);
-    
-    for(int j = 0; j < discret.size(); j++){
-        for(int i = 0; i < discret[j]; i++){
-            phi_0_0.push_back(0);
+    //Find the X variable:
+    if(!searchForInput(inputFile,"X")){
+        return 1;
+    }
+    while(getline(inputFile,line)){
+    //Check if we have read in all the values yet:
+        if(line == "."){
+            break;
+        }
+    //Otherwise tack on the new value:
+        X.push_back(atof(line.c_str()));
+    }
+    //-------------------------------------------
+    if(!searchForInput(inputFile,"discret")){
+        return 1;
+    }
+    while(getline(inputFile,line)){
+        if(line == "." || discret.size() == X.size()){
+            break;
+        }
+        discret.push_back(atoi(line.c_str()));
+    }
+    //-------------------------------------------
+    if(!searchForInput(inputFile,"sigma_s0")){
+        return 1;
+    }
+    while(getline(inputFile,line)){
+        if(line == "." || sigma_s0.size() == X.size()){
+            break;
+        }
+        sigma_s0.push_back(atof(line.c_str()));
+    }
+    //-------------------------------------------
+    if(!searchForInput(inputFile,"sigma_s1")){
+        return 1;
+    }
+    while(getline(inputFile,line)){
+        if(line == "." || sigma_s1.size() == X.size()){
+            break;
+        }
+        sigma_s1.push_back(atof(line.c_str()));
+    }
+    //-------------------------------------------
+    if(!searchForInput(inputFile,"sigma_a")){
+        return 1;
+    }
+    while(getline(inputFile,line)){
+        if(line == "." || sigma_a.size() == X.size()){
+            break;
+        }
+        sigma_a.push_back(atof(line.c_str()));
+    }
+    //-------------------------------------------
+    if(!searchForInput(inputFile,"Q")){
+        return 1;
+    }
+    while(getline(inputFile,line)){
+        if(line == "." || Q.size() == X.size()){
+            break;
+        }
+        Q.push_back(atof(line.c_str()));
+    }
+    //-------------------------------------------
+    if(!searchForInput(inputFile,"phi_0_0")){
+        return 1;
+    }
+    getline(inputFile,line);
+    if(line=="default"){
+        for(int j = 0; j < discret.size(); j++){
+            for(int i = 0; i < discret[j]; i++){
+                phi_0_0.push_back(0);
+            }
+        }
+    } else{
+        phi_0_0.push_back(atof(line.c_str()));
+        while(getline(inputFile,line)){
+            if(line == "."){
+                break;
+            }
+            phi_0_0.push_back(atof(line.c_str()));
         }
     }
     //
     
+    inputFile.close();
     
     //Check to make sure all these vectors are the same size:
     int vectorSizes[] = {X.size(), discret.size(),sigma_s0.size(),sigma_s1.size(),sigma_a.size(), Q.size()};
@@ -95,14 +165,28 @@ void InputDeck::readValues(){
     
     cout<<"phi_0_0 = [";
     int temp = 0;
+    int temp2 = 0;
     for(int i = 0; i < phi_0_0.size(); i++){
-        cout<<phi_0_0[i]<<" ";
         //Divide the phi_0_0 readout by material sections
-        if(temp < discret.size() && i == discret[temp] && i!= phi_0_0.size()-1){
+        if(temp < discret.size() && temp2 == discret[temp] && i!= phi_0_0.size()-1){
             cout<<endl;
-            temp += 1;
+            temp++;
+            temp2 = 0;
         }
+        cout<<phi_0_0[i]<<" ";
+        temp2++;
     }
     cout<<"]"<<endl;
+}
+
+bool InputDeck::searchForInput(ifstream &file, string inp){
+    string line;
+    while(getline(file,line)){
+        if(line == "<--"+inp+"-->"){
+            return 1;
+        }
+    }
+    cout<<"We couldn't find it!"<<endl;
+    return 0;
 }
 
