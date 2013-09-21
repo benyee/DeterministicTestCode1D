@@ -32,7 +32,7 @@ int SourceIteration::iterate(){
     
     //Iterate until tolerance is achieved:
     do{
-        vector<double> old_phi_0(phi_0);
+        //Go either right then left or left then right:
         if(bc[0] == 1 && bc[1] == 0){
             leftIteration();
             rightIteration();
@@ -42,8 +42,9 @@ int SourceIteration::iterate(){
         }
         
         //Update phi, calculate source:
-        double region = 0;
-        double within_region_counter = 0;
+        vector<double> old_phi_0(phi_0);
+        unsigned int region = 0;
+        unsigned int within_region_counter = 0;
         for(unsigned int j = 0; j<phi_0.size();j++){
             phi_0[j] = 0;
             phi_1[j] = 0;
@@ -55,6 +56,11 @@ int SourceIteration::iterate(){
             //Calculate and update source term:
             for(unsigned int m=0;m<N;m++){
                 source[j][m] = (sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region])/2;
+            }
+            within_region_counter++;
+            if(within_region_counter==discret[region]){
+                within_region_counter = 0;
+                region++;
             }
         }
         error = Utilities::inf_norm(old_phi_0-phi_0);
