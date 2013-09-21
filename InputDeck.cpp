@@ -109,7 +109,7 @@ int InputDeck::loadInputDeck(){
     getline(inputFile,line);
     tol = atof(line.c_str());
     //--------------------------------------------
-    //Get initial phi:
+    //Get initial phi_0:
     if(!searchForInput(inputFile,"phi_0_0")){
         return 1;
     }
@@ -130,6 +130,28 @@ int InputDeck::loadInputDeck(){
         }
     }
     
+    //--------------------------------------------
+    //Get initial phi_1:
+    if(!searchForInput(inputFile,"phi_1_0")){
+        return 1;
+    }
+    getline(inputFile,line);
+    if(line=="default"){
+        for(unsigned int j = 0; j < discret.size(); j++){
+            for(int i = 0; i < discret[j]; i++){
+                phi_1_0.push_back(0);
+            }
+        }
+    } else{
+        phi_1_0.push_back(atof(line.c_str()));
+        while(getline(inputFile,line)){
+            if(line == "."){
+                break;
+            }
+            phi_1_0.push_back(atof(line.c_str()));
+        }
+    }
+    
     inputFile.close();
     
     //Check to make sure all these vectors are the same size:
@@ -146,6 +168,8 @@ int InputDeck::loadInputDeck(){
         expectedSize += discret[i];
     }
     if(expectedSize != phi_0_0.size()){
+        return 1;
+    }else if(expectedSize!=phi_1_0.size()){
         return 1;
     }
     
@@ -186,6 +210,21 @@ void InputDeck::readValues(){
             temp2 = 0;
         }
         cout<<phi_0_0[i]<<" ";
+        temp2++;
+    }
+    
+    cout<<"]"<<endl;
+    cout<<"phi_1_0 = [";
+    temp = 0;
+    temp2 = 0;
+    for(unsigned int i = 0; i < phi_1_0.size(); i++){
+        //Divide the phi_0_0 readout by material sections
+        if(temp < discret.size() && temp2 == (unsigned int)discret[temp] && i!= phi_1_0.size()-1){
+            cout<<endl;
+            temp++;
+            temp2 = 0;
+        }
+        cout<<phi_1_0[i]<<" ";
         temp2++;
     }
     cout<<"]"<<endl;
