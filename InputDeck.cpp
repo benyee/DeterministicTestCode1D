@@ -159,35 +159,16 @@ void InputDeck::readValues(){
     }
     cout<<"]"<<endl;
     
-    cout<<"discret = [ ";
-    for(unsigned int i = 0; i < discret.size(); i++){
-        cout<<discret[i]<<" ";
-    }
-    cout<<"]"<<endl;
-    
-    cout<<"sigma_s0 = [";
-    for(unsigned int i = 0; i < sigma_s0.size(); i++){
-        cout<<sigma_s0[i]<<" ";
-    }
-    cout<<"]"<<endl;
-    
-    cout<<"sigma_s1 = [";
-    for(unsigned int i = 0; i < sigma_s1.size(); i++){
-        cout<<sigma_s1[i]<<" ";
-    }
-    cout<<"]"<<endl;
-    
-    cout<<"sigma_a = [";
-    for(unsigned int i = 0; i < sigma_a.size(); i++){
-        cout<<sigma_a[i]<<" ";
-    }
-    cout<<"]"<<endl;
-    
-    cout<<"Q = [";
-    for(unsigned int i = 0; i < Q.size(); i++){
-        cout<<Q[i]<<" ";
-    }
-    cout<<"]"<<endl;
+    cout<<"discret = ";
+    Utilities::print_ivector(discret);
+    cout<<"sigma_s0 = ";
+    Utilities::print_dvector(sigma_s0);
+    cout<<"sigma_s1 = ";
+    Utilities::print_dvector(sigma_s1);
+    cout<<"sigma_a = ";
+    Utilities::print_dvector(sigma_a);
+    cout<<"Q = ";
+    Utilities::print_dvector(Q);
     
     cout<<"bc = ["<<bc[0]<<' '<<bc[1]<<']'<<endl;
     cout<<"N = "<<N<<endl;

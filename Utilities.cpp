@@ -8,14 +8,31 @@
 
 #include "Utilities.h"
 
-vector<double> Utilities::calc_mu_n(int N){
+vector<double> Utilities::calc_mu_n(int N,double tol){
     vector<double> out;
+    double x,x1;
+    for(int i = 1; i<=N;i++){
+        x = cos(PI*(i-0.25)/(N+0.25));
+        do{
+            x1 = x;
+            x -= lege_eval(N,x)/lege_eval_diff(N,x);
+        }while(abs(x1-x)>tol);
+        out.push_back(x);
+    }
     return out;
 }
-vector<double> Utilities::calc_w_n(int N){
+vector<double> Utilities::calc_w_n(vector<double> mu_n){
     vector<double> out;
+    double diff;
+    for(int i = 0; i< (int)mu_n.size(); i++){
+        diff = lege_eval_diff(mu_n.size(),mu_n[i]);
+        out.push_back(2/((1-pow(mu_n[i],2))*pow(diff,2)));
+    }
     return out;
 }
+
+//----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 vector<double> Utilities::lege_coef(int N){
     vector< vector<double> > temp;
     for(int i = 0; i<=N; i++){
@@ -50,15 +67,28 @@ vector<double> Utilities::lege_coef(int N){
     }
     return temp[N];
 }
-vector<double> Utilities::lege_roots(int N){
-    vector<double> out;
-    return out;
-}
 
 double Utilities::lege_eval(vector<double> coeff,double x){
     double out = 0;
-    for(unsigned int i = 0; i<coeff.size();i++){
+    for(int i = 0; i<(int)coeff.size();i++){
         out += coeff[i]*pow(x,i);
     }
     return out;
+}
+
+//----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
+void Utilities::print_ivector(vector<int> input_vector,char space){
+    cout<<"[";
+    for(unsigned int i = 0; i<input_vector.size(); i++){
+        cout<<input_vector[i]<<space;
+    }
+    cout<<"]"<<endl;
+}
+void Utilities::print_dvector(vector<double> input_vector,char space){
+    cout<<"[";
+    for(unsigned int i = 0; i<input_vector.size(); i++){
+        cout<<input_vector[i]<<space;
+    }
+    cout<<"]"<<endl;
 }

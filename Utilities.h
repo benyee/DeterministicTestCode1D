@@ -11,20 +11,28 @@
 
 #include <iostream>
 #include <vector>
-#include <math.h>
+#include <cmath>
 
 using namespace std;
 
 class Utilities{
 public:
-    static vector<double> calc_mu_n(int N);
-    static vector<double> calc_w_n(int N);
+    static const double PI = 3.14159265359;
+    
+    //Functions for calculating Gaussian quadrature constants:
+    static vector<double> calc_mu_n(int N,double tol = 1e-10);
+    static vector<double> calc_w_n(int N){return calc_w_n(calc_mu_n(N));}
+    static vector<double> calc_w_n(vector<double> mu_n);
+    
+    //Functions for calculating and evaluating Legendre Polynomials:
     static vector<double> lege_coef(int N);
-    static vector<double> lege_roots(int N);
-
     static double lege_eval(int N,double x){return lege_eval(lege_coef(N),x);}
     static double lege_eval_diff(int N,double x){return N*(x*lege_eval(N,x)-lege_eval(N-1,x))/(x*x-1);}
     static double lege_eval(vector<double> coeff,double x);
+    
+    //Miscellaneous:
+    static void print_ivector(vector<int> input_vector,char space = ' ');
+    static void print_dvector(vector<double> input_vector,char space = ' ');
     
 private:
     Utilities();
