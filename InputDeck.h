@@ -31,6 +31,11 @@ public:
     vector<double> getsigma_a(){return sigma_a;}
     vector<double> getQ(){return Q;}
     
+    int* getbc(){return bc;}
+    int getN(){return N;}
+    int getalpha_mode(){return alpha_mode;}
+    double gettol(){return tol;}
+    
     vector<double> getphi_0_0(){return phi_0_0;}
     
     void readValues(); //Read out input values
