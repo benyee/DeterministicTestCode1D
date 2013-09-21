@@ -52,6 +52,7 @@ private:
     
     int N;  // number of angular ordinates
     int alpha_mode; //type of finite difference scheme.  0 = diamond difference, 1 = step up, 2 = step characteristic
+    double tol; //tolerance for convergence
     
     bool searchForInput(ifstream &file, string inp);  //Search for the input named inp in file, returns 0 if not found, returns 1 if found
 };

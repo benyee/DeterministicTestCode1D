@@ -103,6 +103,12 @@ int InputDeck::loadInputDeck(){
     getline(inputFile,line);
     alpha_mode = atoi(line.c_str());
     //--------------------------------------------
+    if(!searchForInput(inputFile,"tol")){
+        return 1;
+    }
+    getline(inputFile,line);
+    tol = atof(line.c_str());
+    //--------------------------------------------
     //Get initial phi:
     if(!searchForInput(inputFile,"phi_0_0")){
         return 1;
@@ -186,6 +192,7 @@ void InputDeck::readValues(){
     cout<<"bc = ["<<bc[0]<<' '<<bc[1]<<']'<<endl;
     cout<<"N = "<<N<<endl;
     cout<<"alpha_mode = "<<alpha_mode<<endl;
+    cout<<"tol = "<<tol<<endl;
     
     cout<<"phi_0_0 = [";
     int temp = 0;
