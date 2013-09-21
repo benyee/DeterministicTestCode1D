@@ -38,6 +38,8 @@ public:
     int getalpha_mode(){return alpha_mode;}
     double gettol(){return tol;}
     
+    string getfileName(){return fileName;}
+    
     vector<double> getphi_0_0(){return phi_0_0;}
     
     void readValues(); //Read out input values

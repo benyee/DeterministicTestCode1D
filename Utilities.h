@@ -34,6 +34,9 @@ public:
     static void print_ivector(vector<int> input_vector,char space = ' ');
     static void print_dvector(vector<double> input_vector,char space = ' ');
     
+    //Remove the last four characters of a string:
+    static string remove_ext(string input_string){return input_string.substr(0,input_string.length());}
+    
 private:
     Utilities();
 };
