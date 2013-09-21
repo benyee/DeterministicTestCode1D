@@ -92,3 +92,12 @@ void Utilities::print_dvector(vector<double> input_vector,char space){
     }
     cout<<"]"<<endl;
 }
+double Utilities::inf_norm(vector<double> v1, vector<double> v2){
+    double inf_norm = 0;
+    double temp;
+    for(int i = 0; i<min(v1.size(),v2.size()); i++){
+        temp = abs(v2[i]-v1[i]);
+        if(temp>inf_norm){inf_norm = temp;}
+    }
+    return inf_norm;
+}
