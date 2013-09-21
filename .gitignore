@@ -1,3 +1,4 @@
 -Wall
 *.gch
 input.txt
+*.out

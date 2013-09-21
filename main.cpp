@@ -10,6 +10,7 @@
 #include <string>
 
 #include "InputDeck.h"
+#import "Utilities.h"
 
 using namespace std;
 
@@ -24,6 +25,7 @@ int main ()
         return 1;
     }
     cout << "Vector sizes look good!"<<endl;
+    cout << Utilities::lege_eval(5,0)<<endl;
     cout << "Goodbye world!"<<endl;
     return 0;
 }

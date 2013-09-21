@@ -115,7 +115,7 @@ int InputDeck::loadInputDeck(){
     }
     getline(inputFile,line);
     if(line=="default"){
-        for(int j = 0; j < discret.size(); j++){
+        for(unsigned int j = 0; j < discret.size(); j++){
             for(int i = 0; i < discret[j]; i++){
                 phi_0_0.push_back(0);
             }
@@ -134,15 +134,15 @@ int InputDeck::loadInputDeck(){
     
     //Check to make sure all these vectors are the same size:
     int vectorSizes[] = {X.size(), discret.size(),sigma_s0.size(),sigma_s1.size(),sigma_a.size(), Q.size()};
-    for(int i = 0; i < 5; i++){
+    for(unsigned int i = 0; i < 5; i++){
         if(vectorSizes[i] != vectorSizes[i+1]){
             return 1;
         }
     }
     
     //Make sure the initial values is the proper size:
-    int expectedSize = 0;
-    for(int i = 0; i<X.size(); i++){
+    unsigned int expectedSize = 0;
+    for(unsigned int i = 0; i<X.size(); i++){
         expectedSize += discret[i];
     }
     if(expectedSize != phi_0_0.size()){
@@ -154,37 +154,37 @@ int InputDeck::loadInputDeck(){
 
 void InputDeck::readValues(){
     cout<<"X = [0 ";
-    for(int i = 0; i < X.size(); i++){
+    for(unsigned int i = 0; i < X.size(); i++){
         cout<<X[i]<<" ";
     }
     cout<<"]"<<endl;
     
     cout<<"discret = [ ";
-    for(int i = 0; i < discret.size(); i++){
+    for(unsigned int i = 0; i < discret.size(); i++){
         cout<<discret[i]<<" ";
     }
     cout<<"]"<<endl;
     
     cout<<"sigma_s0 = [";
-    for(int i = 0; i < sigma_s0.size(); i++){
+    for(unsigned int i = 0; i < sigma_s0.size(); i++){
         cout<<sigma_s0[i]<<" ";
     }
     cout<<"]"<<endl;
     
     cout<<"sigma_s1 = [";
-    for(int i = 0; i < sigma_s1.size(); i++){
+    for(unsigned int i = 0; i < sigma_s1.size(); i++){
         cout<<sigma_s1[i]<<" ";
     }
     cout<<"]"<<endl;
     
     cout<<"sigma_a = [";
-    for(int i = 0; i < sigma_a.size(); i++){
+    for(unsigned int i = 0; i < sigma_a.size(); i++){
         cout<<sigma_a[i]<<" ";
     }
     cout<<"]"<<endl;
     
     cout<<"Q = [";
-    for(int i = 0; i < Q.size(); i++){
+    for(unsigned int i = 0; i < Q.size(); i++){
         cout<<Q[i]<<" ";
     }
     cout<<"]"<<endl;
@@ -195,11 +195,11 @@ void InputDeck::readValues(){
     cout<<"tol = "<<tol<<endl;
     
     cout<<"phi_0_0 = [";
-    int temp = 0;
-    int temp2 = 0;
-    for(int i = 0; i < phi_0_0.size(); i++){
+    unsigned int temp = 0;
+    unsigned int temp2 = 0;
+    for(unsigned int i = 0; i < phi_0_0.size(); i++){
         //Divide the phi_0_0 readout by material sections
-        if(temp < discret.size() && temp2 == discret[temp] && i!= phi_0_0.size()-1){
+        if(temp < discret.size() && temp2 == (unsigned int)discret[temp] && i!= phi_0_0.size()-1){
             cout<<endl;
             temp++;
             temp2 = 0;
