@@ -83,6 +83,27 @@ int InputDeck::loadInputDeck(){
         Q.push_back(atof(line.c_str()));
     }
     //-------------------------------------------
+    if(!searchForInput(inputFile,"bc")){
+        return 1;
+    }
+    getline(inputFile,line);
+    bc[0] = atoi(line.c_str());
+    getline(inputFile,line);
+    bc[1] = atoi(line.c_str());
+    //--------------------------------------------
+    if(!searchForInput(inputFile,"N")){
+        return 1;
+    }
+    getline(inputFile,line);
+    N = atoi(line.c_str());
+    //--------------------------------------------
+    if(!searchForInput(inputFile,"alpha_mode")){
+        return 1;
+    }
+    getline(inputFile,line);
+    alpha_mode = atoi(line.c_str());
+    //--------------------------------------------
+    //Get initial phi:
     if(!searchForInput(inputFile,"phi_0_0")){
         return 1;
     }
@@ -102,7 +123,6 @@ int InputDeck::loadInputDeck(){
             phi_0_0.push_back(atof(line.c_str()));
         }
     }
-    //
     
     inputFile.close();
     
@@ -162,6 +182,10 @@ void InputDeck::readValues(){
         cout<<Q[i]<<" ";
     }
     cout<<"]"<<endl;
+    
+    cout<<"bc = ["<<bc[0]<<' '<<bc[1]<<']'<<endl;
+    cout<<"N = "<<N<<endl;
+    cout<<"alpha_mode = "<<alpha_mode<<endl;
     
     cout<<"phi_0_0 = [";
     int temp = 0;

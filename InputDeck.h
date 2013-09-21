@@ -48,7 +48,10 @@ private:
     
     vector<double> phi_0_0; //initial guess for source iteration, should be of size (\sum_{i=0}^{size(xborders)} discret[i] )
     
-    int bc[2]; // boundary conditions for left and right end of domain
+    int bc[2]; // boundary conditions for left and right end of domain.  0 = vaccuum, 1 = reflective, 2 = user specified
+    
+    int N;  // number of angular ordinates
+    int alpha_mode; //type of finite difference scheme.  0 = diamond difference, 1 = step up, 2 = step characteristic
     
     bool searchForInput(ifstream &file, string inp);  //Search for the input named inp in file, returns 0 if not found, returns 1 if found
 };
