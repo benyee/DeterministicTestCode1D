@@ -1,4 +1,4 @@
 -Wall
 *.gch
-input.txt
+*.txt
 *.out
