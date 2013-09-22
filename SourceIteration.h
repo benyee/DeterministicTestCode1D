@@ -29,17 +29,28 @@ public:
     
 private:
     InputDeck *data;
+    
+    //Grid:
+    vector<double> x;
+    vector<double> h;
+    vector<double> x_e;
+    
+    //Neutron info:
     vector<double> phi_0;
     vector<double> phi_1;
     vector<vector<double> > psi_e;
     vector<vector<double> > psi_c;
     vector< vector<double> > source;
     
+    vector< vector<double> > alpha;
+    
     vector<double> mu_n;
     vector<double> w_n;
     
     void rightIteration();
     void leftIteration();
+    void initializeAlpha();
+    void initializeGrid();
 };
 
 #endif /* defined(____SourceIteration__) */

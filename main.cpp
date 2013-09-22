@@ -34,13 +34,13 @@ int main ()
     SourceIteration *input_run = new SourceIteration(input);
     input_run->iterate();
     input_run->printOutput();
-    /*
+    
     //Test Gaussian quadrature functions:
     vector<double> mu_n = Utilities::calc_mu_n(5);
     Utilities::print_dvector(mu_n);
     Utilities::print_dvector(Utilities::calc_w_n(5));
     Utilities::print_dvector(Utilities::calc_w_n(mu_n));
-     */
+     
     
     //
     

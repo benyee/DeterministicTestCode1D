@@ -15,26 +15,34 @@ SourceIteration::SourceIteration(InputDeck *input){
     mu_n = Utilities::calc_mu_n(data->getN());
     w_n = Utilities::calc_w_n(mu_n);
     
+    //Initialize vectors:
+    //Note that psi_e has one extra set of elements compared to psi_c and source
     for(unsigned int i = 0; i<=phi_0.size();i++){
-        vector<double> temp;
-        vector<double> temp2;
+        if(i!=phi_0.size()){
+            vector<double> temp;
+            vector<double> temp2;
+            psi_c.push_back(temp);
+            source.push_back(temp2);
+        }
         vector<double> temp3;
-        psi_c.push_back(temp);
-        psi_e.push_back(temp2);
-        source.push_back(temp3);
+        psi_e.push_back(temp3);
         for(unsigned int j=0; j<mu_n.size();j++){
-            psi_c[i].push_back(0);
+            if(i!=phi_0.size()){
+                psi_c[i].push_back(0);
+                source[i].push_back(0);
+            }
             psi_e[i].push_back(0);
-            source[i].push_back(0);
         }
     }
+    initializeGrid();
+    initializeAlpha();
 }
 
 int SourceIteration::iterate(){
     unsigned int N = data->getN();
     int *bc = data->getbc();
     
-    vector<int> discret = data->getdiscret();
+    vector<unsigned int> discret = data->getdiscret();
     vector<double> sigma_s0 = data->getsigma_s0();
     vector<double> sigma_s1 = data->getsigma_s1();
     vector<double> sigma_a = data->getsigma_a();
@@ -117,4 +125,55 @@ void SourceIteration::leftIteration(){
 }
 void SourceIteration::rightIteration(){
     return;
+}
+
+void SourceIteration::finiteDifference(){
+    return;
+}
+
+void SourceIteration::initializeGrid(){
+    if(x.size()){return;}
+    double tempL = 0;
+    double tempR;
+    vector<double> X = data->getX();
+    vector<unsigned int> discret = data->getdiscret();
+    for(unsigned int i = 0; i < X.size();i++){
+        tempR = X[i];
+        for(unsigned int j = 0; j<discret[i];j++){
+            x_e.push_back(j*(tempR-tempL)/discret[i]);
+            x.push_back((j+0.5)*(tempR-tempL)/discret[i]);
+            h.push_back((tempR-tempL)/discret[i]);
+        }
+        tempL = tempR;
+    }
+    x_e.push_back(X[X.size()-1]);
+}
+
+void SourceIteration::initializeAlpha(){
+    if(alpha.size()){return;}
+    
+    vector<double> sigma_s0 = data->getsigma_s0();
+    vector<double> sigma_a = data->getsigma_a();
+    vector<double> sigma_t = Utilities::vector_add(sigma_s0,sigma_a);
+    for(unsigned int j = 0; j<=phi_0.size();j++){
+        vector<double> temp;
+        alpha.push_back(temp);
+        if(data->getalpha_mode() == 1){
+            for(unsigned int m=0; m<(unsigned int)(mu_n.size()/2);m++){
+                alpha[j].push_back(1);
+            }
+            for(unsigned int m=(unsigned int)(mu_n.size()/2);m<mu_n.size();m++){
+                alpha[j].push_back(-1);
+            }
+        }else if(data->getalpha_mode()==0){
+            for(unsigned int m=0; m<mu_n.size();m++){
+                alpha[j].push_back(0);
+            }
+        }else{
+            for(unsigned int m=0; m<mu_n.size();m++){
+                double tau = sigma_t[j]*h[j]/2/mu_n[m];
+                alpha[j].push_back(1/tanh(tau)-1/tau);
+            }
+        }
+    }
 }

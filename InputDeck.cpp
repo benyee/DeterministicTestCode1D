@@ -116,7 +116,7 @@ int InputDeck::loadInputDeck(){
     getline(inputFile,line);
     if(line=="default"){
         for(unsigned int j = 0; j < discret.size(); j++){
-            for(int i = 0; i < discret[j]; i++){
+            for(unsigned int i = 0; i < discret[j]; i++){
                 phi_0_0.push_back(0);
             }
         }
@@ -138,7 +138,7 @@ int InputDeck::loadInputDeck(){
     getline(inputFile,line);
     if(line=="default"){
         for(unsigned int j = 0; j < discret.size(); j++){
-            for(int i = 0; i < discret[j]; i++){
+            for(unsigned int i = 0; i < discret[j]; i++){
                 phi_1_0.push_back(0);
             }
         }
@@ -184,7 +184,7 @@ void InputDeck::readValues(){
     cout<<"]"<<endl;
     
     cout<<"discret = ";
-    Utilities::print_ivector(discret);
+    Utilities::print_uivector(discret);
     cout<<"sigma_s0 = ";
     Utilities::print_dvector(sigma_s0);
     cout<<"sigma_s1 = ";

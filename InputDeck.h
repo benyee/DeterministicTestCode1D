@@ -27,7 +27,7 @@ public:
     int loadInputDeck();
     
     vector<double> getX(){return X;}
-    vector<int> getdiscret(){return discret;}
+    vector<unsigned int> getdiscret(){return discret;}
     vector<double> getsigma_s0(){return sigma_s0;}
     vector<double> getsigma_s1(){return sigma_s1;}
     vector<double> getsigma_a(){return sigma_a;}
@@ -50,7 +50,7 @@ private:
     
     //The following vectors should always have the same length:
     vector<double> X; //location of material boundaries in cm (left boundary is always 0)
-    vector<int> discret;  //number of elements to divide each region into
+    vector<unsigned int> discret;  //number of elements to divide each region into
     vector<double> sigma_s0; //isotropic scattering cross sections in cm^{-1}
     vector<double> sigma_s1; //anisotropic scattering cross sections in cm^{-1}
     vector<double> sigma_a; //absorption cross section in cm^{-1}
@@ -61,8 +61,8 @@ private:
     
     int bc[2]; // boundary conditions for left and right end of domain.  0 = vaccuum, 1 = reflective, 2 = user specified
     
-    int N;  // number of angular ordinates
-    int alpha_mode; //type of finite difference scheme.  0 = diamond difference, 1 = step up, 2 = step characteristic
+    unsigned int N;  // number of angular ordinates
+    unsigned int alpha_mode; //type of finite difference scheme.  0 = diamond difference, 1 = step up, 2 = step characteristic
     double tol; //tolerance for convergence
     
     bool searchForInput(ifstream &file, string inp);  //Search for the input named inp in file, returns 0 if not found, returns 1 if found

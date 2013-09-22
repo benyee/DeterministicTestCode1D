@@ -78,6 +78,13 @@ double Utilities::lege_eval(vector<double> coeff,double x){
 
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
+void Utilities::print_uivector(vector<unsigned int> input_vector,char space){
+    cout<<"[";
+    for(unsigned int i = 0; i<input_vector.size(); i++){
+        cout<<input_vector[i]<<space;
+    }
+    cout<<"]"<<endl;
+}
 void Utilities::print_ivector(vector<int> input_vector,char space){
     cout<<"[";
     for(unsigned int i = 0; i<input_vector.size(); i++){
@@ -95,9 +102,16 @@ void Utilities::print_dvector(vector<double> input_vector,char space){
 double Utilities::inf_norm(vector<double> v1, vector<double> v2){
     double inf_norm = 0;
     double temp;
-    for(int i = 0; i<min(v1.size(),v2.size()); i++){
+    for(unsigned int i = 0; i<min(v1.size(),v2.size()); i++){
         temp = abs(v2[i]-v1[i]);
         if(temp>inf_norm){inf_norm = temp;}
     }
     return inf_norm;
+}
+vector<double> Utilities::vector_add(vector<double> v1, vector<double> v2){
+    vector<double> sum;
+    for(unsigned int i = 0; i<min(v1.size(),v2.size()); i++){
+        sum.push_back(v1[i]+v2[i]);
+    }
+    return sum;
 }
