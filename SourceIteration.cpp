@@ -128,6 +128,11 @@ void SourceIteration::rightIteration(){
 }
 
 void SourceIteration::finiteDifference(){
+    for(unsigned int j = 0; j<psi_c.size();j++){
+        for(unsigned int m = 0; m<mu_n.size();m++){
+            psi_c[j][m] = ((1+alpha[j][m])*psi_e[j+1][m]+(1-alpha[j][m])*psi_e[j][m])/2;
+        }
+    }
     return;
 }
 
