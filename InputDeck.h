@@ -42,6 +42,8 @@ public:
     
     vector<double> getphi_0_0(){return phi_0_0;}
     vector<double> getphi_1_0(){return phi_0_0;}
+    vector<double> getpsi_bl(){return psi_bl;}
+    vector<double> getpsi_br(){return psi_br;}
     
     void readValues(); //Read out input values
 
@@ -58,6 +60,9 @@ private:
     
     vector<double> phi_0_0; //initial guess for source iteration, should be of size (\sum_{i=0}^{size(xborders)} discret[i] )
     vector<double> phi_1_0; //initial guess for source iteration, should be of size (\sum_{i=0}^{size(xborders)} discret[i] )
+    
+    vector<double> psi_bl; //user specified left boundary, should be of size N/2
+    vector<double> psi_br; //user specified right boundary, should be of size N/2
     
     int bc[2]; // boundary conditions for left and right end of domain.  0 = vaccuum, 1 = reflective, 2 = user specified
     

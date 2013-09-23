@@ -82,6 +82,12 @@ int InputDeck::loadInputDeck(){
         }
         Q.push_back(atof(line.c_str()));
     }
+    //--------------------------------------------
+    if(!searchForInput(inputFile,"N")){
+        return 1;
+    }
+    getline(inputFile,line);
+    N = atoi(line.c_str());
     //-------------------------------------------
     if(!searchForInput(inputFile,"bc")){
         return 1;
@@ -90,12 +96,28 @@ int InputDeck::loadInputDeck(){
     bc[0] = atoi(line.c_str());
     getline(inputFile,line);
     bc[1] = atoi(line.c_str());
-    //--------------------------------------------
-    if(!searchForInput(inputFile,"N")){
-        return 1;
+    if(bc[0]==2){
+        if(!searchForInput(inputFile,"left")){
+            return 1;
+        }
+        while(getline(inputFile,line)){
+            if(line == "." || psi_bl.size() >= N/2){
+                break;
+            }
+            psi_bl.push_back(atof(line.c_str()));
+        }
     }
-    getline(inputFile,line);
-    N = atoi(line.c_str());
+    if(bc[1]==2){
+        if(!searchForInput(inputFile,"right")){
+            return 1;
+        }
+        while(getline(inputFile,line)){
+            if(line == "." || psi_br.size() >= N/2){
+                break;
+            }
+            psi_br.push_back(atof(line.c_str()));
+        }
+    }
     //--------------------------------------------
     if(!searchForInput(inputFile,"alpha_mode")){
         return 1;
@@ -194,8 +216,16 @@ void InputDeck::readValues(){
     cout<<"Q = ";
     Utilities::print_dvector(Q);
     
-    cout<<"bc = ["<<bc[0]<<' '<<bc[1]<<']'<<endl;
     cout<<"N = "<<N<<endl;
+    cout<<"bc = ["<<bc[0]<<' '<<bc[1]<<']'<<endl;
+    if(bc[0] ==2){
+        cout<<"psi_bl = ";
+        Utilities::print_dvector(psi_bl);
+    }
+    if(bc[1]==2){
+        cout<<"psi_br = ";
+        Utilities::print_dvector(psi_br);
+    }
     cout<<"alpha_mode = "<<alpha_mode<<endl;
     cout<<"tol = "<<tol<<endl;
     

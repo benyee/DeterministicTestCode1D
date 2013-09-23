@@ -115,6 +115,11 @@ void SourceIteration::leftIteration(){
         for(unsigned int m=0; m<N/2;m++){
             psi_e[J][N-m-1] = psi_e[J][m];
         }
+    }else if(bc[0]==2){
+        vector<double> temp = data->getpsi_br();
+        for(unsigned int m=0; m<N/2;m++){
+            psi_e[J][m+N/2] = temp[m];
+        }
     }
     int region;
     unsigned int within_region_counter;
@@ -139,6 +144,11 @@ void SourceIteration::rightIteration(){
     if(bc[0]==1){
         for(unsigned int m=0; m<N/2;m++){
             psi_e[0][m] = psi_e[0][N-m-1];
+        }
+    }else if(bc[0]==2){
+        vector<double> temp = data->getpsi_bl();
+        for(unsigned int m=0; m<N/2;m++){
+            psi_e[0][m] = temp[m];
         }
     }
     int region;
@@ -193,6 +203,8 @@ void SourceIteration::initializeAlpha(){
     vector<double> sigma_s0 = data->getsigma_s0();
     vector<double> sigma_a = data->getsigma_a();
     vector<double> sigma_t = Utilities::vector_add(sigma_s0,sigma_a);
+    unsigned int region = 0;
+    unsigned int within_region_counter = 0;
     for(unsigned int j = 0; j<=J;j++){
         vector<double> temp;
         alpha.push_back(temp);
@@ -209,9 +221,14 @@ void SourceIteration::initializeAlpha(){
             }
         }else{
             for(unsigned int m=0; m<N;m++){
-                double tau = sigma_t[j]*h[j]/2/mu_n[m];
+                double tau = sigma_t[region]*h[j]/2/mu_n[m];
                 alpha[j].push_back(1/tanh(tau)-1/tau);
+                within_region_counter++;
             }
+        }
+        if(within_region_counter == discret[region]){
+            within_region_counter=0;
+            region++;
         }
     }
 }
