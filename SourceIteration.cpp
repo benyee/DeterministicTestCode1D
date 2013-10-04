@@ -115,7 +115,7 @@ void SourceIteration::leftIteration(){
         for(unsigned int m=0; m<N/2;m++){
             psi_e[J][N-m-1] = psi_e[J][m];
         }
-    }else if(bc[0]==2){
+    }else if(bc[1]==2){
         vector<double> temp = data->getpsi_br();
         for(unsigned int m=0; m<N/2;m++){
             psi_e[J][m+N/2] = temp[m];
@@ -257,6 +257,6 @@ double SourceIteration::updatePhi_calcSource(){
             region++;
         }
     }
-    return (Utilities::inf_norm(old_phi_0,phi_0));
+    return (Utilities::p_norm(old_phi_0,phi_0));
     
 }
