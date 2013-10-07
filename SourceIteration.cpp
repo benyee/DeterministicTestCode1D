@@ -103,18 +103,14 @@ void SourceIteration::printOutput(unsigned int tabwidth){
     outfile<<'\n';
     outfile<<'\n';
     outfile<<"<<<<<--------------OUTPUT:-------------->>>>>\n";
-    outfile<<"<--phi_0-->\n";
-    cout<<"<--phi_0-->"<<endl;
+    outfile<<setw(5)<<"x_c"<<setw(20)<<"phi_0"<<setw(20)<<"phi_1\n";
+    cout<<setw(5)<<"x_c"<<setw(20)<<"phi_0"<<setw(20)<<"phi_1"<<endl;
     for(unsigned int j = 0; j<J; j++){
-        outfile<<phi_0[j]<<'\n';
-        cout<<phi_0[j]<<endl;
+        outfile<<setw(5)<<x[j]<<setw(20)<<phi_0[j]<<setw(20)<<phi_1[j]<<'\n';
+        cout<<setw(5)<<x[j]<<setw(20)<<phi_0[j]<<setw(20)<<phi_1[j]<<endl;
     }
-    outfile<<"<--phi_1-->\n";
-    cout<<"<--phi_1-->"<<endl;
-    for(unsigned int j = 0; j<J; j++){
-        outfile<<phi_1[j]<<'\n';
-        cout<<phi_1[j]<<endl;
-    }
+    outfile<<'\n';
+    outfile<<'\n';
     outfile<<"<--psi_c-->\n";
     cout<<"<--psi_c-->"<<endl;
     for(unsigned int j = 0; j<J; j++){
@@ -125,6 +121,8 @@ void SourceIteration::printOutput(unsigned int tabwidth){
         outfile<<'\n';
         cout<<endl;
     }
+    outfile<<'\n';
+    outfile<<'\n';
     outfile<<"<--psi_e-->\n";
     cout<<"<--psi_e-->"<<endl;
     for(unsigned int j = 0; j<=J; j++){
