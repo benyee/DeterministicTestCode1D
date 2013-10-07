@@ -10,6 +10,8 @@
 
 SourceIteration::SourceIteration(InputDeck *input){
     data = input;
+    
+    //Store useful information from input deck:
     phi_0 = data->getphi_0_0();
     phi_1 = data->getphi_1_0();
     J = phi_0.size();
@@ -17,7 +19,8 @@ SourceIteration::SourceIteration(InputDeck *input){
     
     sigma_s0 = data->getsigma_s0();
     sigma_s1 = data->getsigma_s1();
-    sigma_a = data->getsigma_a();
+    vector<double> sigma_a = data->getsigma_a();
+    sigma_t = Utilites::vector_add(sigma_a,sigma_s0);
     
     N = data->getN();
     mu_n = Utilities::calc_mu_n(N);
@@ -127,8 +130,8 @@ void SourceIteration::leftIteration(){
         region = discret.size()-1;
         within_region_counter=0;
         for(int j = J-1; j>=0;j--){
-            double numerator = (-mu_n[m]-(sigma_s0[region]+sigma_a[region])*h[j]/2.0*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*h[j];
-            double denominator = -mu_n[m]+(sigma_s0[region]+sigma_a[region])*h[j]/2.0*(1.0-alpha[j][m]);
+            double numerator = (-mu_n[m]-(sigma_t[region])*h[j]/2.0*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*h[j];
+            double denominator = -mu_n[m]+(sigma_t[region])*h[j]/2.0*(1.0-alpha[j][m]);
             psi_e[j][m] = numerator/denominator;
             within_region_counter++;
             if(within_region_counter==discret[region]){
@@ -157,8 +160,8 @@ void SourceIteration::rightIteration(){
         region = 0;
         within_region_counter=0;
         for(unsigned int j = 0; j<J;j++){
-            double numerator = (mu_n[m]-(sigma_s0[region]+sigma_a[region])*h[j]/2.0*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*h[j];
-            double denominator = mu_n[m]+(sigma_s0[region]+sigma_a[region])*h[j]/2.0*(1.0+alpha[j][m]);
+            double numerator = (mu_n[m]-(sigma_t[region])*h[j]/2.0*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*h[j];
+            double denominator = mu_n[m]+(sigma_t[region])*h[j]/2.0*(1.0+alpha[j][m]);
             psi_e[j+1][m] = numerator/denominator;
             within_region_counter++;
             if(within_region_counter==discret[region]){
@@ -200,9 +203,6 @@ void SourceIteration::initializeGrid(){
 void SourceIteration::initializeAlpha(){
     if(alpha.size()){return;}
     
-    vector<double> sigma_s0 = data->getsigma_s0();
-    vector<double> sigma_a = data->getsigma_a();
-    vector<double> sigma_t = Utilities::vector_add(sigma_s0,sigma_a);
     unsigned int region = 0;
     unsigned int within_region_counter = 0;
     for(unsigned int j = 0; j<=J;j++){
