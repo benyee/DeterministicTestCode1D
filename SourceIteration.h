@@ -23,13 +23,14 @@ using namespace std;
 
 class SourceIteration{
 public:
-    SourceIteration(InputDeck *input);
+    SourceIteration(InputDeck *input,string outputfilename="output.txt");
     ~SourceIteration();
     int iterate();
-    void printOutput(string outfilename="output.txt",unsigned int tabwidth=15);
+    void printOutput(unsigned int tabwidth=15);
     
 private:
     InputDeck *data;
+    string outfilename;
     
     //Grid:
     vector<double> x;
@@ -55,6 +56,7 @@ private:
     
     unsigned int J,N;
     int* bc;
+    int bc;
     
     void rightIteration();
     void leftIteration();

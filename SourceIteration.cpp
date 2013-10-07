@@ -8,8 +8,9 @@
 
 #include "SourceIteration.h"
 
-SourceIteration::SourceIteration(InputDeck *input){
+SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     data = input;
+    outfilename = outputfilename;
     
     //Store useful information from input deck:
     phi_0 = data->getphi_0_0();
@@ -74,7 +75,7 @@ int SourceIteration::iterate(){
     return 0;
 }
 
-void SourceIteration::printOutput(string outfilename, unsigned int tabwidth){
+void SourceIteration::printOutput(unsigned int tabwidth){
     ofstream outfile;
     outfile.open (outfilename.c_str());
     cout<<"Writing to file named "+outfilename<<endl;
