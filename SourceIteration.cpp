@@ -257,6 +257,6 @@ double SourceIteration::updatePhi_calcSource(){
             region++;
         }
     }
-    return (Utilities::p_norm(old_phi_0,phi_0));
+    return (Utilities::p_norm(old_phi_0,phi_0,2));
     
 }
