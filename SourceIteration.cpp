@@ -127,7 +127,7 @@ void SourceIteration::leftIteration(){
         region = discret.size()-1;
         within_region_counter=0;
         for(int j = J-1; j>=0;j--){
-            double numerator = (-mu_n[m]-(sigma_s0[region]+sigma_a[region])*h[j]/2.0*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*h[j]/2.0;
+            double numerator = (-mu_n[m]-(sigma_s0[region]+sigma_a[region])*h[j]/2.0*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*h[j];
             double denominator = -mu_n[m]+(sigma_s0[region]+sigma_a[region])*h[j]/2.0*(1.0-alpha[j][m]);
             psi_e[j][m] = numerator/denominator;
             within_region_counter++;
@@ -157,7 +157,7 @@ void SourceIteration::rightIteration(){
         region = 0;
         within_region_counter=0;
         for(unsigned int j = 0; j<J;j++){
-            double numerator = (mu_n[m]-(sigma_s0[region]+sigma_a[region])*h[j]/2.0*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*h[j]/2.0;
+            double numerator = (mu_n[m]-(sigma_s0[region]+sigma_a[region])*h[j]/2.0*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*h[j];
             double denominator = mu_n[m]+(sigma_s0[region]+sigma_a[region])*h[j]/2.0*(1.0+alpha[j][m]);
             psi_e[j+1][m] = numerator/denominator;
             within_region_counter++;
