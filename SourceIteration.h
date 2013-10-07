@@ -56,7 +56,6 @@ private:
     
     unsigned int J,N;
     int* bc;
-    int bc;
     
     void rightIteration();
     void leftIteration();
