@@ -74,10 +74,16 @@ int SourceIteration::iterate(){
     return 0;
 }
 
-void SourceIteration::printOutput(string outfilename){
+void SourceIteration::printOutput(string outfilename, unsigned int tabwidth){
     ofstream outfile;
     outfile.open (outfilename.c_str());
     cout<<"Writing to file named "+outfilename<<endl;
+    outfile<<'\n';
+    outfile<<'\n';
+    outfile<<'\n';
+    outfile<<'\n';
+    outfile<<'\n';
+    outfile<<"<<<<<--------------OUTPUT:-------------->>>>>\n";
     outfile<<"<--phi_0-->\n";
     cout<<"<--phi_0-->"<<endl;
     for(unsigned int j = 0; j<J; j++){
@@ -94,8 +100,8 @@ void SourceIteration::printOutput(string outfilename){
     cout<<"<--psi_c-->"<<endl;
     for(unsigned int j = 0; j<J; j++){
         for(unsigned int m = 0; m<N;m++){
-            outfile<<psi_c[j][m]<<'\t';
-            cout<<psi_c[j][m]<<'\t';
+            outfile<<setw(tabwidth)<<psi_c[j][m];
+            cout<<setw(tabwidth)<<psi_c[j][m];
         }
         outfile<<'\n';
         cout<<endl;
@@ -104,8 +110,8 @@ void SourceIteration::printOutput(string outfilename){
     cout<<"<--psi_e-->"<<endl;
     for(unsigned int j = 0; j<=J; j++){
         for(unsigned int m = 0; m<N;m++){
-            outfile<<psi_e[j][m]<<'\t';
-            cout<<psi_e[j][m]<<'\t';
+            outfile<<setw(tabwidth)<<psi_e[j][m];
+            cout<<setw(tabwidth)<<psi_e[j][m];
         }
         outfile<<'\n';
         cout<<endl;

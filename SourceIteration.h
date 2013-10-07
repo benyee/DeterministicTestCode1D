@@ -10,6 +10,7 @@
 #define ____SourceIteration__
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <math.h>
@@ -25,7 +26,7 @@ public:
     SourceIteration(InputDeck *input);
     ~SourceIteration();
     int iterate();
-    void printOutput(string outfilename="output.txt");
+    void printOutput(string outfilename="output.txt",unsigned int tabwidth=15);
     
 private:
     InputDeck *data;
