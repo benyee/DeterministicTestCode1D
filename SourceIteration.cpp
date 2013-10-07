@@ -58,7 +58,7 @@ int SourceIteration::iterate(){
     cout<<"Performing source iteration..."<<endl;
     outfile<<"Performing source iteration...\n";
     outfile<<setw(5)<<"it_num"<<setw(20)<<"||Change in Flux||"<<setw(20);
-    outfile<<"Rho Est."<<setw(20)<<"NF"<<endl;;
+    outfile<<"Conv. Rate Est."<<setw(20)<<"Negative Fluxes"<<endl;;
     double tol = abs(data->gettol());
     double error;
     
