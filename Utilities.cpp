@@ -125,3 +125,10 @@ vector<double> Utilities::vector_add(vector<double> v1, vector<double> v2){
     }
     return sum;
 }
+vector<double> Utilities::vector_subtract(vector<double> v1, vector<double> v2){
+    vector<double> diff;
+    for(unsigned int i = 0; i<min(v1.size(),v2.size()); i++){
+        diff.push_back(v1[i]-v2[i]);
+    }
+    return diff;
+}

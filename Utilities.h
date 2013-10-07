@@ -38,6 +38,7 @@ public:
     static double inf_norm(vector<double> v1, vector<double> v2);
     static double p_norm(vector<double> v1, vector<double> v2, unsigned int p);
     static vector<double> vector_add(vector<double> v1, vector<double> v2);
+    static vector<double> vector_subtract(vector<double> v1, vector<double> v2);
     
     
     //Remove the last four characters of a string:
