@@ -20,7 +20,7 @@ SourceIteration::SourceIteration(InputDeck *input){
     sigma_s0 = data->getsigma_s0();
     sigma_s1 = data->getsigma_s1();
     vector<double> sigma_a = data->getsigma_a();
-    sigma_t = Utilites::vector_add(sigma_a,sigma_s0);
+    sigma_t = Utilities::vector_add(sigma_a,sigma_s0);
     
     N = data->getN();
     mu_n = Utilities::calc_mu_n(N);
