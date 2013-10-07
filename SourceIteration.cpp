@@ -53,10 +53,17 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
 }
 
 int SourceIteration::iterate(){
+    ofstream outfile;
+    outfile.open(outfilename.c_str());
+    cout<<"Performing source iteration..."<<endl;
+    outfile<<"Performing source iteration...\n";
+    outfile<<setw(5)<<"it_num"<<setw(20)<<"||Change in Flux||"<<setw(20);
+    outfile<<"Rho Est."<<setw(20)<<"NF"<<endl;;
     double tol = abs(data->gettol());
     double error;
     
     //Iterate until tolerance is achieved:
+    it_num = 1;
     do{
         //Go either right then left or left then right:
         if(bc[0] == 1 && bc[1] == 0){
@@ -70,14 +77,25 @@ int SourceIteration::iterate(){
         finiteDifference();
         
         error = updatePhi_calcSource();
-        cout<<"error is "<<error<<endl;
-    }while(error>tol);
+        outfile<<setw(5)<<it_num<<setw(20)<<error<<setw(20);
+        if(it_num ==1){
+            outfile<<"---";
+        }else{
+            outfile<<error/old_error;
+        }
+        outfile<<setw(20)<<checkNegativeFlux()<<'\n';
+        cout<<"For iteration number "<<it_num<<", the error is "<<error<<endl;
+        old_error = error;
+        it_num++;
+    }while(error>tol && it_num < 1000);
+    
+    outfile.close();
     return 0;
 }
 
 void SourceIteration::printOutput(unsigned int tabwidth){
     ofstream outfile;
-    outfile.open (outfilename.c_str());
+    outfile.open (outfilename.c_str(), ios::app);
     cout<<"Writing to file named "+outfilename<<endl;
     outfile<<'\n';
     outfile<<'\n';
@@ -264,6 +282,16 @@ double SourceIteration::updatePhi_calcSource(){
             region++;
         }
     }
-    return (Utilities::p_norm(old_phi_0,phi_0,2));
+    return (Utilities::inf_norm(old_phi_0,phi_0));
     
+}
+
+unsigned int SourceIteration::checkNegativeFlux(){
+    int temp = 0;
+    for(unsigned int j = 0; j<J;j++){
+        if(phi_0[j] < 0){
+            temp++;
+        }
+    }
+    return temp;
 }

@@ -58,12 +58,16 @@ private:
     unsigned int J,N; //number of spatial cells, order of S_N approximation
     int* bc; //boundary conditions
     
+    int it_num; //Iteraiton number
+    double old_error; //stores ||phi_{i}-phi_{i-1}|| from the previous iteration
+    
     void rightIteration(); //Sweep left to right
     void leftIteration(); //Sweep right to left
     void finiteDifference(); //Calculate cell-averaged angular fluxes
     void initializeAlpha(); //Calculate alpha values
     void initializeGrid(); //Calculate values associated with grid locations
     double updatePhi_calcSource(); //Update fluxes and currents, calculate new source, calculate difference between new and old scalar flux
+    unsigned int checkNegativeFlux(); //Returns the number of negative values in phi_0
 };
 
 #endif /* defined(____SourceIteration__) */
