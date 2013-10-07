@@ -29,40 +29,41 @@ public:
     void printOutput(unsigned int tabwidth=15);
     
 private:
-    InputDeck *data;
-    string outfilename;
+    InputDeck *data; //Input deck
+    string outfilename; //Name of outpile file
     
     //Grid:
-    vector<double> x;
-    vector<double> h;
-    vector<unsigned int> discret;
-    vector<double> x_e;
+    vector<double> x; //List of x-values at cell centers
+    vector<double> h; //List of widths (dx's)
+    vector<unsigned int> discret; //Number of spatial cells for each region
+    vector<double> x_e; //List of x-values at cell edges
     
     //Neutron info:
-    vector<double> phi_0;
-    vector<double> phi_1;
-    vector<vector<double> > psi_e;
-    vector<vector<double> > psi_c;
-    vector< vector<double> > source;
+    vector<double> phi_0; //Cell-averaged scalar flux
+    vector<double> phi_1; //Cell-averaged net current in x direction
+    vector<vector<double> > psi_e; //Edge angular flux
+    vector<vector<double> > psi_c; //Cell-averaged angular flux
+    vector< vector<double> > source;  //Source term for source iteration
     
+    //Cross sections:
     vector<double> sigma_s0; //isotropic scattering cross sections in cm^{-1}
     vector<double> sigma_s1; //anisotropic scattering cross sections in cm^{-1}
     vector<double> sigma_t; //absorption cross section in cm^{-1}
     
-    vector< vector<double> > alpha;
+    vector< vector<double> > alpha; //Finite difference coefficients
     
-    vector<double> mu_n;
-    vector<double> w_n;
+    vector<double> mu_n; //mu values for S_N approximation
+    vector<double> w_n; //weights for S_N approximation
     
-    unsigned int J,N;
-    int* bc;
+    unsigned int J,N; //number of spatial cells, order of S_N approximation
+    int* bc; //boundary conditions
     
-    void rightIteration();
-    void leftIteration();
-    void finiteDifference();
-    void initializeAlpha();
-    void initializeGrid();
-    double updatePhi_calcSource();
+    void rightIteration(); //Sweep left to right
+    void leftIteration(); //Sweep right to left
+    void finiteDifference(); //Calculate cell-averaged angular fluxes
+    void initializeAlpha(); //Calculate alpha values
+    void initializeGrid(); //Calculate values associated with grid locations
+    double updatePhi_calcSource(); //Update fluxes and currents, calculate new source, calculate difference between new and old scalar flux
 };
 
 #endif /* defined(____SourceIteration__) */
