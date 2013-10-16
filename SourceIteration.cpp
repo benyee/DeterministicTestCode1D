@@ -294,7 +294,7 @@ double SourceIteration::updatePhi_calcSource(){
 //Update phi, calculate source:
 vector<double> SourceIteration::calcEdgePhi(int num){
     vector<double> edgePhi;
-    if(num){
+    if(!num){
         for(unsigned int j = 0; j<J+1;j++){
             edgePhi.push_back(0);
             for(unsigned int m = 0; m<N;m++){
