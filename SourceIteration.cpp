@@ -96,6 +96,8 @@ int SourceIteration::iterate(){
 void SourceIteration::printOutput(unsigned int tabwidth){
     ofstream outfile;
     outfile.open (outfilename.c_str(), ios::app);
+    vector<double> phi_0e = calcEdgePhi(0);
+    vector<double> phi_1e = calcEdgePhi(1);
     cout<<"Writing to file named "+outfilename<<endl;
     outfile<<'\n';
     outfile<<'\n';
@@ -103,12 +105,16 @@ void SourceIteration::printOutput(unsigned int tabwidth){
     outfile<<'\n';
     outfile<<'\n';
     outfile<<"<<<<<--------------OUTPUT:-------------->>>>>\n";
-    outfile<<setw(5)<<"x_c"<<setw(20)<<"phi_0"<<setw(20)<<"phi_1\n";
-    cout<<setw(5)<<"x_c"<<setw(20)<<"phi_0"<<setw(20)<<"phi_1"<<endl;
+    outfile<<setw(5)<<"x"<<setw(tabwidth)<<"phi_0,c"<<setw(tabwidth)<<"phi_0,e"<<setw(tabwidth)<<"phi_1,c"<<setw(tabwidth)<<"phi_1,e"<<endl;
+    cout<<setw(5)<<"x"<<setw(tabwidth)<<"phi_0,c"<<setw(tabwidth)<<"phi_0,e"<<setw(tabwidth)<<"phi_1,c"<<setw(tabwidth)<<"phi_1,e"<<endl;
     for(unsigned int j = 0; j<J; j++){
-        outfile<<setw(5)<<x[j]<<setw(20)<<phi_0[j]<<setw(20)<<phi_1[j]<<'\n';
-        cout<<setw(5)<<x[j]<<setw(20)<<phi_0[j]<<setw(20)<<phi_1[j]<<endl;
+        outfile<<setw(5)<<x_e[j]<<setw(tabwidth)<<"      "<<setw(tabwidth)<<phi_0e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[j]<<endl;
+        cout<<setw(5)<<x_e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_0e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[j]<<endl;
+        outfile<<setw(5)<<x[j]<<setw(tabwidth)<<phi_0[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1[j]<<setw(tabwidth)<<"     "<<endl;
+        cout<<setw(5)<<x[j]<<setw(tabwidth)<<phi_0[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1[j]<<setw(tabwidth)<<"     "<<endl;
     }
+    outfile<<setw(5)<<x_e[J+1]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_0e[J+1]<<setw(tabwidth)<<"    "<<setw(tabwidth)<<phi_1e[J+1]<<endl;
+    cout<<setw(5)<<x_e[J+1]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_0e[J+1]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[J+1]<<endl;
     outfile<<'\n';
     outfile<<'\n';
     outfile<<"<--psi_c-->\n";
@@ -281,6 +287,28 @@ double SourceIteration::updatePhi_calcSource(){
         }
     }
     return (Utilities::inf_norm(old_phi_0,phi_0));
+    
+}
+
+//Update phi, calculate source:
+vector<double> SourceIteration::calcEdgePhi(int num){
+    vector<double> edgePhi;
+    if(num){
+        for(unsigned int j = 0; j<J+1;j++){
+            edgePhi.push_back(0);
+            for(unsigned int m = 0; m<N;m++){
+                edgePhi[j]+= w_n[m]*psi_e[j][m];
+            }
+        }
+    }else{
+        for(unsigned int j = 0; j<J+1;j++){
+            edgePhi.push_back(0);
+            for(unsigned int m = 0; m<N;m++){
+                edgePhi[j]+= mu_n[m]*w_n[m]*psi_e[j][m];
+            }
+        }
+    }
+    return edgePhi;
     
 }
 

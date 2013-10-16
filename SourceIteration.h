@@ -26,7 +26,7 @@ public:
     SourceIteration(InputDeck *input,string outputfilename="output.txt");
     ~SourceIteration();
     int iterate();
-    void printOutput(unsigned int tabwidth=15);
+    void printOutput(unsigned int tabwidth=20);
     
 private:
     InputDeck *data; //Input deck
@@ -67,6 +67,7 @@ private:
     void initializeAlpha(); //Calculate alpha values
     void initializeGrid(); //Calculate values associated with grid locations
     double updatePhi_calcSource(); //Update fluxes and currents, calculate new source, calculate difference between new and old scalar flux
+    vector<double> calcEdgePhi(int num); //Integrate the edge fluxes to get scalar edge fluxes and edge currents.  This is not necessary for the source iteration procedure and can be performed at the end.  num = 0 for scalar edge flux, num = 1 for edge current
     unsigned int checkNegativeFlux(); //Returns the number of negative values in phi_0
 };
 
