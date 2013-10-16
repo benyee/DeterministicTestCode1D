@@ -98,6 +98,7 @@ void SourceIteration::printOutput(unsigned int tabwidth){
     outfile.open (outfilename.c_str(), ios::app);
     vector<double> phi_0e = calcEdgePhi(0);
     vector<double> phi_1e = calcEdgePhi(1);
+    outfile<<setprecision(4);
     cout<<"Writing to file named "+outfilename<<endl;
     outfile<<'\n';
     outfile<<'\n';
@@ -108,13 +109,13 @@ void SourceIteration::printOutput(unsigned int tabwidth){
     outfile<<setw(5)<<"x"<<setw(tabwidth)<<"phi_0,c"<<setw(tabwidth)<<"phi_0,e"<<setw(tabwidth)<<"phi_1,c"<<setw(tabwidth)<<"phi_1,e"<<endl;
     cout<<setw(5)<<"x"<<setw(tabwidth)<<"phi_0,c"<<setw(tabwidth)<<"phi_0,e"<<setw(tabwidth)<<"phi_1,c"<<setw(tabwidth)<<"phi_1,e"<<endl;
     for(unsigned int j = 0; j<J; j++){
-        outfile<<setw(5)<<x_e[j]<<setw(tabwidth)<<"      "<<setw(tabwidth)<<phi_0e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[j]<<endl;
-        cout<<setw(5)<<x_e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_0e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[j]<<endl;
-        outfile<<setw(5)<<x[j]<<setw(tabwidth)<<phi_0[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1[j]<<setw(tabwidth)<<"     "<<endl;
-        cout<<setw(5)<<x[j]<<setw(tabwidth)<<phi_0[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1[j]<<setw(tabwidth)<<"     "<<endl;
+        outfile<<setw(5)<<fixed<<x_e[j]<<setw(tabwidth)<<"      "<<setw(tabwidth)<<scientific<<phi_0e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[j]<<endl;
+        cout<<setw(5)<<fixed<<x_e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<scientific<<phi_0e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[j]<<endl;
+        outfile<<setw(5)<<fixed<<x[j]<<setw(tabwidth)<<scientific<<phi_0[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1[j]<<setw(tabwidth)<<"     "<<endl;
+        cout<<setw(5)<<fixed<<x[j]<<setw(tabwidth)<<scientific<<phi_0[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1[j]<<setw(tabwidth)<<"     "<<endl;
     }
-    outfile<<setw(5)<<x_e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_0e[J]<<setw(tabwidth)<<"    "<<setw(tabwidth)<<phi_1e[J]<<endl;
-    cout<<setw(5)<<x_e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_0e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[J]<<endl;
+    outfile<<setw(5)<<fixed<<x_e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<scientific<<phi_0e[J]<<setw(tabwidth)<<"    "<<setw(tabwidth)<<phi_1e[J]<<endl;
+    cout<<setw(5)<<fixed<<x_e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<scientific<<phi_0e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[J]<<endl;
     outfile<<'\n';
     outfile<<'\n';
     outfile<<"<--psi_c-->\n";
