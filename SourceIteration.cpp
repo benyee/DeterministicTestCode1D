@@ -113,8 +113,8 @@ void SourceIteration::printOutput(unsigned int tabwidth){
         outfile<<setw(5)<<x[j]<<setw(tabwidth)<<phi_0[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1[j]<<setw(tabwidth)<<"     "<<endl;
         cout<<setw(5)<<x[j]<<setw(tabwidth)<<phi_0[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1[j]<<setw(tabwidth)<<"     "<<endl;
     }
-    outfile<<setw(5)<<x_e[J+1]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_0e[J+1]<<setw(tabwidth)<<"    "<<setw(tabwidth)<<phi_1e[J+1]<<endl;
-    cout<<setw(5)<<x_e[J+1]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_0e[J+1]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[J+1]<<endl;
+    outfile<<setw(5)<<x_e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_0e[J]<<setw(tabwidth)<<"    "<<setw(tabwidth)<<phi_1e[J]<<endl;
+    cout<<setw(5)<<x_e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_0e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[J]<<endl;
     outfile<<'\n';
     outfile<<'\n';
     outfile<<"<--psi_c-->\n";
