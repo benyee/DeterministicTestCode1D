@@ -53,6 +53,7 @@ private:
     vector< vector<double> > alpha; //Finite difference coefficients
     
     vector<double> mu_n; //mu values for S_N approximation
+    //Convention: mu_n[0] > mu_n[1] > ... mu_n[N-1]
     vector<double> w_n; //weights for S_N approximation
     
     unsigned int J,N; //number of spatial cells, order of S_N approximation
