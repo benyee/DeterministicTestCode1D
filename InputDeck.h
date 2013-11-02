@@ -67,7 +67,7 @@ private:
     int bc[2]; // boundary conditions for left and right end of domain.  0 = vaccuum, 1 = reflective, 2 = user specified
     
     unsigned int N;  // number of angular ordinates
-    unsigned int alpha_mode; //type of finite difference scheme.  0 = diamond difference, 1 = step up, 2 = step characteristic
+    unsigned int alpha_mode; //type of finite difference scheme.  0 = diamond difference, 1 = step up, 2 = step characteristic, 3 = characteristic alternative (3.1 of notes)
     double tol; //tolerance for convergence
     
     bool searchForInput(ifstream &file, string inp);  //Search for the input named inp in file, returns 0 if not found, returns 1 if found

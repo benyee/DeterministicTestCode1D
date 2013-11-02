@@ -238,22 +238,31 @@ void SourceIteration::initializeAlpha(){
     for(unsigned int j = 0; j<=J;j++){
         vector<double> temp;
         alpha.push_back(temp);
-        if(data->getalpha_mode() == 1){
+        if(data->getalpha_mode() == 1){ //Step method
             for(unsigned int m=0; m<N/2;m++){
                 alpha[j].push_back(1);
             }
             for(unsigned int m=N/2;m<N;m++){
                 alpha[j].push_back(-1);
             }
-        }else if(data->getalpha_mode()==0){
+        }else if(data->getalpha_mode()==0){ //Diamond Difference
             for(unsigned int m=0; m<N;m++){
                 alpha[j].push_back(0);
             }
-        }else{
+        }else if(data->getalpha_mode()==2){ //Step characteristic
             for(unsigned int m=0; m<N;m++){
                 double tau = sigma_t[region]*h[j]/2/mu_n[m];
                 alpha[j].push_back(1/tanh(tau)-1/tau);
                 within_region_counter++;
+            }
+        }else{ //Characteristic alternative (3.1 of notes)
+            for(unsigned int m=0;m<N;m++){
+                double tau = sigma_t[region]*h[j]/2/mu_n[m];
+                if(m < N/2){
+                    alpha[j].push_back(tau+1);
+                }else{
+                    alpha[j].push_back(tau-1);
+                }
             }
         }
         if(within_region_counter == discret[region]){
