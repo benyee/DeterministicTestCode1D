@@ -119,26 +119,26 @@ void SourceIteration::printOutput(unsigned int tabwidth){
     outfile<<'\n';
     outfile<<'\n';
     outfile<<"<--psi_c-->\n";
-    cout<<"<--psi_c-->"<<endl;
+    //cout<<"<--psi_c-->"<<endl;
     for(unsigned int j = 0; j<J; j++){
         for(unsigned int m = 0; m<N;m++){
             outfile<<setw(tabwidth)<<psi_c[j][m];
-            cout<<setw(tabwidth)<<psi_c[j][m];
+            //cout<<setw(tabwidth)<<psi_c[j][m];
         }
         outfile<<'\n';
-        cout<<endl;
+        //cout<<endl;
     }
     outfile<<'\n';
     outfile<<'\n';
     outfile<<"<--psi_e-->\n";
-    cout<<"<--psi_e-->"<<endl;
+    //cout<<"<--psi_e-->"<<endl;
     for(unsigned int j = 0; j<=J; j++){
         for(unsigned int m = 0; m<N;m++){
             outfile<<setw(tabwidth)<<psi_e[j][m];
-            cout<<setw(tabwidth)<<psi_e[j][m];
+      //      cout<<setw(tabwidth)<<psi_e[j][m];
         }
         outfile<<'\n';
-        cout<<endl;
+        //cout<<endl;
     }
     outfile.close();
 }
@@ -255,7 +255,7 @@ void SourceIteration::initializeAlpha(){
                 alpha[j].push_back(1/tanh(tau)-1/tau);
                 within_region_counter++;
             }
-        }else{ //Characteristic alternative (3.1 of notes)
+        }else if(data->getalpha_mode()==3){ //Characteristic alternative (3.1 of notes)
             for(unsigned int m=0;m<N;m++){
                 double tau = sigma_t[region]*h[j]/2/mu_n[m];
                 if(m < N/2){
