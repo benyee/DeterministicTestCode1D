@@ -35,7 +35,7 @@ public:
     
     int* getbc(){return bc;}
     int getN(){return N;}
-    int getalpha_mode(){return alpha_mode;}
+    unsigned int getalpha_mode(){return alpha_mode;}
     double gettol(){return tol;}
     
     string getfileName(){return fileName;}

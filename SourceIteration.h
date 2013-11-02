@@ -58,6 +58,7 @@ private:
     
     unsigned int J,N; //number of spatial cells, order of S_N approximation
     int* bc; //boundary conditions
+    unsigned int alpha_mode;
     
     int it_num; //Iteraiton number
     double old_error; //stores ||phi_{i}-phi_{i-1}|| from the previous iteration

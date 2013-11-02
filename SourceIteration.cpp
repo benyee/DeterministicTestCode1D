@@ -18,6 +18,8 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     J = phi_0.size();
     bc = data->getbc();
     
+    alpha_mode = data->getalpha_mode();
+    
     sigma_s0 = data->getsigma_s0();
     sigma_s1 = data->getsigma_s1();
     vector<double> sigma_a = data->getsigma_a();
@@ -190,9 +192,14 @@ void SourceIteration::rightIteration(){
         region = 0;
         within_region_counter=0;
         for(unsigned int j = 0; j<J;j++){
-            double numerator = (mu_n[m]-(sigma_t[region])*h[j]/2.0*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*h[j];
-            double denominator = mu_n[m]+(sigma_t[region])*h[j]/2.0*(1.0+alpha[j][m]);
-            psi_e[j+1][m] = numerator/denominator;
+            if(alpha_mode==4){
+                
+            }else{
+                double numerator = (mu_n[m]-(sigma_t[region])*h[j]/2.0*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*h[j];
+                double denominator = mu_n[m]+(sigma_t[region])*h[j]/2.0*(1.0+alpha[j][m]);
+                psi_e[j+1][m] = numerator/denominator;
+            }
+            
             within_region_counter++;
             if(within_region_counter==discret[region]){
                 within_region_counter = 0;
@@ -238,24 +245,24 @@ void SourceIteration::initializeAlpha(){
     for(unsigned int j = 0; j<=J;j++){
         vector<double> temp;
         alpha.push_back(temp);
-        if(data->getalpha_mode() == 1){ //Step method
+        if(alpha_mode == 1){ //Step method
             for(unsigned int m=0; m<N/2;m++){
                 alpha[j].push_back(1);
             }
             for(unsigned int m=N/2;m<N;m++){
                 alpha[j].push_back(-1);
             }
-        }else if(data->getalpha_mode()==0){ //Diamond Difference
+        }else if(alpha_mode==0){ //Diamond Difference
             for(unsigned int m=0; m<N;m++){
                 alpha[j].push_back(0);
             }
-        }else if(data->getalpha_mode()==2){ //Step characteristic
+        }else if(alpha_mode==2){ //Step characteristic
             for(unsigned int m=0; m<N;m++){
                 double tau = sigma_t[region]*h[j]/2/mu_n[m];
                 alpha[j].push_back(1/tanh(tau)-1/tau);
                 within_region_counter++;
             }
-        }else if(data->getalpha_mode()==3){ //Characteristic alternative (3.1 of notes)
+        }else if(alpha_mode==3){ //Characteristic alternative (3.1 of notes)
             for(unsigned int m=0;m<N;m++){
                 double tau = sigma_t[region]*h[j]/2/mu_n[m];
                 if(m < N/2){
