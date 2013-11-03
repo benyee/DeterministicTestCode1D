@@ -17,7 +17,6 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     phi_1 = data->getphi_1_0();
     J = phi_0.size();
     bc = data->getbc();
-    
     alpha_mode = data->getalpha_mode();
     
     sigma_s0 = data->getsigma_s0();
@@ -28,6 +27,22 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     N = data->getN();
     mu_n = Utilities::calc_mu_n(N);
     w_n = Utilities::calc_w_n(mu_n);
+    
+    hasLinearTerms = data->gethasLinearTerms();
+    if(hasLinearTerms){
+        phi_0_lin = data->getphi_0_0_lin();
+        phi_1_lin = data->getphi_1_0_lin();
+        for(unsigned int j = 0; j<J;j++){
+            vector<double> temp;
+            vector<double> temp2;
+            psi_c_lin.push_back(temp);
+            source_lin.push_back(temp2);
+            for(unsigned int m=0;m<N;m++){
+                psi_c_lin[j].push_back(0);
+                source_lin[j].push_back(0);
+            }
+        }
+    }
     
     //Initialize vectors:
     //Note that psi_e has one extra set of elements compared to psi_c and source
@@ -193,7 +208,7 @@ void SourceIteration::rightIteration(){
         within_region_counter=0;
         for(unsigned int j = 0; j<J;j++){
             if(alpha_mode==4){
-                
+                //For Linear Characteristic stuff
             }else{
                 double numerator = (mu_n[m]-(sigma_t[region])*h[j]/2.0*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*h[j];
                 double denominator = mu_n[m]+(sigma_t[region])*h[j]/2.0*(1.0+alpha[j][m]);
@@ -239,7 +254,7 @@ void SourceIteration::initializeGrid(){
 
 void SourceIteration::initializeAlpha(){
     if(alpha.size()){return;}
-    
+    if(alpha_mode > 3){return;}
     unsigned int region = 0;
     unsigned int within_region_counter = 0;
     for(unsigned int j = 0; j<=J;j++){
@@ -283,6 +298,7 @@ void SourceIteration::initializeAlpha(){
 double SourceIteration::updatePhi_calcSource(){
     vector<double> old_phi_0(phi_0);
     vector<double> Q = data->getQ();
+    vector<double> Q_lin = data->getQ_lin();
     int region = 0;
     unsigned int within_region_counter = 0;
     for(unsigned int j = 0; j<J;j++){
@@ -295,12 +311,36 @@ double SourceIteration::updatePhi_calcSource(){
         }
         //Calculate and update source term:
         for(unsigned int m=0;m<N;m++){
-            source[j][m] = (sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region])/2;
+            //Note that for a linear source, Q[region]+Q_lin[region]*x[j] gives the average external source in that spatial cell
+            source[j][m] = (sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region]+Q_lin[region]*x[j])/2;
         }
         within_region_counter++;
         if(within_region_counter==discret[region]){
             within_region_counter = 0;
             region++;
+        }
+    }
+    
+    if(hasLinearTerms){
+        region = 0;
+        within_region_counter = 0;
+        for(unsigned int j = 0; j<J;j++){
+            phi_0_lin[j] = 0;
+            phi_1_lin[j] = 0;
+            //Integrate over angle:
+            for(unsigned int m = 0; m<N;m++){
+                phi_0_lin[j]+= w_n[m]*psi_c_lin[j][m];
+                phi_1_lin[j]+= mu_n[m]*w_n[m]*psi_c_lin[j][m];
+            }
+            //Calculate and update source term:
+            for(unsigned int m=0;m<N;m++){
+                source_lin[j][m] = (sigma_s0[region]*phi_0_lin[j]+3*mu_n[m]*sigma_s1[region]*phi_1_lin[j]+Q_lin[region])/2;
+            }
+            within_region_counter++;
+            if(within_region_counter==discret[region]){
+                within_region_counter = 0;
+                region++;
+            }
         }
     }
     return (Utilities::inf_norm(old_phi_0,phi_0));

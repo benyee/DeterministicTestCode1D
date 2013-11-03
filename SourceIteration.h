@@ -45,6 +45,13 @@ private:
     vector<vector<double> > psi_c; //Cell-averaged angular flux
     vector< vector<double> > source;  //Source term for source iteration
     
+    //Linear neutron info for higher order approximations:
+    bool hasLinearTerms;
+    vector<double> phi_0_lin; //Cell-averaged scalar flux
+    vector<double> phi_1_lin; //Cell-averaged net current in x direction
+    vector<vector<double> > psi_c_lin; //Cell-averaged angular flux
+    vector< vector<double> > source_lin;  //Source term for source iteration
+    
     //Cross sections:
     vector<double> sigma_s0; //isotropic scattering cross sections in cm^{-1}
     vector<double> sigma_s1; //anisotropic scattering cross sections in cm^{-1}
