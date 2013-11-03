@@ -190,7 +190,7 @@ void SourceIteration::leftIteration(){
                 double esighmu = exp(sighmu);
                 psi_c[j][m] = C0/sighmu*(esighmu-1) + srctwosigt-srclintwosigt*musig;
                 psi_c_lin[j][m] = srclintwosigt - 6*C0/sighmu/h[j]*(1 + esighmu-2/sighmu*(esighmu-1));
-                psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhf + musig) + srctwosigt;
+                psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhj + musig) + srctwosigt;
             } else{
                 double numerator = (-mu_n[m]-(sigma_t[region])*halfhj*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*h[j];
                 double denominator = -mu_n[m]+(sigma_t[region])*halfhj*(1.0-alpha[j][m]);
