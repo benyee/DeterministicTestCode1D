@@ -82,6 +82,16 @@ int InputDeck::loadInputDeck(){
         }
         Q.push_back(atof(line.c_str()));
     }
+    //-------------------------------------------
+    if(!searchForInput(inputFile,"Q_lin")){
+        return 1;
+    }
+    while(getline(inputFile,line)){
+        if(line == "." || Q_lin.size() == X.size()){
+            break;
+        }
+        Q_lin.push_back(atof(line.c_str()));
+    }
     //--------------------------------------------
     if(!searchForInput(inputFile,"N")){
         return 1;
@@ -173,12 +183,66 @@ int InputDeck::loadInputDeck(){
             phi_1_0.push_back(atof(line.c_str()));
         }
     }
+    if(alpha_mode ==4){
+        hasLinearTerms = 1;
+    }
+    else{
+        hasLinearTerms = 0;
+    }
+    //-------------------------------------------
+    //Get initial phi_0_lin and phi_1_lin:
+    if(hasLinearTerms){
+        //--------------------------------------------
+        //Get initial phi_0_lin:
+        if(!searchForInput(inputFile,"phi_0_0_lin")){
+            return 1;
+        }
+        getline(inputFile,line);
+        if(line=="default"){
+            for(unsigned int j = 0; j < discret.size(); j++){
+                for(unsigned int i = 0; i < discret[j]; i++){
+                    phi_0_0_lin.push_back(0);
+                }
+            }
+        } else{
+            phi_0_0_lin.push_back(atof(line.c_str()));
+            while(getline(inputFile,line)){
+                if(line == "."){
+                    break;
+                }
+                phi_0_0_lin.push_back(atof(line.c_str()));
+            }
+        }
+        
+        //--------------------------------------------
+        //Get initial phi_1:
+        if(!searchForInput(inputFile,"phi_1_0_lin")){
+            return 1;
+        }
+        getline(inputFile,line);
+        if(line=="default"){
+            for(unsigned int j = 0; j < discret.size(); j++){
+                for(unsigned int i = 0; i < discret[j]; i++){
+                    phi_1_0_lin.push_back(0);
+                }
+            }
+        } else{
+            phi_1_0_lin.push_back(atof(line.c_str()));
+            while(getline(inputFile,line)){
+                if(line == "."){
+                    break;
+                }
+                phi_1_0_lin.push_back(atof(line.c_str()));
+            }
+        }
+    }
+
     
     inputFile.close();
     
     //Check to make sure all these vectors are the same size:
-    int vectorSizes[] = {X.size(), discret.size(),sigma_s0.size(),sigma_s1.size(),sigma_a.size(), Q.size()};
-    for(unsigned int i = 0; i < 5; i++){
+    int vectorSizes[] = {X.size(), discret.size(),sigma_s0.size(),sigma_s1.size(),sigma_a.size(), Q.size(),Q_lin.size()};
+    for(unsigned int i = 0; i < 7; i++){
         if(vectorSizes[i] != vectorSizes[i+1]){
             return 1;
         }
@@ -193,6 +257,15 @@ int InputDeck::loadInputDeck(){
         return 1;
     }else if(expectedSize!=phi_1_0.size()){
         return 1;
+    }
+    
+    //Repeat if there are linear terms:
+    if(hasLinearTerms){
+        if(expectedSize != phi_0_0_lin.size()){
+            return 1;
+        }else if(expectedSize!=phi_1_0_lin.size()){
+            return 1;
+        }
     }
     
     return 0;
@@ -248,7 +321,7 @@ void InputDeck::readValues(){
     temp = 0;
     temp2 = 0;
     for(unsigned int i = 0; i < phi_1_0.size(); i++){
-        //Divide the phi_0_0 readout by material sections
+        //Divide the phi_1_0 readout by material sections
         if(temp < discret.size() && temp2 == (unsigned int)discret[temp] && i!= phi_1_0.size()-1){
             cout<<endl;
             temp++;
@@ -257,7 +330,39 @@ void InputDeck::readValues(){
         cout<<phi_1_0[i]<<" ";
         temp2++;
     }
-    cout<<"]"<<endl;
+    
+    if(hasLinearTerms){
+        cout<<"]"<<endl;
+        cout<<"phi_0_0_lin = [";
+        unsigned int temp = 0;
+        unsigned int temp2 = 0;
+        for(unsigned int i = 0; i < phi_0_0_lin.size(); i++){
+            //Divide the phi_0_0_lin readout by material sections
+            if(temp < discret.size() && temp2 == (unsigned int)discret[temp] && i!= phi_0_0_lin.size()-1){
+                cout<<endl;
+                temp++;
+                temp2 = 0;
+            }
+            cout<<phi_0_0_lin[i]<<" ";
+            temp2++;
+        }
+        
+        cout<<"]"<<endl;
+        cout<<"phi_1_0_lin = [";
+        temp = 0;
+        temp2 = 0;
+        for(unsigned int i = 0; i < phi_1_0_lin.size(); i++){
+            //Divide the phi_1_0_lin readout by material sections
+            if(temp < discret.size() && temp2 == (unsigned int)discret[temp] && i!= phi_1_0_lin.size()-1){
+                cout<<endl;
+                temp++;
+                temp2 = 0;
+            }
+            cout<<phi_1_0_lin[i]<<" ";
+            temp2++;
+        }
+        cout<<"]"<<endl;
+    }
 }
 
 bool InputDeck::searchForInput(ifstream &file, string inp){
