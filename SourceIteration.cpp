@@ -269,8 +269,8 @@ void SourceIteration::initializeGrid(){
     for(unsigned int i = 0; i < X.size();i++){
         tempR = X[i];
         for(unsigned int j = 0; j<discret[i];j++){
-            x_e.push_back(j*(tempR-tempL)/discret[i]);
-            x.push_back((j+0.5)*(tempR-tempL)/discret[i]);
+            x_e.push_back(tempL+j*(tempR-tempL)/discret[i]);
+            x.push_back(tempL+(j+0.5)*(tempR-tempL)/discret[i]);
             h.push_back((tempR-tempL)/discret[i]);
         }
         tempL = tempR;
@@ -323,6 +323,8 @@ void SourceIteration::initializeAlpha(){
 //Update phi, calculate source:
 double SourceIteration::updatePhi_calcSource(){
     vector<double> old_phi_0(phi_0);
+    vector<double> X = data->getX();
+    X.insert(X.begin(),0);
     vector<double> Q = data->getQ();
     vector<double> Q_lin = data->getQ_lin();
     int region = 0;
@@ -338,7 +340,7 @@ double SourceIteration::updatePhi_calcSource(){
         //Calculate and update source term:
         for(unsigned int m=0;m<N;m++){
             //Note that for a linear source, Q[region]+Q_lin[region]*x[j] gives the average external source in that spatial cell
-            source[j][m] = sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region]+Q_lin[region]*x[j];
+            source[j][m] = sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region]+Q_lin[region]*(x[j]-X[region]);
         }
         within_region_counter++;
         if(within_region_counter==discret[region]){
@@ -360,7 +362,7 @@ double SourceIteration::updatePhi_calcSource(){
             }
             //Calculate and update source term:
             for(unsigned int m=0;m<N;m++){
-                source_lin[j][m] = (sigma_s0[region]*phi_0_lin[j]+3*mu_n[m]*sigma_s1[region]*phi_1_lin[j]+Q_lin[region])/2;
+                source_lin[j][m] = sigma_s0[region]*phi_0_lin[j]+3*mu_n[m]*sigma_s1[region]*phi_1_lin[j]+Q_lin[region];
             }
             within_region_counter++;
             if(within_region_counter==discret[region]){
