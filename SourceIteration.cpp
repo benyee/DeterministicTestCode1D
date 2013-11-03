@@ -179,19 +179,21 @@ void SourceIteration::leftIteration(){
         region = discret.size()-1;
         within_region_counter=0;
         for(int j = J-1; j>=0;j--){
+            double halfhj = h[j]/2.0;
             if(alpha_mode==4){//For linear characteristic stuff
                 double twosigt = 2*sigma_t[region];
                 double musig = mu_n[m]/sigma_t[region];
                 double sighmu = h[j]/musig;
                 double srctwosigt = source[j][m]/twosigt;
                 double srclintwosigt = source_lin[j][m]/twosigt;
-                double C0 = psi_e[j+1][m] - srctwosigt - srclintwosigt*(h[j]/2.0-musig);
-                psi_c[j][m] = C0/sighmu*(exp(sighmu)-1) + srctwosigt-srclintwosigt*musig;
-                psi_c_lin[j][m] = srclintwosigt - 6*C0/sighmu/h[j]*(1 + exp(sighmu)-2/sighmu*(exp(sighmu)-1));
-                psi_e[j][m] = C0*exp(sighmu)- srclintwosigt*(h[j]/2 + musig) + srctwosigt;
+                double C0 = psi_e[j+1][m] - srctwosigt - srclintwosigt*(halfhj-musig);
+                double esighmu = exp(sighmu);
+                psi_c[j][m] = C0/sighmu*(esighmu-1) + srctwosigt-srclintwosigt*musig;
+                psi_c_lin[j][m] = srclintwosigt - 6*C0/sighmu/h[j]*(1 + esighmu-2/sighmu*(esighmu-1));
+                psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhf + musig) + srctwosigt;
             } else{
-                double numerator = (-mu_n[m]-(sigma_t[region])*h[j]/2.0*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*h[j];
-                double denominator = -mu_n[m]+(sigma_t[region])*h[j]/2.0*(1.0-alpha[j][m]);
+                double numerator = (-mu_n[m]-(sigma_t[region])*halfhj*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*h[j];
+                double denominator = -mu_n[m]+(sigma_t[region])*halfhj*(1.0-alpha[j][m]);
                 psi_e[j][m] = numerator/denominator;
             }
             within_region_counter++;
@@ -221,19 +223,21 @@ void SourceIteration::rightIteration(){
         region = 0;
         within_region_counter=0;
         for(unsigned int j = 0; j<J;j++){
+            double halfhj = h[j]/2.0;
             if(alpha_mode==4){ //For Linear Characteristic stuff
                 double twosigt = 2*sigma_t[region];
                 double musig = mu_n[m]/sigma_t[region];
                 double sighmu = h[j]/musig;
                 double srctwosigt = source[j][m]/twosigt;
                 double srclintwosigt = source_lin[j][m]/twosigt;
-                double C0 = psi_e[j][m] - srctwosigt + srclintwosigt*(h[j]/2.0+musig);
-                psi_c[j][m] = C0/sighmu*(1 - exp(-sighmu)) + srctwosigt-srclintwosigt*musig;
-                psi_c_lin[j][m] = srclintwosigt - 6*C0/sighmu/h[j]*(1 + exp(-sighmu)+2/sighmu*(exp(-sighmu)-1));
-                psi_e[j+1][m] = C0*exp(-sighmu)+ srclintwosigt*(h[j]/2 - musig) + srctwosigt;
+                double C0 = psi_e[j][m] - srctwosigt + srclintwosigt*(halfhj+musig);
+                double esighmu = exp(-sighmu);
+                psi_c[j][m] = C0/sighmu*(1 - esighmu) + srctwosigt-srclintwosigt*musig;
+                psi_c_lin[j][m] = srclintwosigt - 6*C0/sighmu/h[j]*(1 + esighmu+2/sighmu*(esighmu-1));
+                psi_e[j+1][m] = C0*esighmu+ srclintwosigt*(halfhj - musig) + srctwosigt;
             }else{
-                double numerator = (mu_n[m]-(sigma_t[region])*h[j]/2.0*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*h[j];
-                double denominator = mu_n[m]+(sigma_t[region])*h[j]/2.0*(1.0+alpha[j][m]);
+                double numerator = (mu_n[m]-(sigma_t[region])*halfhj*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*h[j];
+                double denominator = mu_n[m]+(sigma_t[region])*halfhj*(1.0+alpha[j][m]);
                 psi_e[j+1][m] = numerator/denominator;
             }
             
