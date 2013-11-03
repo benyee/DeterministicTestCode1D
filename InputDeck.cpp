@@ -242,8 +242,9 @@ int InputDeck::loadInputDeck(){
     
     //Check to make sure all these vectors are the same size:
     int vectorSizes[] = {X.size(), discret.size(),sigma_s0.size(),sigma_s1.size(),sigma_a.size(), Q.size(),Q_lin.size()};
-    for(unsigned int i = 0; i < 7; i++){
+    for(unsigned int i = 0; i < 6; i++){
         if(vectorSizes[i] != vectorSizes[i+1]){
+            std::cout<<"There's an issue with the material definition vector sizes!"<<endl;
             return 1;
         }
     }
@@ -254,16 +255,21 @@ int InputDeck::loadInputDeck(){
         expectedSize += discret[i];
     }
     if(expectedSize != phi_0_0.size()){
+        std::cout<<"There's an issue with the vector sizes of the initial conditions!"<<endl;
         return 1;
     }else if(expectedSize!=phi_1_0.size()){
+        std::cout<<"There's an issue with the vector sizes of the initial conditions!"<<endl;
         return 1;
     }
+    
     
     //Repeat if there are linear terms:
     if(hasLinearTerms){
         if(expectedSize != phi_0_0_lin.size()){
+            std::cout<<"There's an issue with the vector sizes of the linear part of the initial conditions!"<<endl;
             return 1;
         }else if(expectedSize!=phi_1_0_lin.size()){
+            std::cout<<"There's an issue with the vector sizes of the linear part of the initial conditions!"<<endl;
             return 1;
         }
     }
@@ -288,6 +294,8 @@ void InputDeck::readValues(){
     Utilities::print_dvector(sigma_a);
     cout<<"Q = ";
     Utilities::print_dvector(Q);
+    cout<<"Q_lin = ";
+    Utilities::print_dvector(Q_lin);
     
     cout<<"N = "<<N<<endl;
     cout<<"bc = ["<<bc[0]<<' '<<bc[1]<<']'<<endl;
