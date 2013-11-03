@@ -188,11 +188,11 @@ void SourceIteration::leftIteration(){
                 double srclintwosigt = source_lin[j][m]/twosigt;
                 double C0 = psi_e[j+1][m] - srctwosigt - srclintwosigt*(halfhj-musig);
                 double esighmu = exp(sighmu);
-                psi_c[j][m] = C0/sighmu*(esighmu-1) + srctwosigt-srclintwosigt*musig;
-                psi_c_lin[j][m] = srclintwosigt - 6*C0/sighmu/h[j]*(1 + esighmu-2/sighmu*(esighmu-1));
+                psi_c[j][m] = C0/sighmu*(esighmu-1.0) + srctwosigt-srclintwosigt*musig;
+                psi_c_lin[j][m] = srclintwosigt - 6.0*C0/sighmu/h[j]*(1.0 + esighmu-2.0/sighmu*(esighmu-1.0));
                 psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhj + musig) + srctwosigt;
             } else{
-                double numerator = (-mu_n[m]-(sigma_t[region])*halfhj*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*h[j];
+                double numerator = (-mu_n[m]-(sigma_t[region])*halfhj*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*halfhj;
                 double denominator = -mu_n[m]+(sigma_t[region])*halfhj*(1.0-alpha[j][m]);
                 psi_e[j][m] = numerator/denominator;
             }
@@ -232,11 +232,11 @@ void SourceIteration::rightIteration(){
                 double srclintwosigt = source_lin[j][m]/twosigt;
                 double C0 = psi_e[j][m] - srctwosigt + srclintwosigt*(halfhj+musig);
                 double esighmu = exp(-sighmu);
-                psi_c[j][m] = C0/sighmu*(1 - esighmu) + srctwosigt-srclintwosigt*musig;
-                psi_c_lin[j][m] = srclintwosigt - 6*C0/sighmu/h[j]*(1 + esighmu+2/sighmu*(esighmu-1));
+                psi_c[j][m] = C0/sighmu*(1.0 - esighmu) + srctwosigt-srclintwosigt*musig;
+                psi_c_lin[j][m] = srclintwosigt - 6.0*C0/sighmu/h[j]*(1.0 + esighmu+2.0/sighmu*(esighmu-1));
                 psi_e[j+1][m] = C0*esighmu+ srclintwosigt*(halfhj - musig) + srctwosigt;
             }else{
-                double numerator = (mu_n[m]-(sigma_t[region])*halfhj*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*h[j];
+                double numerator = (mu_n[m]-(sigma_t[region])*halfhj*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*halfhj;
                 double denominator = mu_n[m]+(sigma_t[region])*halfhj*(1.0+alpha[j][m]);
                 psi_e[j+1][m] = numerator/denominator;
             }
@@ -338,7 +338,7 @@ double SourceIteration::updatePhi_calcSource(){
         //Calculate and update source term:
         for(unsigned int m=0;m<N;m++){
             //Note that for a linear source, Q[region]+Q_lin[region]*x[j] gives the average external source in that spatial cell
-            source[j][m] = (sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region]+Q_lin[region]*x[j])/2;
+            source[j][m] = sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region]+Q_lin[region]*x[j];
         }
         within_region_counter++;
         if(within_region_counter==discret[region]){
