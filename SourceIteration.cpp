@@ -91,7 +91,9 @@ int SourceIteration::iterate(){
             leftIteration();
         }
         
-        finiteDifference();
+        if(alpha_mode != 4){
+            finiteDifference();
+        }
         
         error = updatePhi_calcSource();
         outfile<<setw(5)<<it_num<<setw(20)<<error<<setw(20);
@@ -207,8 +209,16 @@ void SourceIteration::rightIteration(){
         region = 0;
         within_region_counter=0;
         for(unsigned int j = 0; j<J;j++){
-            if(alpha_mode==4){
-                //For Linear Characteristic stuff
+            if(alpha_mode==4){ //For Linear Characteristic stuff
+                double twosigt = 2*sigma_t[region];
+                double musig = mu_n[m]/sigma_t[region];
+                double sighmu = h[j]/musig;
+                double srctwosigt = source[j][m]/twosigt;
+                double srclintwosigt = source_lin[j][m]/twosigt;
+                double C0 = psi_e[j][m] - source[j][m]/twosigt + source_lin[j][m]/twosigt*(h[j]/2.0+mu_n[m]/sigma_t[region]);
+                psi_c[j][m] = C0/sighmu*(1 - exp(-sighmu)) + srctwosigt-srclintwosigt*musig;
+                psi_c_lin[j][m] = srclintwosigt - 6*C0/sighmu/h[j]*(1 + exp(-sighmu)+2/sighmu*(exp(-sighmu)-1));
+                psi_e[j+1][m] = C0*exp(-sighmu)+ srclintwosigt*(h[j]/2 - musig) + srctwosigt;
             }else{
                 double numerator = (mu_n[m]-(sigma_t[region])*h[j]/2.0*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*h[j];
                 double denominator = mu_n[m]+(sigma_t[region])*h[j]/2.0*(1.0+alpha[j][m]);
