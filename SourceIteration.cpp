@@ -191,7 +191,14 @@ void SourceIteration::leftIteration(){
                 psi_c[j][m] = C0/sighmu*(esighmu-1.0) + srctwosigt-srclintwosigt*musig;
                 psi_c_lin[j][m] = srclintwosigt - 6.0*C0/sighmu/h[j]*(1.0 + esighmu-2.0/sighmu*(esighmu-1.0));
                 psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhj + musig) + srctwosigt;
-            } else{
+            }else if(alpha_mode==5){
+                double tau = sigma_t[region]*h[j]/2/mu_n[m];
+                double numerator = h[j]*h[j]*tau*source_lin[j][m] + 2*h[j]*(3-tau)*source[j][m]-4*mu_n[m]*(3+2*tau)*psi_e[j+1][m];
+                double denominator = 4*(4*mu_n[m]*tau-3*mu_n[m]-sigma_t[region]*h[j]*tau);
+                psi_e[j][m] = numerator/denominator;
+                psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
+                psi_c_lin[j][m] = 2*(psi_c[j][m]-psi_e[j][m])/h[j];
+            }else{
                 double numerator = (-mu_n[m]-(sigma_t[region])*halfhj*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*halfhj;
                 double denominator = -mu_n[m]+(sigma_t[region])*halfhj*(1.0-alpha[j][m]);
                 psi_e[j][m] = numerator/denominator;
@@ -235,6 +242,13 @@ void SourceIteration::rightIteration(){
                 psi_c[j][m] = C0/sighmu*(1.0 - esighmu) + srctwosigt-srclintwosigt*musig;
                 psi_c_lin[j][m] = srclintwosigt - 6.0*C0/sighmu/h[j]*(1.0 + esighmu+2.0/sighmu*(esighmu-1));
                 psi_e[j+1][m] = C0*esighmu+ srclintwosigt*(halfhj - musig) + srctwosigt;
+            }else if(alpha_mode==5){
+                double tau = sigma_t[region]*h[j]/2/mu_n[m];
+                double numerator = h[j]*h[j]*tau*source_lin[j][m] + 2*h[j]*(3+tau)*source[j][m]+4*mu_n[m]*(3-2*tau)*psi_e[j][m];
+                double denominator = 4*(4*mu_n[m]*tau+3*mu_n[m]+sigma_t[region]*h[j]*tau);
+                psi_e[j+1][m] = numerator/denominator;
+                psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
+                psi_c_lin[j][m] = 2*(psi_e[j+1][m] - psi_c[j][m])/h[j];
             }else{
                 double numerator = (mu_n[m]-(sigma_t[region])*halfhj*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*halfhj;
                 double denominator = mu_n[m]+(sigma_t[region])*halfhj*(1.0+alpha[j][m]);
