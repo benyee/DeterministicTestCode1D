@@ -91,7 +91,7 @@ int SourceIteration::iterate(){
             leftIteration();
         }
         
-        if(alpha_mode != 4){
+        if(alpha_mode < 4){
             finiteDifference();
         }
         
