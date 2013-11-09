@@ -34,12 +34,19 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
         phi_1_lin = data->getphi_1_0_lin();
         for(unsigned int j = 0; j<J;j++){
             vector<double> temp;
-            vector<double> temp2;
-            psi_c_lin.push_back(temp);
-            source_lin.push_back(temp2);
+            source_lin.push_back(temp);
             for(unsigned int m=0;m<N;m++){
-                psi_c_lin[j].push_back(0);
                 source_lin[j].push_back(0);
+            }
+        }
+        
+        if(alpha_mode !=11){
+            for(unsigned int j = 0; j<J;j++){
+                vector<double> temp;
+                psi_c_lin.push_back(temp);
+                for(unsigned int m=0;m<N;m++){
+                    psi_c_lin[j].push_back(0);
+                }
             }
         }
     }
@@ -91,7 +98,7 @@ int SourceIteration::iterate(){
             leftIteration();
         }
         
-        if(alpha_mode < 4){
+        if(alpha_mode < 10){
             finiteDifference();
         }
         
@@ -180,7 +187,7 @@ void SourceIteration::leftIteration(){
         within_region_counter=0;
         for(int j = J-1; j>=0;j--){
             double halfhj = h[j]/2.0;
-            if(alpha_mode==4){//For linear characteristic stuff
+            if(alpha_mode==10){//For linear characteristic stuff
                 double twosigt = 2*sigma_t[region];
                 double musig = mu_n[m]/sigma_t[region];
                 double sighmu = h[j]/musig;
@@ -191,7 +198,18 @@ void SourceIteration::leftIteration(){
                 psi_c[j][m] = C0/sighmu*(esighmu-1.0) + srctwosigt-srclintwosigt*musig;
                 psi_c_lin[j][m] = srclintwosigt - 6.0*C0/sighmu/h[j]*(1.0 + esighmu-2.0/sighmu*(esighmu-1.0));
                 psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhj + musig) + srctwosigt;
-            }else if(alpha_mode==5){
+            }else if(alpha_mode==11){
+                double twosigt = 2*sigma_t[region];
+                double musig = mu_n[m]/sigma_t[region];
+                double sighmu = h[j]/musig;
+                double srctwosigt = source[j][m]/twosigt;
+                double srclintwosigt = source_lin[j][m]/twosigt;
+                double C0 = psi_e[j+1][m] - srctwosigt - srclintwosigt*(halfhj-musig);
+                double esighmu = exp(sighmu);
+                psi_c[j][m] = C0/sighmu*(esighmu-1.0) + srctwosigt-srclintwosigt*musig;
+                psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhj + musig) + srctwosigt;
+            }
+            }else if(alpha_mode==20){
                 double tau = sigma_t[region]*h[j]/2/mu_n[m];
                 double numerator = h[j]*h[j]*tau*source_lin[j][m] + 2*h[j]*(3-tau)*source[j][m]-4*mu_n[m]*(3+2*tau)*psi_e[j+1][m];
                 double denominator = 4*(4*mu_n[m]*tau-3*mu_n[m]-sigma_t[region]*h[j]*tau);
@@ -231,7 +249,7 @@ void SourceIteration::rightIteration(){
         within_region_counter=0;
         for(unsigned int j = 0; j<J;j++){
             double halfhj = h[j]/2.0;
-            if(alpha_mode==4){ //For Linear Characteristic stuff
+            if(alpha_mode==10){ //For Linear Characteristic stuff
                 double twosigt = 2*sigma_t[region];
                 double musig = mu_n[m]/sigma_t[region];
                 double sighmu = h[j]/musig;
@@ -242,7 +260,18 @@ void SourceIteration::rightIteration(){
                 psi_c[j][m] = C0/sighmu*(1.0 - esighmu) + srctwosigt-srclintwosigt*musig;
                 psi_c_lin[j][m] = srclintwosigt - 6.0*C0/sighmu/h[j]*(1.0 + esighmu+2.0/sighmu*(esighmu-1));
                 psi_e[j+1][m] = C0*esighmu+ srclintwosigt*(halfhj - musig) + srctwosigt;
-            }else if(alpha_mode==5){
+            }else if(alpha_mode==11){ //"tilting method" (linear alternative)
+                double twosigt = 2*sigma_t[region];
+                double musig = mu_n[m]/sigma_t[region];
+                double sighmu = h[j]/musig;
+                double srctwosigt = source[j][m]/twosigt;
+                double srclintwosigt = source_lin[j][m]/twosigt;
+                double C0 = psi_e[j][m] - srctwosigt + srclintwosigt*(halfhj+musig);
+                double esighmu = exp(-sighmu);
+                psi_c[j][m] = C0/sighmu*(1.0 - esighmu) + srctwosigt-srclintwosigt*musig;
+                psi_e[j+1][m] = C0*esighmu+ srclintwosigt*(halfhj - musig) + srctwosigt;
+            }
+            }else if(alpha_mode==20){ // LD
                 double tau = sigma_t[region]*h[j]/2/mu_n[m];
                 double numerator = h[j]*h[j]*tau*source_lin[j][m] + 2*h[j]*(3+tau)*source[j][m]+4*mu_n[m]*(3-2*tau)*psi_e[j][m];
                 double denominator = 4*(4*mu_n[m]*tau+3*mu_n[m]+sigma_t[region]*h[j]*tau);
@@ -364,24 +393,45 @@ double SourceIteration::updatePhi_calcSource(){
     }
     
     if(hasLinearTerms){
-        region = 0;
-        within_region_counter = 0;
-        for(unsigned int j = 0; j<J;j++){
-            phi_0_lin[j] = 0;
-            phi_1_lin[j] = 0;
-            //Integrate over angle:
-            for(unsigned int m = 0; m<N;m++){
-                phi_0_lin[j]+= w_n[m]*psi_c_lin[j][m];
-                phi_1_lin[j]+= mu_n[m]*w_n[m]*psi_c_lin[j][m];
+        if(alpha_mode !=11){
+            region = 0;
+            within_region_counter = 0;
+            for(unsigned int j = 0; j<J;j++){
+                phi_0_lin[j] = 0;
+                phi_1_lin[j] = 0;
+                //Integrate over angle:
+                for(unsigned int m = 0; m<N;m++){
+                    phi_0_lin[j]+= w_n[m]*psi_c_lin[j][m];
+                    phi_1_lin[j]+= mu_n[m]*w_n[m]*psi_c_lin[j][m];
+                }
+                //Calculate and update source term:
+                for(unsigned int m=0;m<N;m++){
+                    source_lin[j][m] = sigma_s0[region]*phi_0_lin[j]+3*mu_n[m]*sigma_s1[region]*phi_1_lin[j]+Q_lin[region];
+                }
+                within_region_counter++;
+                if(within_region_counter==discret[region]){
+                    within_region_counter = 0;
+                    region++;
+                }
             }
-            //Calculate and update source term:
-            for(unsigned int m=0;m<N;m++){
-                source_lin[j][m] = sigma_s0[region]*phi_0_lin[j]+3*mu_n[m]*sigma_s1[region]*phi_1_lin[j]+Q_lin[region];
-            }
-            within_region_counter++;
-            if(within_region_counter==discret[region]){
-                within_region_counter = 0;
-                region++;
+        }else{
+            region = 0;
+            within_region_counter = 0;
+            vector<double> edgePhi0 = calcEdgePhi(0);
+            vector<double> edgePhi1 = calcEdgePhi(1);
+            for(unsigned int j = 0; j<J;j++){
+                phi_0_lin[j] = 2*phi_0[j]/h[j]*(edgePhi0[j+1]-edgePhi0[j-1])/(edgePhi0[j+1]+edgePhi0[j-1]);
+                phi_1_lin[j] = 2*phi_1[j]/h[j]*(edgePhi1[j+1]-edgePhi1[j-1])/(edgePhi1[j+1]+edgePhi1[j-1]);
+                
+                //Calculate and update source term:
+                for(unsigned int m=0;m<N;m++){
+                    source_lin[j][m] = sigma_s0[region]*phi_0_lin[j]+3*mu_n[m]*sigma_s1[region]*phi_1_lin[j]+Q_lin[region];
+                }
+                within_region_counter++;
+                if(within_region_counter==discret[region]){
+                    within_region_counter = 0;
+                    region++;
+                }
             }
         }
     }

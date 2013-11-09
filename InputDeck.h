@@ -82,8 +82,9 @@ private:
      1 = step up
      2 = step characteristic
      3 = characteristic alternative (3.1 of notes)
-     4 = linear characteristic (3.2 of notes)
-     5 = linear discontinuous (4.1 of notes)
+     10 = linear characteristic (3.2 of notes)
+     11 = alternative linear characteristic (3.3 of notes)
+     20 = linear discontinuous (4.1 of notes)
      */
     double tol; //tolerance for convergence
     bool hasLinearTerms;
