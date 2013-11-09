@@ -418,8 +418,17 @@ double SourceIteration::updatePhi_calcSource(){
             vector<double> edgePhi0 = calcEdgePhi(0);
             vector<double> edgePhi1 = calcEdgePhi(1);
             for(unsigned int j = 0; j<J;j++){
-                phi_0_lin[j] = 2*phi_0[j]/h[j]*(edgePhi0[j+1]-edgePhi0[j-1])/(edgePhi0[j+1]+edgePhi0[j-1]);
-                phi_1_lin[j] = 2*phi_1[j]/h[j]*(edgePhi1[j+1]-edgePhi1[j-1])/(edgePhi1[j+1]+edgePhi1[j-1]);
+                if(edgePhi0[j+1]+edgePhi0[j] == 0){
+                    phi_0_lin[j] = 0;
+                }else{
+                    phi_0_lin[j] = 2*phi_0[j]/h[j]*(edgePhi0[j+1]-edgePhi0[j])/(edgePhi0[j+1]+edgePhi0[j]);
+                }
+                
+                if(edgePhi1[j+1]+edgePhi1[j] == 0){
+                    phi_1_lin[j] = 0;
+                }else{
+                    phi_1_lin[j] = 2*phi_1[j]/h[j]*(edgePhi1[j+1]-edgePhi1[j])/(edgePhi1[j+1]+edgePhi1[j]);
+                }
                 
                 //Calculate and update source term:
                 for(unsigned int m=0;m<N;m++){
