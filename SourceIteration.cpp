@@ -208,7 +208,6 @@ void SourceIteration::leftIteration(){
                 double esighmu = exp(sighmu);
                 psi_c[j][m] = C0/sighmu*(esighmu-1.0) + srctwosigt-srclintwosigt*musig;
                 psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhj + musig) + srctwosigt;
-            }
             }else if(alpha_mode==20){
                 double tau = sigma_t[region]*h[j]/2/mu_n[m];
                 double numerator = h[j]*h[j]*tau*source_lin[j][m] + 2*h[j]*(3-tau)*source[j][m]-4*mu_n[m]*(3+2*tau)*psi_e[j+1][m];
@@ -270,7 +269,6 @@ void SourceIteration::rightIteration(){
                 double esighmu = exp(-sighmu);
                 psi_c[j][m] = C0/sighmu*(1.0 - esighmu) + srctwosigt-srclintwosigt*musig;
                 psi_e[j+1][m] = C0*esighmu+ srclintwosigt*(halfhj - musig) + srctwosigt;
-            }
             }else if(alpha_mode==20){ // LD
                 double tau = sigma_t[region]*h[j]/2/mu_n[m];
                 double numerator = h[j]*h[j]*tau*source_lin[j][m] + 2*h[j]*(3+tau)*source[j][m]+4*mu_n[m]*(3-2*tau)*psi_e[j][m];
