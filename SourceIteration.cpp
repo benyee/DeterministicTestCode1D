@@ -73,6 +73,15 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     initializeGrid();
     initializeAlpha();
     
+    //Find the maximum value of c:
+    c = 0;
+    for(unsigned int i = 0; i<=sigma_t.size();i++){
+        double temp = sigma_s0[i]/sigma_s[i];
+        if(temp > c){
+            c = temp;
+        }
+    }
+    
     updatePhi_calcSource();
 }
 
@@ -83,7 +92,7 @@ int SourceIteration::iterate(){
     outfile<<"Performing source iteration...\n";
     outfile<<setw(5)<<"it_num"<<setw(20)<<"||Change in Flux||"<<setw(20);
     outfile<<"Conv. Rate Est."<<setw(20)<<"Negative Fluxes"<<endl;;
-    double tol = abs(data->gettol());
+    double tol = (1-c)*abs(data->gettol());
     double error;
     
     //Iterate until tolerance is achieved:
