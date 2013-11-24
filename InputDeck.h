@@ -79,7 +79,7 @@ private:
     string fileName; //input file name
     
     //The following vectors should always have the same length:
-    vector<double> X; //location of material boundaries in cm (left boundary is always 0)
+    vector<double> X; //location of material boundaries in cm (left boundary is always 0, DO NOT INCLUDE 0 AS THE FIRST ELEMENT OF X, IT IS IMPLIED)
     vector<unsigned int> discret;  //number of elements to divide each region into
     vector<double> sigma_s0; //isotropic scattering cross sections in cm^{-1}
     vector<double> sigma_s1; //anisotropic scattering cross sections in cm^{-1}

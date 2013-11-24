@@ -56,6 +56,7 @@ private:
     vector<double> sigma_s0; //isotropic scattering cross sections in cm^{-1}
     vector<double> sigma_s1; //anisotropic scattering cross sections in cm^{-1}
     vector<double> sigma_t; //absorption cross section in cm^{-1}
+    double c;  //maximum value of sigma_s0/sigma_t
     
     vector< vector<double> > alpha; //Finite difference coefficients
     

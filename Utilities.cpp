@@ -76,6 +76,7 @@ double Utilities::lege_eval(vector<double> coeff,double x){
     return out;
 }
 
+
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 void Utilities::print_uivector(vector<unsigned int> input_vector,char space){

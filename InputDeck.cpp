@@ -338,6 +338,7 @@ void InputDeck::readValues(){
         cout<<phi_1_0[i]<<" ";
         temp2++;
     }
+    cout<<"]"<<endl;
     
     if(hasLinearTerms){
         cout<<"]"<<endl;

@@ -76,7 +76,7 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     //Find the maximum value of c:
     c = 0;
     for(unsigned int i = 0; i<=sigma_t.size();i++){
-        double temp = sigma_s0[i]/sigma_s[i];
+        double temp = sigma_s0[i]/sigma_t[i];
         if(temp > c){
             c = temp;
         }
