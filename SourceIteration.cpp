@@ -75,7 +75,7 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     
     //Find the maximum value of c:
     c = 0;
-    for(unsigned int i = 0; i<=sigma_t.size();i++){
+    for(unsigned int i = 0; i<sigma_t.size();i++){
         double temp = sigma_s0[i]/sigma_t[i];
         if(temp > c){
             c = temp;
@@ -119,22 +119,29 @@ int SourceIteration::iterate(){
             outfile<<error/old_error;
         }
         outfile<<setw(20)<<checkNegativeFlux()<<'\n';
-        cout<<"For iteration number "<<it_num<<", the error is "<<error<<endl;
+        //cout<<"For iteration number "<<it_num<<", the error is "<<error<<endl;
         old_error = error;
         it_num++;
-    }while(error>tol && it_num < 1000);
+    }while(error>tol && it_num < MAX_IT);
+    if(it_num < MAX_IT){
+        cout<<"Source iteration converged in "<<it_num<<" iterations"<<endl;
+    }else{
+        cout<<"Source iteration did NOT converge in "<<MAX_IT<<" iterations"<<endl;
+    }
     
     outfile.close();
     return 0;
 }
 
-void SourceIteration::printOutput(unsigned int tabwidth){
+void SourceIteration::printOutput(bool isPrintingToWindow,unsigned int tabwidth){
     ofstream outfile;
     outfile.open (outfilename.c_str(), ios::app);
     vector<double> phi_0e = calcEdgePhi(0);
     vector<double> phi_1e = calcEdgePhi(1);
     outfile<<setprecision(4);
-    cout<<"Writing to file named "+outfilename<<endl;
+    if(isPrintingToWindow){
+        cout<<"Writing to file named "+outfilename<<endl;
+    }
     outfile<<'\n';
     outfile<<'\n';
     outfile<<'\n';
@@ -142,38 +149,58 @@ void SourceIteration::printOutput(unsigned int tabwidth){
     outfile<<'\n';
     outfile<<"<<<<<--------------OUTPUT:-------------->>>>>\n";
     outfile<<setw(5)<<"x"<<setw(tabwidth)<<"phi_0,c"<<setw(tabwidth)<<"phi_0,e"<<setw(tabwidth)<<"phi_1,c"<<setw(tabwidth)<<"phi_1,e"<<endl;
-    cout<<setw(5)<<"x"<<setw(tabwidth)<<"phi_0,c"<<setw(tabwidth)<<"phi_0,e"<<setw(tabwidth)<<"phi_1,c"<<setw(tabwidth)<<"phi_1,e"<<endl;
+    if(isPrintingToWindow){
+        cout<<setw(5)<<"x"<<setw(tabwidth)<<"phi_0,c"<<setw(tabwidth)<<"phi_0,e"<<setw(tabwidth)<<"phi_1,c"<<setw(tabwidth)<<"phi_1,e"<<endl;
+    }
     for(unsigned int j = 0; j<J; j++){
         outfile<<setw(5)<<fixed<<x_e[j]<<setw(tabwidth)<<"      "<<setw(tabwidth)<<scientific<<phi_0e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[j]<<endl;
-        cout<<setw(5)<<fixed<<x_e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<scientific<<phi_0e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[j]<<endl;
+        if(isPrintingToWindow){
+            cout<<setw(5)<<fixed<<x_e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<scientific<<phi_0e[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[j]<<endl;
+        }
         outfile<<setw(5)<<fixed<<x[j]<<setw(tabwidth)<<scientific<<phi_0[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1[j]<<setw(tabwidth)<<"     "<<endl;
-        cout<<setw(5)<<fixed<<x[j]<<setw(tabwidth)<<scientific<<phi_0[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1[j]<<setw(tabwidth)<<"     "<<endl;
+        if(isPrintingToWindow){
+            cout<<setw(5)<<fixed<<x[j]<<setw(tabwidth)<<scientific<<phi_0[j]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1[j]<<setw(tabwidth)<<"     "<<endl;
+        }
     }
     outfile<<setw(5)<<fixed<<x_e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<scientific<<phi_0e[J]<<setw(tabwidth)<<"    "<<setw(tabwidth)<<phi_1e[J]<<endl;
-    cout<<setw(5)<<fixed<<x_e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<scientific<<phi_0e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[J]<<endl;
+    if(isPrintingToWindow){
+        cout<<setw(5)<<fixed<<x_e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<scientific<<phi_0e[J]<<setw(tabwidth)<<"     "<<setw(tabwidth)<<phi_1e[J]<<endl;
+    }
     outfile<<'\n';
     outfile<<'\n';
     outfile<<"<--psi_c-->\n";
-    //cout<<"<--psi_c-->"<<endl;
+    if(isPrintingToWindow){
+        cout<<"<--psi_c-->"<<endl;
+    }
     for(unsigned int j = 0; j<J; j++){
         for(unsigned int m = 0; m<N;m++){
             outfile<<setw(tabwidth)<<psi_c[j][m];
-            //cout<<setw(tabwidth)<<psi_c[j][m];
+            if(isPrintingToWindow){
+                //cout<<setw(tabwidth)<<psi_c[j][m];
+            }
         }
         outfile<<'\n';
-        //cout<<endl;
+        if(isPrintingToWindow){
+            //cout<<endl;
+        }
     }
     outfile<<'\n';
     outfile<<'\n';
     outfile<<"<--psi_e-->\n";
-    //cout<<"<--psi_e-->"<<endl;
+    if(isPrintingToWindow){
+        //cout<<"<--psi_e-->"<<endl;
+    }
     for(unsigned int j = 0; j<=J; j++){
         for(unsigned int m = 0; m<N;m++){
             outfile<<setw(tabwidth)<<psi_e[j][m];
+            if(isPrintingToWindow){
       //      cout<<setw(tabwidth)<<psi_e[j][m];
+            }
         }
         outfile<<'\n';
-        //cout<<endl;
+        if(isPrintingToWindow){
+            //cout<<endl;
+        }
     }
     outfile.close();
 }

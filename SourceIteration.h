@@ -23,10 +23,12 @@ using namespace std;
 
 class SourceIteration{
 public:
+    static const unsigned int MAX_IT = 100000;
+    
     SourceIteration(InputDeck *input,string outputfilename="output.txt");
     ~SourceIteration();
     int iterate();
-    void printOutput(unsigned int tabwidth=20);
+    void printOutput( bool isPrintingToWindow = false,unsigned int tabwidth=20);
     
 private:
     InputDeck *data; //Input deck
