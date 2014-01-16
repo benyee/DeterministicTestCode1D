@@ -18,6 +18,7 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     J = phi_0.size();
     bc = data->getbc();
     alpha_mode = data->getalpha_mode();
+    accel_mode = data->getaccel_mode();
     
     sigma_s0 = data->getsigma_s0();
     sigma_s1 = data->getsigma_s1();
@@ -111,8 +112,14 @@ int SourceIteration::iterate(){
             leftIteration();
         }
         
+        //Special case:
         if(alpha_mode < 10){
             finiteDifference();
+        }
+        
+        //CMFD acceleration:
+        if(accel_mode == 1){
+            cout<<"ACCELERATING!"<<endl;
         }
         
         error = updatePhi_calcSource();
@@ -357,6 +364,22 @@ void SourceIteration::initializeGrid(){
         tempL = tempR;
     }
     x_e.push_back(X[X.size()-1]);
+    
+    if(accel_mode){
+        discret_CM = data->getdiscret_CM();
+        if(x_CM.size()){return;}
+        tempL = 0;
+        for(unsigned int i = 0; i < X.size();i++){
+            tempR = X[i];
+            for(unsigned int j = 0; j<discret_CM[i];j++){
+                x_CM_e.push_back(tempL+j*(tempR-tempL)/discret_CM[i]);
+                x_CM.push_back(tempL+(j+0.5)*(tempR-tempL)/discret_CM[i]);
+                h_CM.push_back((tempR-tempL)/discret_CM[i]);
+            }
+            tempL = tempR;
+        }
+        x_CM_e.push_back(X[X.size()-1]);
+    }
 }
 
 void SourceIteration::initializeAlpha(){

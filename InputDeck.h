@@ -29,6 +29,7 @@ public:
     
     vector<double> getX(){return X;}
     vector<unsigned int> getdiscret(){return discret;}
+    vector<unsigned int> getdiscret_CM(){return discret_CM;}
     vector<double> getsigma_s0(){return sigma_s0;}
     vector<double> getsigma_s1(){return sigma_s1;}
     vector<double> getsigma_a(){return sigma_a;}
@@ -37,6 +38,7 @@ public:
     
     void setX(vector<double> input){X = input;}
     void setdiscret(vector<unsigned int> input){discret=input;}
+    void setdiscret_CM(vector<unsigned int> input){discret_CM=input;}
     void setsigma_s0(vector<double> input){sigma_s0=input;}
     void setsigma_s1(vector<double> input){sigma_s1=input;}
     void setsigma_a(vector<double> input){sigma_a=input;}

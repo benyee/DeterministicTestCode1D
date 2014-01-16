@@ -34,11 +34,16 @@ private:
     InputDeck *data; //Input deck
     string outfilename; //Name of outpile file
     
-    //Grid:
+    //Fine Grid:
     vector<double> x; //List of x-values at cell centers
     vector<double> h; //List of widths (dx's)
     vector<unsigned int> discret; //Number of spatial cells for each region
     vector<double> x_e; //List of x-values at cell edges
+    //Coarse Grid:
+    vector<double> x_CM; //List of x-values at cell centers
+    vector<double> h_CM; //List of widths (dx's)
+    vector<unsigned int> discret_CM; //Number of spatial cells for each region
+    vector<double> x_CM_e; //List of x-values at cell edges
     
     //Neutron info:
     vector<double> phi_0; //Cell-averaged scalar flux
@@ -69,6 +74,7 @@ private:
     unsigned int J,N; //number of spatial cells, order of S_N approximation
     int* bc; //boundary conditions
     unsigned int alpha_mode;
+    unsigned int accel_mode;
     
     int it_num; //Iteraiton number
     double old_error; //stores ||phi_{i}-phi_{i-1}|| from the previous iteration
