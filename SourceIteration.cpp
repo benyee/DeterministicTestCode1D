@@ -101,8 +101,9 @@ int SourceIteration::iterate(){
     double error = 0;
     
     //Iterate until tolerance is achieved:
-    it_num = 1;
+    it_num = 0;
     do{
+        it_num++;
         //Go either right then left or left then right:
         if(bc[0] == 1 && bc[1] == 0){
             leftIteration();
@@ -117,12 +118,15 @@ int SourceIteration::iterate(){
             finiteDifference();
         }
         
-        //CMFD acceleration:
-        if(accel_mode == 1){
-            cout<<"ACCELERATING!"<<endl;
-        }
         
         error = updatePhi_calcSource();
+        
+        //CMFD acceleration:
+        if(accel_mode == 1){
+            cmfd();
+            updatePhi_calcSource();
+        }
+        
         outfile<<setw(5)<<it_num<<setw(20)<<error<<setw(20);
         if(it_num ==1){
             outfile<<"---";
@@ -130,9 +134,8 @@ int SourceIteration::iterate(){
             outfile<<error/old_error;
         }
         outfile<<setw(20)<<checkNegativeFlux()<<'\n';
-        //cout<<"For iteration number "<<it_num<<", the error is "<<error<<endl;
+        cout<<"For iteration number "<<it_num<<", the error is "<<error<<endl;
         old_error = error;
-        it_num++;
     }while(error>tol && it_num < MAX_IT);
     if(it_num < MAX_IT){
         cout<<"Source iteration converged in "<<it_num<<" iterations"<<endl;
@@ -339,6 +342,47 @@ void SourceIteration::rightIteration(){
     return;
 }
 
+void SourceIteration::cmfd(){
+    vector<double> phi_0_CM;
+    vector<double> Q_CM;
+    vector<double> phi_1_e_CM;
+    
+    double temp = 0;
+    unsigned int FM_index = 0; //This tells you where you are in terms of fine grid cells.
+    unsigned int CM_index = 0;
+    
+    for(unsigned int i = 0; i<discret_CM.size(); i++){
+        for(unsigned int j = 0; j<discret_CM[i];j++){
+            phi_1_e_CM.push_back(0);
+            for(unsigned int m = 0; m<N;m++){
+                phi_1_e_CM[CM_index] += w_n[m]*mu_n[m]*psi_e[FM_index][m];
+            }
+            
+            phi_0_CM.push_back(0);
+            Q_CM.push_back(0);
+            
+            for(unsigned int k = FM_index; x_e[k+1]<x_CM_e[k];k++){
+                FM_index = k;
+                phi_0_CM[CM_index] += phi_0[FM_index]*h[FM_index];
+                temp = 0;
+                for(unsigned int m = 0; m<N;m++){
+                    temp += w_n[m]*source[FM_index][m];
+                }
+                Q_CM[CM_index] += Q_CM[CM_index]*temp;
+            }
+            phi_0_CM[CM_index] /= h_CM[CM_index];
+            Q_CM[CM_index] /= h_CM[CM_index];
+            
+            CM_index++;
+        }
+    }
+    
+    phi_1_e_CM.push_back(0);
+    for(unsigned int m = 0; m<N;m++){
+        phi_1_e_CM[CM_index] += w_n[m]*mu_n[m]*psi_e[FM_index][m];
+    }
+}
+
 void SourceIteration::finiteDifference(){
     for(unsigned int j = 0; j<J;j++){
         for(unsigned int m = 0; m<N;m++){
@@ -441,10 +485,12 @@ double SourceIteration::updatePhi_calcSource(){
             phi_0[j]+= w_n[m]*psi_c[j][m];
             phi_1[j]+= mu_n[m]*w_n[m]*psi_c[j][m];
         }
-        //Calculate and update source term:
-        for(unsigned int m=0;m<N;m++){
-            //Note that for a linear source, Q[region]+Q_lin[region]*x[j] gives the average external source in that spatial cell
-            source[j][m] = sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region]+Q_lin[region]*(x[j]-X[region]);
+        if(!hasLinearTerms){
+            //Calculate and update source term if there are no linear terms.  Otherwise, we need to update phi_0_lin and phi_1_lin first...
+            for(unsigned int m=0;m<N;m++){
+                //Note that for a linear source, Q[region]+Q_lin[region]*x[j] gives the average external source in that spatial cell
+                source[j][m] = sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region]+Q_lin[region]*(x[j]-X[region]);
+            }
         }
         within_region_counter++;
         if(within_region_counter==discret[region]){
@@ -467,6 +513,7 @@ double SourceIteration::updatePhi_calcSource(){
                 }
                 //Calculate and update source term:
                 for(unsigned int m=0;m<N;m++){
+                    source[j][m] = sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region]+Q_lin[region]*(x[j]-X[region]);
                     source_lin[j][m] = sigma_s0[region]*phi_0_lin[j]+3*mu_n[m]*sigma_s1[region]*phi_1_lin[j]+Q_lin[region];
                 }
                 within_region_counter++;
@@ -495,6 +542,7 @@ double SourceIteration::updatePhi_calcSource(){
                 
                 //Calculate and update source term:
                 for(unsigned int m=0;m<N;m++){
+                    source[j][m] = sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region]+Q_lin[region]*(x[j]-X[region]);
                     source_lin[j][m] = sigma_s0[region]*phi_0_lin[j]+3*mu_n[m]*sigma_s1[region]*phi_1_lin[j]+Q_lin[region];
                 }
                 within_region_counter++;

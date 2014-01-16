@@ -82,6 +82,7 @@ private:
     void rightIteration(); //Sweep left to right
     void leftIteration(); //Sweep right to left
     void finiteDifference(); //Calculate cell-averaged angular fluxes
+    void cmfd(); //Perform cmfd acceleration
     void initializeAlpha(); //Calculate alpha values
     void initializeGrid(); //Calculate values associated with grid locations
     double updatePhi_calcSource(); //Update fluxes and currents, calculate new source, calculate difference between new and old scalar flux
