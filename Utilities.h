@@ -40,6 +40,8 @@ public:
     static vector<double> vector_add(vector<double> v1, vector<double> v2);
     static vector<double> vector_subtract(vector<double> v1, vector<double> v2);
     
+    //Linear algebra functions:
+    static vector<double> solve_tridiag(vector<vector<double> > A, const vector<double> &b);
     
     //Remove the last four characters of a string:
     static string remove_ext(string input_string){return input_string.substr(0,input_string.length());}

@@ -133,3 +133,29 @@ vector<double> Utilities::vector_subtract(vector<double> v1, vector<double> v2){
     }
     return diff;
 }
+
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+vector<double> Utilities::solve_tridiag(vector<vector<double> > A, const vector<double> &b){
+    vector<double> x(b);
+    unsigned int n = A.size();
+    
+    A[0][1] /= A[0][0];
+    x[0] /= A[0][0];
+    print_dvector(x);
+    for(unsigned int i = 1; i<n-1;i++){
+        A[i][i+1] /= A[i][i] - A[i-1][i]*A[i][i-1];
+        x[i] = (x[i]-x[i-1]*A[i][i-1])/(A[i][i] - A[i-1][i]*A[i][i-1]);
+    }
+    unsigned int j = n-1;
+    x[j] = (x[j]-x[j-1]*A[j][j-1])/(A[j][j] - A[j-1][j]*A[j][j-1]);
+    for(int i=n-2; i>=0; i--){
+        x[i] -= A[i][i+1]*x[i+1];
+    }
+    print_dvector(A[0]);
+    print_dvector(A[1]);
+    print_dvector(A[2]);
+    print_dvector(A[3]);
+    print_dvector(A[4]);
+    return x;
+}
