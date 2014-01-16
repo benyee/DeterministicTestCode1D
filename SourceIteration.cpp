@@ -85,6 +85,10 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     updatePhi_calcSource();
 }
 
+SourceIteration::~SourceIteration(){
+    data = NULL;
+}
+
 int SourceIteration::iterate(){
     ofstream outfile;
     outfile.open(outfilename.c_str());
@@ -93,7 +97,7 @@ int SourceIteration::iterate(){
     outfile<<setw(5)<<"it_num"<<setw(20)<<"||Change in Flux||"<<setw(20);
     outfile<<"Conv. Rate Est."<<setw(20)<<"Negative Fluxes"<<endl;;
     double tol = (1-c)*abs(data->gettol());
-    double error;
+    double error = 0;
     
     //Iterate until tolerance is achieved:
     it_num = 1;
