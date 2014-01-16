@@ -13,6 +13,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <stdlib.h>
 
 #include "Utilities.h"
 
@@ -121,7 +122,7 @@ private:
     double tol; //tolerance for convergence
     bool hasLinearTerms;
     
-    bool searchForInput(ifstream &file, string inp);  //Search for the input named inp in file, returns 0 if not found, returns 1 if found
+    bool searchForInput(ifstream &file, string inp, bool hasErrorOutput = true);  //Search for the input named inp in file, returns 0 if not found, returns 1 if found
 };
 
 #endif /* defined(____InputDeck__) */

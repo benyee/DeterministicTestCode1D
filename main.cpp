@@ -21,7 +21,7 @@ int main ()
     cout << "Hello world!"<<endl;
     
     InputDeck *input = new InputDeck();
-    input->setfileName("defaultinput.txt");
+    input->setfileName("input.txt");
     int debug = input->loadInputDeck();
     input->readValues();
     /*

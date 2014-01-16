@@ -236,7 +236,7 @@ int InputDeck::loadInputDeck(){
             }
         }
     }
-    if(!searchForInput(inputFile,"accel_mode")){
+    if(!searchForInput(inputFile,"accel_mode",false)){
         accel_mode = 0;
     }else{
         getline(inputFile,line);
@@ -381,14 +381,16 @@ void InputDeck::readValues(){
     }
 }
 
-bool InputDeck::searchForInput(ifstream &file, string inp){
+bool InputDeck::searchForInput(ifstream &file, string inp, bool hasErrorOutput){
     string line;
     while(getline(file,line)){
         if(line == "<--"+inp+"-->"){
             return 1;
         }
     }
-    cout<<"We couldn't find it!"<<endl;
+    if(hasErrorOutput){
+        cout<<"We couldn't find "<<inp<<"!"<<endl;
+    }
     return 0;
 }
 
