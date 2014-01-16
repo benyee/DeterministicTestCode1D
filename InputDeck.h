@@ -44,12 +44,14 @@ public:
     
     void setbc(int input[2]){bc[0] = input[0]; bc[1]=input[1];}
     void setN(int input){N=input;}
+    void setaccel_mode(unsigned int input){accel_mode = input;}
     void setalpha_mode(unsigned int input){alpha_mode = input;}
     void settol(double input){tol=input;}
     void sethasLinearTerms(bool input){hasLinearTerms=input;}
     
     int* getbc(){return bc;}
     int getN(){return N;}
+    unsigned int getaccel_mode(){return accel_mode;}
     unsigned int getalpha_mode(){return alpha_mode;}
     double gettol(){return tol;}
     bool gethasLinearTerms(){return hasLinearTerms;}
@@ -101,6 +103,12 @@ private:
     int bc[2]; // boundary conditions for left and right end of domain.  0 = vaccuum, 1 = reflective, 2 = user specified
     
     unsigned int N;  // number of angular ordinates
+    unsigned int accel_mode; //type of acceleration used.
+    /* 0 = no acceleration
+     1 = CMFD
+     2 = pCMFD
+     3 = mpCMFD
+    */
     unsigned int alpha_mode; //type of finite difference scheme.
     /*0 = diamond difference
      1 = step up

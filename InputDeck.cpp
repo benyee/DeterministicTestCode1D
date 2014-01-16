@@ -236,6 +236,12 @@ int InputDeck::loadInputDeck(){
             }
         }
     }
+    if(!searchForInput(inputFile,"accel_mode")){
+        accel_mode = 0;
+    }else{
+        getline(inputFile,line);
+        accel_mode = atoi(line.c_str());
+    }
 
     
     inputFile.close();
@@ -308,6 +314,7 @@ void InputDeck::readValues(){
         Utilities::print_dvector(psi_br);
     }
     cout<<"alpha_mode = "<<alpha_mode<<endl;
+    cout<<"accel_mode = "<<accel_mode<<endl;
     cout<<"tol = "<<tol<<endl;
     
     cout<<"phi_0_0 = [";
