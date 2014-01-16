@@ -100,7 +100,7 @@ void Utilities::print_dvector(vector<double> input_vector,char space){
     }
     cout<<"]"<<endl;
 }
-double Utilities::inf_norm(vector<double> v1, vector<double> v2){
+double Utilities::inf_norm(vector<double> &v1, vector<double> &v2){
     double inf_norm = 0;
     double temp;
     for(unsigned int i = 0; i<min(v1.size(),v2.size()); i++){

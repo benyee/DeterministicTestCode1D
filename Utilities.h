@@ -35,7 +35,7 @@ public:
     static void print_ivector(vector<int> input_vector,char space = ' ');
     static void print_dvector(vector<double> input_vector,char space = ' ');
 
-    static double inf_norm(vector<double> v1, vector<double> v2);
+    static double inf_norm(vector<double> &v1, vector<double> &v2);
     static double p_norm(vector<double> v1, vector<double> v2, unsigned int p);
     static vector<double> vector_add(vector<double> v1, vector<double> v2);
     static vector<double> vector_subtract(vector<double> v1, vector<double> v2);
