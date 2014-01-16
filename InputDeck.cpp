@@ -238,9 +238,27 @@ int InputDeck::loadInputDeck(){
     }
     if(!searchForInput(inputFile,"accel_mode",false)){
         accel_mode = 0;
+        discret_CM = discret;
     }else{
         getline(inputFile,line);
         accel_mode = atoi(line.c_str());
+        if(!searchForInput(inputFile,"discret_CM")){
+            cout<<"Problem with discret_CM... setting discret_CM = discret"<<endl;
+            discret_CM = discret;
+        }else{
+            unsigned int i = 0;
+            while(getline(inputFile,line)){
+                if(line == "." || discret_CM.size() == X.size()){
+                    break;
+                }
+                discret_CM.push_back(atoi(line.c_str()));
+                if(discret[i] % discret_CM[i] != 0){
+                    cout<<"WARNING: discret_CM["<<i<<"] does not divide evenly into discret["<<i<<"].  Setting discret_CM = discret instead."<<endl;
+                    discret_CM[i] = discret[i];
+                }
+                i = i+1;
+            }
+        }
     }
 
     
@@ -292,6 +310,10 @@ void InputDeck::readValues(){
     
     cout<<"discret = ";
     Utilities::print_uivector(discret);
+    if(accel_mode){
+        cout<<"discret_CM = ";
+        Utilities::print_uivector(discret_CM);
+    }
     cout<<"sigma_s0 = ";
     Utilities::print_dvector(sigma_s0);
     cout<<"sigma_s1 = ";

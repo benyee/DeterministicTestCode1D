@@ -23,11 +23,10 @@ int main ()
     InputDeck *input = new InputDeck();
     input->setfileName("input.txt");
     int debug = input->loadInputDeck();
-    input->readValues();
-    /*
+    //input->readValues();
     SourceIteration *input_run = new SourceIteration(input);
     input_run->iterate();
-    input_run->printOutput(false);*/
+    input_run->printOutput(false);
     
     /*
     //Read in input:
