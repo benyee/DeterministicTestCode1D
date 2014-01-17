@@ -349,8 +349,11 @@ void SourceIteration::cmfd(){
     
     double temp = 0;
     unsigned int FM_index = 0; //This tells you where you are in terms of fine grid cells.
-    unsigned int CM_index = 0;
+    unsigned int CM_index = 0; //This tells you where you are in terms of coarse grid cells.
     
+    
+    //Extrapolate to calculate corase mesh scalar fluxes, currents, and sources:
+    //(Equations 2.11b,2.11c,2.11d of Blake/Larsen paper)
     for(unsigned int i = 0; i<discret_CM.size(); i++){
         for(unsigned int j = 0; j<discret_CM[i];j++){
             phi_1_e_CM.push_back(0);
@@ -377,10 +380,67 @@ void SourceIteration::cmfd(){
         }
     }
     
+    //Get the last current value (there's an extra because there's always one more edge than there are cells)
     phi_1_e_CM.push_back(0);
     for(unsigned int m = 0; m<N;m++){
         phi_1_e_CM[CM_index] += w_n[m]*mu_n[m]*psi_e[FM_index][m];
     }
+    
+    //
+    //Calculate correction factors:
+    //
+    vector<double> D_c(phi_1_e_CM); //Correction factors
+    unsigned int c_size = phi_1_e_CM.size()-1;
+    unsigned int f_size = psi_e.size()-1;
+    
+    //Keep track of where we are:
+    unsigned int counter = 0; //Number of coarse cells that we've gone through in this region
+    unsigned int region_1 = 0; //region to the left of our current edge
+    unsigned int region_2 = 0; //region to the right of our current edge
+    
+    //Left edge: (Equation 2.15a)
+    D_c[0] = mu_n[0]*psi_e[0][0]*w_n[0];
+    for(unsigned int m = 1; m < N/2; m++){
+        D_c[0] += mu_n[m]*psi_e[0][m]*w_n[m];
+    }
+    D_c[0] *= 2;
+    D_c[0] = (D_c[0]-phi_1_e_CM[0])/phi_0_CM[0];
+    
+    //Keep track of where we are:
+    counter++;
+    if(counter == discret_CM[0]){
+        region_2++;
+        counter = 0;
+    }
+    
+    
+    //Middle of slab: (Equation 2.14)
+    for(unsigned int i = 1; i < c_size;i++){
+        D_c[i] = (phi_1_e_CM[i] + 2.0*(phi_0_CM[i]-phi_0_CM[i-1])/3.0/\
+            ( (sigma_t[region_2]-sigma_s1[region_2])*h[i] + (sigma_t[region_1]-sigma_s1[region_1])*h[i-1] ))/\
+            (phi_0_CM[i]+phi_0_CM[i-1]);
+        
+        //Keep track of where we are:
+        counter++;
+        if(region_2 > region_1){
+            region_1 = region_2;
+        }
+        if(counter == discret_CM[region_2]){
+            region_2++;
+            counter = 0;
+        }
+    }
+    
+    //Right edge:
+    D_c[c_size] = -mu_n[N/2]*psi_e[f_size][N/2]*w_n[N/2];
+    for(unsigned int m = N/2; m < N; m++){
+        D_c[c_size] += mu_n[m]*psi_e[f_size][m]*w_n[m];
+    }
+    D_c[c_size] *=2;
+    D_c[c_size] = (D_c[c_size]+phi_1_e_CM[c_size])/phi_0_CM[c_size-1];
+    
+    //Formulate tridiagonal matrix for new coarse mesh fluxes and currents:
+    
 }
 
 void SourceIteration::finiteDifference(){
