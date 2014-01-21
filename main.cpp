@@ -31,13 +31,13 @@ int main ()
     
     /*
      //Testing tridiagonal matrix function:
-     vector<vector<double> > A(5, vector<double>(5,0));
+     vector<vector<double> > A(5, vector<double>(3,0));
      vector<double> b(5,0);
-     A[0][0] = -1; A[0][1] = 2.;
+     A[0][1] = -1; A[0][2] = 2.;
      A[1][0] = 3; A[1][1] = 4.; A[1][2] = -5;
-     A[2][1] = 6; A[2][2] = 7; A[2][3] = 8;
-     A[3][2] = -9; A[3][3] = 10.; A[3][4] = 11.;
-     A[4][3] = 12; A[4][4] = -13.;
+     A[2][0] = 6; A[2][1] = 7; A[2][2] = 8;
+     A[3][0] = -9; A[3][1] = 10.; A[3][2] = 11.;
+     A[4][0] = 12; A[4][1] = -13.;
      b[0] = 5;
      b[1] = -4;
      b[2] = 3;
