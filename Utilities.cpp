@@ -100,6 +100,13 @@ void Utilities::print_dvector(vector<double> input_vector,char space){
     }
     cout<<"]"<<endl;
 }
+void Utilities::print_dmatrix(vector<vector<double> > A, char space){
+    cout<<"======Begin matrix output ========"<<endl;
+    for(unsigned int i = 0; i<A.size();i++){
+        print_dvector(A[i],space);
+    }
+    cout<<"======End   matrix output ========"<<endl;
+}
 double Utilities::inf_norm(vector<double> &v1, vector<double> &v2){
     double inf_norm = 0;
     double temp;
@@ -139,15 +146,16 @@ vector<double> Utilities::vector_subtract(vector<double> v1, vector<double> v2){
 vector<double> Utilities::solve_tridiag(vector<vector<double> > A, const vector<double> &b){
     vector<double> x(b);
     unsigned int n = A.size();
-    
+    /*
     print_dvector(A[0]);
     print_dvector(A[1]);
     print_dvector(A[2]);
     print_dvector(A[3]);
     print_dvector(A[4]);
+    print_dvector(x);
+     */
     A[0][2] /= A[0][1];
     x[0] /= A[0][1];
-    print_dvector(x);
     for(unsigned int i = 1; i<n-1;i++){
         A[i][2] /= A[i][1] - A[i-1][2]*A[i][0];
         x[i] = (x[i]-x[i-1]*A[i][0])/(A[i][1] - A[i-1][2]*A[i][0]);
