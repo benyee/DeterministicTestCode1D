@@ -125,7 +125,7 @@ int SourceIteration::iterate(){
         if(accel_mode == 1){
             cmfd();
             updatePhi_calcSource(false);
-        }else if(accel_mode == 2){
+        }else if(accel_mode == 2 || accel_mode == 3){
             pcmfd();
             updatePhi_calcSource(false);
         }
@@ -549,8 +549,13 @@ void SourceIteration::pcmfd(){
     
     //Middle of slab: (Equation 2.14)
     for(unsigned int i = 1; i < D_cL.size()-1;i++){
-        D_cR[i] = (phi_1_e_CMR[i]+D_actual_CM[i-1]*(phi_0_CM[i]-phi_0_CM[i-1])/2.)/phi_0_CM[i-1]; //
-        D_cL[i] = (phi_1_e_CML[i]-(D_actual_CM[i-1]*(phi_0_CM[i]-phi_0_CM[i-1])/2.))/phi_0_CM[i]; //
+        if(accel_mode ==2){ //pCMFD
+            D_cR[i] = (phi_1_e_CMR[i]+D_actual_CM[i-1]*(phi_0_CM[i]-phi_0_CM[i-1])/2.)/phi_0_CM[i-1]; //
+            D_cL[i] = (phi_1_e_CML[i]-(D_actual_CM[i-1]*(phi_0_CM[i]-phi_0_CM[i-1])/2.))/phi_0_CM[i]; //
+        } else{ //mpCMFD
+            D_cR[i] = (2*phi_1_e_CMR[i]+D_actual_CM[i-1]*phi_0_CM[i])/phi_0_CM[i-1]/(0.5 + D_actual_CM[i-1]); //
+            D_cL[i] = (2*phi_1_e_CML[i]+D_actual_CM[i-1]*phi_0_CM[i-1])/phi_0_CM[i]/(0.5 + D_actual_CM[i-1]); //
+        }
         
 //        Utilities::print_dvector(D_cL);
 //        Utilities::print_dvector(D_cR);
@@ -561,8 +566,8 @@ void SourceIteration::pcmfd(){
     
 //    Utilities::print_dvector(phi_0_CM);
 //    Utilities::print_dvector(D_actual_CM);
-//    Utilities::print_dvector(D_cL);
-//    Utilities::print_dvector(D_cR);
+    Utilities::print_dvector(D_cL);
+    Utilities::print_dvector(D_cR);
     
     //
     //Formulate tridiagonal matrix for new coarse mesh fluxes and currents:   (Equations 2.16a-d)
@@ -581,15 +586,28 @@ void SourceIteration::pcmfd(){
     //std::cout<<"b["<<phi_0_CM_size-1<<"] = "<<phi_0_CM_new[phi_0_CM_size-1]<<endl;
     
     //Equations 5.21 of my notes:
-    A[0][1] = D_actual_CM[0]+opt_CM_a[0]+D_cR[1]+D_cL[0];
-    A[0][2] = -D_cL[1]-D_actual_CM[0];
-    for(unsigned int k = 1; k<phi_0_CM_size-1;k++){
-        A[k][0] = -D_actual_CM[k-1]-D_cR[k];
-        A[k][1] = D_actual_CM[k]+D_actual_CM[k-1]+D_cR[k+1]+D_cL[k]+opt_CM_a[k];
-        A[k][2] = -D_actual_CM[k]-D_cL[k+1];
+    if(accel_mode ==2){ //CMFD
+        A[0][1] = D_actual_CM[0]+opt_CM_a[0]+D_cR[1]+D_cL[0];
+        A[0][2] = -D_cL[1]-D_actual_CM[0];
+        for(unsigned int k = 1; k<phi_0_CM_size-1;k++){
+            A[k][0] = -D_actual_CM[k-1]-D_cR[k];
+            A[k][1] = D_actual_CM[k]+D_actual_CM[k-1]+D_cR[k+1]+D_cL[k]+opt_CM_a[k];
+            A[k][2] = -D_actual_CM[k]-D_cL[k+1];
+        }
+        A[phi_0_CM_size-1][0] = -D_actual_CM[phi_0_CM_size-2]-D_cR[phi_0_CM_size-1];
+        A[phi_0_CM_size-1][1] = D_actual_CM[phi_0_CM_size-2]+D_cR[phi_0_CM_size]+D_cL[phi_0_CM_size-1]+opt_CM_a[phi_0_CM_size-1];
+    }else{ //mpCMFD
+        //Equations 5.21 of my notes:
+        A[0][1] = D_cR[1]/4 + (1 + D_cR[1])*(D_actual_CM[0]/2) + D_cL[0] + opt_CM_a[0];
+        A[0][2] = -(D_cL[1]/4+(1+D_cL[1])*(D_actual_CM[0]/2));
+        for(unsigned int k = 1; k<phi_0_CM_size-1;k++){
+            A[k][0] = -(D_cR[k]/4+(1+D_cR[k])*(D_actual_CM[k-1]/2));
+            A[k][1] = D_cL[k]/4+(1+D_cL[k])*(D_actual_CM[k-1]/2)+D_cR[k+1]/4+(1+D_cR[k+1])*(D_actual_CM[k]/2)+opt_CM_a[k];
+            A[k][2] = -(D_cL[k+1]/4+(1+D_cL[k+1])*(D_actual_CM[k]/2));
+        }
+        A[phi_0_CM_size-1][0] = -(D_cR[phi_0_CM_size-1]/4+(1+D_cR[phi_0_CM_size-1])*(D_actual_CM[phi_0_CM_size-2]/2));
+        A[phi_0_CM_size-1][1] = D_cL[phi_0_CM_size-1]/4+(1+D_cL[phi_0_CM_size-1])*(D_actual_CM[phi_0_CM_size-2]/2)+D_cR[phi_0_CM_size]+opt_CM_a[phi_0_CM_size-1];
     }
-    A[phi_0_CM_size-1][0] = -D_actual_CM[phi_0_CM_size-2]-D_cR[phi_0_CM_size-1];
-    A[phi_0_CM_size-1][1] = D_actual_CM[phi_0_CM_size-2]+D_cR[phi_0_CM_size]+D_cL[phi_0_CM_size-1]+opt_CM_a[phi_0_CM_size-1];
     
 //    Utilities::print_dmatrix(A);
 //    Utilities::print_dvector(D_c);

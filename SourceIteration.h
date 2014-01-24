@@ -23,7 +23,7 @@ using namespace std;
 
 class SourceIteration{
 public:
-    static const unsigned int MAX_IT = 10000;
+    static const unsigned int MAX_IT = 20;
     
     SourceIteration(InputDeck *input,string outputfilename="output.txt");
     ~SourceIteration();
