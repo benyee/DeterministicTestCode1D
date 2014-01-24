@@ -128,6 +128,9 @@ int SourceIteration::iterate(){
         }else if(accel_mode == 2){
             pcmfd();
             updatePhi_calcSource(false);
+        }else if(accel_mode == 3){
+            mpcmfd();
+            updatePhi_calcSource(false);
         }
         
         outfile<<setw(5)<<it_num<<setw(20)<<error<<setw(20);
@@ -619,6 +622,148 @@ void SourceIteration::pcmfd(){
     //Update phi_1:
     
 }
+
+
+void SourceIteration::mpcmfd(){
+    vector<double> phi_0_CM;
+    vector<double> Q_CM;
+    vector<double> phi_1_e_CML; //Left edge current on coarse mesh
+    vector<double> phi_1_e_CMR; //Right edge current on coarse mesh
+    
+    vector<double> Q = data->getQ();
+    
+    unsigned int FM_index = 0; //This tells you where you are in terms of fine grid cells.
+    unsigned int CM_index = 0; //This tells you where you are in terms of coarse grid cells.
+    
+    //Extrapolate to calculate corase mesh scalar fluxes, currents, and sources:
+    //(Equations 2.11b,2.11c,2.11d of Blake/Larsen paper)
+    
+    //i tracks which material region you're in
+    //j tracks the CM cell that you're in within region i
+    //k tracks the FM cell that you're in within the j-th CM cell of region i
+    for(unsigned int i = 0; i<discret_CM.size(); i++){
+        for(unsigned int j = 0; j<discret_CM[i];j++){
+            phi_1_e_CMR.push_back(0);
+            for(unsigned int m = 0; m<N/2;m++){
+                phi_1_e_CMR[CM_index] += w_n[m]*mu_n[m]*psi_e[FM_index][m];
+            }
+            
+            phi_1_e_CML.push_back(0);
+            for(unsigned int m = N/2; m<N;m++){
+                phi_1_e_CML[CM_index] -= w_n[m]*mu_n[m]*psi_e[FM_index][m];
+            }
+            
+            phi_0_CM.push_back(0);
+            Q_CM.push_back(0);
+            
+            for(; x_e[FM_index]<x_CM_e[CM_index+1];FM_index++){
+                phi_0_CM[CM_index] += phi_0[FM_index]*h[FM_index];
+                Q_CM[CM_index] += Q[i]*h[FM_index];
+            }
+            phi_0_CM[CM_index] /= h_CM[CM_index];
+            Q_CM[CM_index] /= h_CM[CM_index];
+            
+            //std::cout<<"Q_CM["<<CM_index<<"] = "<<Q_CM[CM_index]<<endl;
+            
+            CM_index++;
+        }
+    }
+    
+    //Get the last current value (there's an extra because there's always one more edge than there are cells)
+    phi_1_e_CMR.push_back(0);
+    for(unsigned int m = 0; m<N/2;m++){
+        phi_1_e_CMR[CM_index] += w_n[m]*mu_n[m]*psi_e[FM_index][m];
+    }
+    phi_1_e_CML.push_back(0);
+    for(unsigned int m = N/2; m<N;m++){
+        phi_1_e_CML[CM_index] -= w_n[m]*mu_n[m]*psi_e[FM_index][m];
+    }
+    //    Utilities::print_dvector(phi_1_e_CML);
+    //    Utilities::print_dvector(phi_1_e_CMR);
+    
+    //
+    //Calculate correction factors:
+    //
+    unsigned int c_size = phi_1_e_CML.size()-1;
+    vector<double> D_cL(c_size+1,0); //Correction factors
+    vector<double> D_cR(c_size+1,0); //Correction factors
+    
+    //Left edge: (Equation 2.15a)
+    D_cL[0] = (phi_1_e_CMR[0]+phi_1_e_CML[0])/phi_0_CM[0];
+    
+    //Middle of slab: (Equation 2.14)
+    for(unsigned int i = 1; i < D_cL.size()-1;i++){
+        D_cR[i] = (phi_1_e_CMR[i]+D_actual_CM[i-1]*(phi_0_CM[i]-phi_0_CM[i-1])/2.)/phi_0_CM[i-1]; //
+        D_cL[i] = (phi_1_e_CML[i]-(D_actual_CM[i-1]*(phi_0_CM[i]-phi_0_CM[i-1])/2.))/phi_0_CM[i]; //
+        
+        //        Utilities::print_dvector(D_cL);
+        //        Utilities::print_dvector(D_cR);
+    }
+    
+    //Right edge: (Equation 2.15b)
+    D_cR[c_size] = (phi_1_e_CMR[c_size]+phi_1_e_CML[c_size])/phi_0_CM[c_size-1];
+    
+    //    Utilities::print_dvector(phi_0_CM);
+    //    Utilities::print_dvector(D_actual_CM);
+    //    Utilities::print_dvector(D_cL);
+    //    Utilities::print_dvector(D_cR);
+    
+    //
+    //Formulate tridiagonal matrix for new coarse mesh fluxes and currents:   (Equations 2.16a-d)
+    unsigned int phi_0_CM_size = phi_0_CM.size();
+    vector<vector<double> > A(phi_0_CM_size,vector<double>(3,0));
+    vector<double> phi_0_CM_new(phi_0_CM_size,0);
+    
+    //Equation 5.20 of my notes:
+    phi_0_CM_new[0] = Q_CM[0]*h_CM[0]+2*phi_1_e_CMR[0];
+    //std::cout<<"b["<<0<<"] = "<<phi_0_CM_new[0]<<endl;
+    for(unsigned int i = 1; i<phi_0_CM_size-1;i++){
+        phi_0_CM_new[i] = Q_CM[i]*h_CM[i];
+        //std::cout<<"b["<<i<<"] = "<<phi_0_CM_new[i]<<endl;
+    }
+    phi_0_CM_new[phi_0_CM_size-1] = Q_CM[phi_0_CM_size-1]*h_CM[phi_0_CM_size-1] + 2*phi_1_e_CML[c_size];
+    //std::cout<<"b["<<phi_0_CM_size-1<<"] = "<<phi_0_CM_new[phi_0_CM_size-1]<<endl;
+    
+    //Equations 5.21 of my notes:
+    A[0][1] = D_actual_CM[0]+opt_CM_a[0]+D_cR[1]+D_cL[0];
+    A[0][2] = -D_cL[1]-D_actual_CM[0];
+    for(unsigned int k = 1; k<phi_0_CM_size-1;k++){
+        A[k][0] = -D_actual_CM[k-1]-D_cR[k];
+        A[k][1] = D_actual_CM[k]+D_actual_CM[k-1]+D_cR[k+1]+D_cL[k]+opt_CM_a[k];
+        A[k][2] = -D_actual_CM[k]-D_cL[k+1];
+    }
+    A[phi_0_CM_size-1][0] = -D_actual_CM[phi_0_CM_size-2]-D_cR[phi_0_CM_size-1];
+    A[phi_0_CM_size-1][1] = D_actual_CM[phi_0_CM_size-2]+D_cR[phi_0_CM_size]+D_cL[phi_0_CM_size-1]+opt_CM_a[phi_0_CM_size-1];
+    
+    //    Utilities::print_dmatrix(A);
+    //    Utilities::print_dvector(D_c);
+    //Solve A*phi = b:
+    phi_0_CM_new = Utilities::solve_tridiag(A,phi_0_CM_new);
+    
+    //Need to solve for phi_1:
+    
+    
+    //Now we need to update phi_0:
+    FM_index = 0; //This tells you where you are in terms of fine grid cells.
+    CM_index = 0; //This tells you where you are in terms of coarse grid cells.
+    
+    //i tracks which material region you're in
+    //j tracks the CM cell that you're in within region i
+    //k tracks the FM cell that you're in within the j-th CM cell of region i
+    for(unsigned int i = 0; i<discret_CM.size(); i++){
+        for(unsigned int j = 0; j<discret_CM[i];j++){
+            for(; x_e[FM_index]<x_CM_e[CM_index+1];FM_index++){
+                phi_0[FM_index] *= phi_0_CM_new[CM_index]/phi_0_CM[CM_index];
+                //                std::cout<<"Scaling "<<FM_index<<" by "<<phi_0_CM_new[CM_index]/phi_0_CM[CM_index]<<endl;
+            }
+            CM_index++;
+        }
+    }
+    
+    //Update phi_1:
+    
+}
+
 
 void SourceIteration::finiteDifference(){
     for(unsigned int j = 0; j<J;j++){

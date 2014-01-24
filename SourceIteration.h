@@ -87,6 +87,7 @@ private:
     void finiteDifference(); //Calculate cell-averaged angular fluxes
     void cmfd(); //Perform cmfd acceleration
     void pcmfd(); //Perform pcmfd acceleration
+    void mpcmfd(); //Perform mpcmfd acceleration
     void initializeAlpha(); //Calculate alpha values
     void initializeGrid(); //Calculate values associated with grid locations
     double updatePhi_calcSource(bool usePsi = true); //Update fluxes and currents, calculate new source, calculate difference between new and old scalar flux
