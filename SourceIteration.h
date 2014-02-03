@@ -23,7 +23,7 @@ using namespace std;
 
 class SourceIteration{
 public:
-    static const unsigned int MAX_IT = 20;
+    static const unsigned int MAX_IT = 100;
     
     SourceIteration(InputDeck *input,string outputfilename="output.txt");
     ~SourceIteration();
@@ -51,6 +51,7 @@ private:
     vector<vector<double> > psi_e; //Edge angular flux
     vector<vector<double> > psi_c; //Cell-averaged angular flux
     vector< vector<double> > source;  //Source term for source iteration
+    vector< vector<double> > source_edge;  //Source term for source iteration
     
     //Linear neutron info for higher order approximations:
     bool hasLinearTerms;

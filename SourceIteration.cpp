@@ -63,12 +63,14 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
         }
         vector<double> temp3;
         psi_e.push_back(temp3);
+        source_edge.push_back(temp3);
         for(unsigned int m=0; m<N;m++){
             if(j!=J){
                 psi_c[j].push_back(0);
                 source[j].push_back(0);
             }
             psi_e[j].push_back(0);
+            source_edge[j].push_back(0);
         }
     }
     initializeGrid();
@@ -268,6 +270,11 @@ void SourceIteration::leftIteration(){
                 psi_e[j][m] = numerator/denominator;
                 psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
                 psi_c_lin[j][m] = 2*(psi_c[j][m]-psi_e[j][m])/h[j];
+            }else if(alpha_mode ==30){
+                double twomu_h = mu_n[m]/halfhj;
+                double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
+                psi_e[j][m] = (twomu_h*mu_hsigt*psi_e[j+1][m]-mu_hsigt*source[j][m]+source_edge[j+1][m]/2)/(twomu_h*(mu_hsigt-1)+sigma_t[region]);
+                psi_c[j][m] = (source_edge[j+1][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
             }else{
                 double numerator = (-mu_n[m]-(sigma_t[region])*halfhj*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*halfhj;
                 double denominator = -mu_n[m]+(sigma_t[region])*halfhj*(1.0-alpha[j][m]);
@@ -323,12 +330,17 @@ void SourceIteration::rightIteration(){
                 psi_c[j][m] = C0/sighmu*(1.0 - esighmu) + srctwosigt-srclintwosigt*musig;
                 psi_e[j+1][m] = C0*esighmu+ srclintwosigt*(halfhj - musig) + srctwosigt;
             }else if(alpha_mode==20){ // LD
-                double tau = sigma_t[region]*h[j]/2/mu_n[m];
+                double tau = sigma_t[region]*halfhj/mu_n[m];
                 double numerator = h[j]*h[j]*tau*source_lin[j][m] + 2*h[j]*(3+tau)*source[j][m]+4*mu_n[m]*(3-2*tau)*psi_e[j][m];
                 double denominator = 4*(4*mu_n[m]*tau+3*mu_n[m]+sigma_t[region]*h[j]*tau);
                 psi_e[j+1][m] = numerator/denominator;
                 psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
                 psi_c_lin[j][m] = 2*(psi_e[j+1][m] - psi_c[j][m])/h[j];
+            }else if(alpha_mode ==30){
+                double twomu_h = mu_n[m]/halfhj;
+                double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
+                psi_e[j+1][m] = (twomu_h*mu_hsigt*psi_e[j][m]+mu_hsigt*source[j][m]+source_edge[j+1][m]/2)/(twomu_h*(mu_hsigt+1)+sigma_t[region]);
+                psi_c[j][m] = (source_edge[j+1][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
             }else{
                 double numerator = (mu_n[m]-(sigma_t[region])*halfhj*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*halfhj;
                 double denominator = mu_n[m]+(sigma_t[region])*halfhj*(1.0+alpha[j][m]);
@@ -760,6 +772,12 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
     vector<double> Q_lin = data->getQ_lin();
     int region = 0;
     unsigned int within_region_counter = 0;
+    vector<double> edgePhi0;
+    vector<double> edgePhi1;
+    if(alpha_mode == 11 || alpha_mode >= 30){
+        edgePhi0 = calcEdgePhi(0);
+        edgePhi1 = calcEdgePhi(1);
+    }
     for(unsigned int j = 0; j<J;j++){
         if(usePsi){
             phi_0[j] = 0;
@@ -775,6 +793,15 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
             for(unsigned int m=0;m<N;m++){
                 //Note that for a linear source, Q[region]+Q_lin[region]*x[j] gives the average external source in that spatial cell
                 source[j][m] = sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region]+Q_lin[region]*(x[j]-X[region]);
+            }
+        }
+        //Need to calculate edge sources:
+        if(alpha_mode >=30){
+            for(unsigned int m = 0; m < N/2;m++){
+                source_edge[j+1][m] = sigma_s0[region]*edgePhi0[j+1]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j+1] + Q[region] + Q_lin[region]*(x[j]+h[j]/4-X[region]);
+            }
+            for(unsigned int m = N/2; m<N;m++){
+                source_edge[j][m] = sigma_s0[region]*edgePhi0[j]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j] + Q[region] + Q_lin[region]*(x[j]-h[j]/4-X[region]);
             }
         }
         within_region_counter++;
@@ -812,8 +839,8 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
         }else{
             region = 0;
             within_region_counter = 0;
-            vector<double> edgePhi0 = calcEdgePhi(0);
-            vector<double> edgePhi1 = calcEdgePhi(1);
+            edgePhi0 = calcEdgePhi(0);
+            edgePhi1 = calcEdgePhi(1);
             for(unsigned int j = 0; j<J;j++){
                 if(edgePhi0[j+1]+edgePhi0[j] == 0){
                     phi_0_lin[j] = 0;

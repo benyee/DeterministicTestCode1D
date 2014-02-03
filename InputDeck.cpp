@@ -183,7 +183,7 @@ int InputDeck::loadInputDeck(){
             phi_1_0.push_back(atof(line.c_str()));
         }
     }
-    if(alpha_mode >=10){
+    if(alpha_mode >=10 && alpha_mode < 30){
         hasLinearTerms = 1;
     }
     else{
