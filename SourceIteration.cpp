@@ -273,8 +273,8 @@ void SourceIteration::leftIteration(){
             }else if(alpha_mode ==30){
                 double twomu_h = mu_n[m]/halfhj;
                 double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
-                psi_e[j][m] = (twomu_h*mu_hsigt*psi_e[j+1][m]-mu_hsigt*source[j][m]+source_edge[j+1][m]/2)/(twomu_h*(mu_hsigt-1)+sigma_t[region]);
-                psi_c[j][m] = (source_edge[j+1][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+                psi_e[j][m] = (twomu_h*mu_hsigt*psi_e[j+1][m]-mu_hsigt*source[j][m]+source_edge[j][m]/2)/(twomu_h*(mu_hsigt-1)+sigma_t[region]);
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
             }else{
                 double numerator = (-mu_n[m]-(sigma_t[region])*halfhj*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*halfhj;
                 double denominator = -mu_n[m]+(sigma_t[region])*halfhj*(1.0-alpha[j][m]);
@@ -340,7 +340,7 @@ void SourceIteration::rightIteration(){
                 double twomu_h = mu_n[m]/halfhj;
                 double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
                 psi_e[j+1][m] = (twomu_h*mu_hsigt*psi_e[j][m]+mu_hsigt*source[j][m]+source_edge[j+1][m]/2)/(twomu_h*(mu_hsigt+1)+sigma_t[region]);
-                psi_c[j][m] = (source_edge[j+1][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
             }else{
                 double numerator = (mu_n[m]-(sigma_t[region])*halfhj*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*halfhj;
                 double denominator = mu_n[m]+(sigma_t[region])*halfhj*(1.0+alpha[j][m]);
