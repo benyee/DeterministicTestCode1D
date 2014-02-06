@@ -30,6 +30,8 @@ public:
     int iterate();
     void printOutput( bool isPrintingToWindow = false,unsigned int tabwidth=20);
     
+    bool isConverged;
+    
 private:
     InputDeck *data; //Input deck
     string outfilename; //Name of outpile file

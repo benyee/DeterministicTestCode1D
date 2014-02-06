@@ -93,6 +93,7 @@ SourceIteration::~SourceIteration(){
 }
 
 int SourceIteration::iterate(){
+    isConverged = 0;
     ofstream outfile;
     outfile.open(outfilename.c_str());
     cout<<"Performing source iteration..."<<endl;
@@ -144,6 +145,7 @@ int SourceIteration::iterate(){
     }while(error>tol && it_num < MAX_IT);
     if(it_num < MAX_IT){
         cout<<"Source iteration converged in "<<it_num<<" iterations"<<endl;
+        isConverged = 1;
     }else{
         cout<<"Source iteration did NOT converge in "<<MAX_IT<<" iterations"<<endl;
     }
