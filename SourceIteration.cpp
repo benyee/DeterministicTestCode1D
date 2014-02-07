@@ -580,8 +580,8 @@ void SourceIteration::pcmfd(){
     
 //    Utilities::print_dvector(phi_0_CM);
 //    Utilities::print_dvector(D_actual_CM);
-    Utilities::print_dvector(D_cL);
-    Utilities::print_dvector(D_cR);
+//    Utilities::print_dvector(D_cL);
+//    Utilities::print_dvector(D_cR);
     
     //
     //Formulate tridiagonal matrix for new coarse mesh fluxes and currents:   (Equations 2.16a-d)
