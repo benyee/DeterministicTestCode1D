@@ -23,7 +23,7 @@ using namespace std;
 
 class SourceIteration{
 public:
-    static const unsigned int MAX_IT = 100;
+    static const unsigned int MAX_IT = 10000;
     
     SourceIteration(InputDeck *input,string outputfilename="output.txt");
     ~SourceIteration();
@@ -31,6 +31,10 @@ public:
     void printOutput( bool isPrintingToWindow = false,unsigned int tabwidth=20);
     
     bool isConverged;
+    
+    int get_it_num(){if(isConverged){return it_num;} return -it_num;}
+    
+    double get_error(){return old_error;}
     
 private:
     InputDeck *data; //Input deck
