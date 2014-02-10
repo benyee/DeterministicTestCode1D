@@ -21,7 +21,7 @@ int main ()
     cout << "Hello world!"<<endl;
     
     InputDeck *input = new InputDeck();
-    input->setfileName("defaultinput1.txt");
+    input->setfileName("defaultinput3.txt");
     int debug = input->loadInputDeck();
     
     
@@ -127,6 +127,8 @@ int main ()
                     input->setalpha_mode(alpha_mode[m]);
                     
                     vector<double> temp;
+                    temp.push_back(X);
+                    input->setX(temp);
                     
                     vector<unsigned int> temp2;
                     temp2.push_back(X/dx[j]);
@@ -139,13 +141,24 @@ int main ()
                     input->setphi_0_0_lin(temp3);
                     input->setphi_1_0_lin(temp3);
                     
-                    temp.push_back(SigS_arr[k]);
+                    temp[0] = SigS_arr[k];
                     input->setsigma_s0(temp);
                     temp[0] = 1.0-SigS_arr[k];
                     input->setsigma_a(temp);
                     
+                    
+                    
+                    ostringstream ss;
+                    if(m == 0){
+                        ss<<"OutputFiles/output_V_DD_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
+                    }else if (alpha_mode[m] ==30){
+                        ss<<"OutputFiles/output_V_new_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
+                    }else{
+                        ss<<"OutputFiles/output_V_"<<alpha_mode[m]<<"_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
+                    }
+                    
                     cout<<"Finished setting parameters..."<<endl;
-                    input_run = new SourceIteration(input,"OutputFiles/output.txt");
+                    input_run = new SourceIteration(input,ss.str());
                     input_run->iterate();
                     input_run->printOutput(false);
                     
