@@ -34,7 +34,7 @@ int main ()
     vector<double> SigS(SigS_arr,SigS_arr+sizeof(SigS_arr)/sizeof(SigS_arr[0]));
     static const double N_arr[] = {4};
     vector<double> N(N_arr,N_arr+sizeof(N_arr)/sizeof(N_arr[0]));
-    static const double alpha_arr[] = {0,30};
+    static const double alpha_arr[] = {0,2,30};
     vector<double> alpha_mode(alpha_arr,alpha_arr+sizeof(alpha_arr)/sizeof(alpha_arr[0]));
     
     SourceIteration *input_run;
@@ -81,6 +81,8 @@ int main ()
                     ss<<"OutputFiles/output_IV_DD_"<<j<<"_"<<k<<"_.txt";
                 }else if (alpha_mode[m] ==30){
                     ss<<"OutputFiles/output_IV_new_"<<j<<"_"<<k<<"_.txt";
+                }else if (alpha_mode[m] ==2){
+                    ss<<"OutputFiles/output_IV_SC_"<<j<<"_"<<k<<"_.txt";
                 }else{
                     ss<<"OutputFiles/output_IV_"<<alpha_mode[m]<<"_"<<j<<"_"<<k<<"_.txt";
                 }
@@ -98,7 +100,7 @@ int main ()
     }/* */
     
     
-    /* Problem 3 */
+    /* Problem 3*/
     static const double X = 20;
     static const double dx_arr[] = {5,4,2,1,0.5,0.01};
     vector<double> dx(dx_arr,dx_arr+sizeof(dx_arr)/sizeof(dx_arr[0]));
@@ -106,7 +108,7 @@ int main ()
     vector<double> SigS(SigS_arr,SigS_arr+sizeof(SigS_arr)/sizeof(SigS_arr[0]));
     static const double N_arr[] = {4};
     vector<double> N(N_arr,N_arr+sizeof(N_arr)/sizeof(N_arr[0]));
-    static const double alpha_arr[] = {0,30};
+    static const double alpha_arr[] = {0,2,30};
     vector<double> alpha_mode(alpha_arr,alpha_arr+sizeof(alpha_arr)/sizeof(alpha_arr[0]));
     
     SourceIteration *input_run;
@@ -153,6 +155,8 @@ int main ()
                         ss<<"OutputFiles/output_V_DD_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
                     }else if (alpha_mode[m] ==30){
                         ss<<"OutputFiles/output_V_new_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
+                    }else if (alpha_mode[m] ==2){
+                        ss<<"OutputFiles/output_V_SC_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
                     }else{
                         ss<<"OutputFiles/output_V_"<<alpha_mode[m]<<"_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
                     }
