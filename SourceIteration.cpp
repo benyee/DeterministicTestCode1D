@@ -277,7 +277,13 @@ void SourceIteration::leftIteration(){
                 double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
                 psi_e[j][m] = (twomu_h*mu_hsigt*psi_e[j+1][m]-mu_hsigt*source[j][m]+source_edge[j][m]/2)/(twomu_h*(mu_hsigt-1)+sigma_t[region]);
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-            }else{
+            }else if(alpha_mode==31){
+                double tau = -sigma_t[region]*h[j]/mu_n[m];
+                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]/sigma_t[region]*(tau*tau/4+tau*tau*tau/12);
+                double denominator = 1 + tau + tau*tau/2 + tau*tau*tau/6;
+                psi_e[j][m] = numerator/denominator;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+            }else{ //Regular finite difference
                 double numerator = (-mu_n[m]-(sigma_t[region])*halfhj*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*halfhj;
                 double denominator = -mu_n[m]+(sigma_t[region])*halfhj*(1.0-alpha[j][m]);
                 psi_e[j][m] = numerator/denominator;
@@ -342,6 +348,12 @@ void SourceIteration::rightIteration(){
                 double twomu_h = mu_n[m]/halfhj;
                 double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
                 psi_e[j+1][m] = (twomu_h*mu_hsigt*psi_e[j][m]+mu_hsigt*source[j][m]+source_edge[j+1][m]/2)/(twomu_h*(mu_hsigt+1)+sigma_t[region]);
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+            }else if(alpha_mode==31){
+                double tau = sigma_t[region]*h[j]/mu_n[m];
+                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]/sigma_t[region]*(tau*tau/4+tau*tau*tau/12);
+                double denominator = 1 + tau + tau*tau/2 + tau*tau*tau/6;
+                psi_e[j+1][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
             }else{
                 double numerator = (mu_n[m]-(sigma_t[region])*halfhj*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*halfhj;

@@ -122,6 +122,8 @@ private:
      11 = alternative linear characteristic (3.2 of notes)
      20 = linear discontinuous (4.1 of notes)
      30 = new method (5.1)
+     31 = alt. 1 to new method (5.3)
+     32 = alt. 2 to new method (5.4)
      */
     double tol; //tolerance for convergence
     bool hasLinearTerms;
