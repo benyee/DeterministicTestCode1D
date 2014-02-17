@@ -21,11 +21,11 @@ int main ()
     cout << "Hello world!"<<endl;
     
     InputDeck *input = new InputDeck();
-    input->setfileName("defaultinput1.txt");
+    input->setfileName("defaultinput3.txt");
     int debug = input->loadInputDeck();
     
     
-    /* Problem I */
+    /* Problem I
     //Generate input files:
     static const double X = 20;
     static const double dx_arr[] = {4,2,1,0.5,0.125,0.01};
@@ -100,7 +100,7 @@ int main ()
     }/* */
     
     
-    /* Problem 3
+    /* Problem 3 */
     static const double X = 20;
     static const double dx_arr[] = {5,4,2,1,0.5,0.01};
     vector<double> dx(dx_arr,dx_arr+sizeof(dx_arr)/sizeof(dx_arr[0]));
@@ -108,7 +108,7 @@ int main ()
     vector<double> SigS(SigS_arr,SigS_arr+sizeof(SigS_arr)/sizeof(SigS_arr[0]));
     static const double N_arr[] = {4};
     vector<double> N(N_arr,N_arr+sizeof(N_arr)/sizeof(N_arr[0]));
-    static const double alpha_arr[] = {0,2,30};
+    static const double alpha_arr[] = {0,32};
     vector<double> alpha_mode(alpha_arr,alpha_arr+sizeof(alpha_arr)/sizeof(alpha_arr[0]));
     
     SourceIteration *input_run;
@@ -152,13 +152,13 @@ int main ()
                     
                     ostringstream ss;
                     if(m == 0){
-                        ss<<"OutputFiles/output_V_DD_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
-                    }else if (alpha_mode[m] ==30){
-                        ss<<"OutputFiles/output_V_new_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
+                        ss<<"OutputFiles/output_8_DD_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
+                    }else if (alpha_mode[m] ==32){
+                        ss<<"OutputFiles/output_8_new2_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
                     }else if (alpha_mode[m] ==2){
-                        ss<<"OutputFiles/output_V_SC_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
+                        ss<<"OutputFiles/output_8_SC_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
                     }else{
-                        ss<<"OutputFiles/output_V_"<<alpha_mode[m]<<"_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
+                        ss<<"OutputFiles/output_8_"<<alpha_mode[m]<<"_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
                     }
                     
                     cout<<"Finished setting parameters..."<<endl;
