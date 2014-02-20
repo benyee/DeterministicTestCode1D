@@ -35,6 +35,9 @@ public:
     int get_it_num(){if(isConverged){return it_num;} return -it_num;}
     
     double get_error(){return old_error;}
+    double get_spec_rad(){return spec_rad;}
+    
+    vector<vector<double> > get_phi_e(){return phi_e;}
     
 private:
     InputDeck *data; //Input deck
@@ -88,6 +91,7 @@ private:
     
     int it_num; //Iteraiton number
     double old_error; //stores ||phi_{i}-phi_{i-1}|| from the previous iteration
+    double spec_rad; //stores the latest estimate for the spectral radius (average of all the previous spectral radii)
     
     void rightIteration(); //Sweep left to right
     void leftIteration(); //Sweep right to left

@@ -124,6 +124,7 @@ private:
      30 = new method (5.1)
      31 = alt. 1 to new method (5.3)
      32 = alt. 2 to new method (5.4)
+     33 = alt. 3 to new method (5.5)
      */
     double tol; //tolerance for convergence
     bool hasLinearTerms;

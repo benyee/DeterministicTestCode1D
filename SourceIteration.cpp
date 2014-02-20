@@ -136,8 +136,10 @@ int SourceIteration::iterate(){
         outfile<<setw(5)<<it_num<<setw(20)<<error<<setw(20);
         if(it_num ==1){
             outfile<<"---";
+            spec_rad = 0;
         }else{
             outfile<<error/old_error;
+            spec_rad = (spec_rad*(it_num-2)+error/old_error)/(it_num-1);
         }
         outfile<<setw(20)<<checkNegativeFlux()<<'\n';
         cout<<"For iteration number "<<it_num<<", the error is "<<error<<endl;
