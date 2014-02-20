@@ -275,13 +275,21 @@ void SourceIteration::leftIteration(){
                 psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
                 psi_c_lin[j][m] = 2*(psi_c[j][m]-psi_e[j][m])/h[j];
             }else if(alpha_mode ==30){
+                double tau = -sigma_t[region]*h[j]/mu_n[m];
+                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]*h[j]*tau/4/mu_n[m];
+                double denominator = 1 + tau + tau*tau/2;
+                psi_e[j][m] = numerator/denominator;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+                /*
                 double twomu_h = mu_n[m]/halfhj;
                 double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
                 psi_e[j][m] = (twomu_h*mu_hsigt*psi_e[j+1][m]-mu_hsigt*source[j][m]+source_edge[j][m]/2)/(twomu_h*(mu_hsigt-1)+sigma_t[region]);
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+                 */
             }else if(alpha_mode==31){
                 double tau = -sigma_t[region]*h[j]/mu_n[m];
-                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]/sigma_t[region]*(tau*tau/4+tau*tau*tau/12);
+                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]*h[j]/mu_n[m]*tau*(0.25+tau/12);
+                //double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]/sigma_t[region]*(tau*tau/4+tau*tau*tau/12);
                 double denominator = 1 + tau + tau*tau/2 + tau*tau*tau/6;
                 psi_e[j][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
@@ -361,13 +369,19 @@ void SourceIteration::rightIteration(){
                 psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
                 psi_c_lin[j][m] = 2*(psi_e[j+1][m] - psi_c[j][m])/h[j];
             }else if(alpha_mode ==30){
+                double tau = sigma_t[region]*h[j]/mu_n[m];
+                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]*h[j]/mu_n[m]*tau/4;
+                double denominator = 1 + tau + tau*tau/2;
+                psi_e[j+1][m] = numerator/denominator;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+                /*
                 double twomu_h = mu_n[m]/halfhj;
                 double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
                 psi_e[j+1][m] = (twomu_h*mu_hsigt*psi_e[j][m]+mu_hsigt*source[j][m]+source_edge[j+1][m]/2)/(twomu_h*(mu_hsigt+1)+sigma_t[region]);
-                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];*/
             }else if(alpha_mode==31){
                 double tau = sigma_t[region]*h[j]/mu_n[m];
-                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]/sigma_t[region]*(tau*tau/4+tau*tau*tau/12);
+                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]*h[j]/mu_n[m]*tau*(0.25+tau/12);
                 double denominator = 1 + tau + tau*tau/2 + tau*tau*tau/6;
                 psi_e[j+1][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
