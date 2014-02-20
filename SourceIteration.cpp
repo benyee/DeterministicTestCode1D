@@ -78,11 +78,22 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     
     //Find the maximum value of c:
     c = 0;
+    double c_eff = 0;
+    vector<double> X = data->getX();
+    double L = X[X.size()-1];
     for(unsigned int i = 0; i<sigma_t.size();i++){
         double temp = sigma_s0[i]/sigma_t[i];
         if(temp > c){
             c = temp;
         }
+        
+        temp = sigma_s0[i]/(sigma_t[i]+DB2);
+        if(temp > c_eff){
+            c_eff = temp;
+        }
+    }
+    if(c >= 1){
+        c = c_eff;
     }
     
     updatePhi_calcSource();
