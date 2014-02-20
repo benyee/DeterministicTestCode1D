@@ -37,7 +37,7 @@ public:
     double get_error(){return old_error;}
     double get_spec_rad(){return spec_rad;}
     
-    vector<vector<double> > get_phi_e(){return phi_e;}
+    vector<vector<double> > get_psi_e(){return psi_e;}
     
 private:
     InputDeck *data; //Input deck
