@@ -87,6 +87,7 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
             c = temp;
         }
         
+        double DB2 = (Utilities::PI/L)*(Utilities::PI/L)/3/(sigma_t[i]-sigma_s1[i]);
         temp = sigma_s0[i]/(sigma_t[i]+DB2);
         if(temp > c_eff){
             c_eff = temp;
