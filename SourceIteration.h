@@ -27,7 +27,7 @@ public:
     
     SourceIteration(InputDeck *input,string outputfilename="output.txt");
     ~SourceIteration();
-    int iterate();
+    int iterate(bool isPrintingToWindow = true);
     void printOutput( bool isPrintingToWindow = false,unsigned int tabwidth=20);
     
     bool isConverged;

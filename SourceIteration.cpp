@@ -95,6 +95,7 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     }
     if(c >= 1){
         c = c_eff;
+        cout<<"c corrected to "<<c<<endl;
     }
     
     updatePhi_calcSource();
@@ -104,7 +105,7 @@ SourceIteration::~SourceIteration(){
     data = NULL;
 }
 
-int SourceIteration::iterate(){
+int SourceIteration::iterate(bool isPrintingToWindow){
     isConverged = 0;
     ofstream outfile;
     outfile.open(outfilename.c_str());
@@ -154,7 +155,9 @@ int SourceIteration::iterate(){
             spec_rad = (spec_rad*(it_num-2)+error/old_error)/(it_num-1);
         }
         outfile<<setw(20)<<checkNegativeFlux()<<'\n';
-        cout<<"For iteration number "<<it_num<<", the error is "<<error<<endl;
+        if(isPrintingToWindow){
+            cout<<"For iteration number "<<it_num<<", the error is "<<error<<endl;
+        }
         old_error = error;
     }while(error>tol && it_num < MAX_IT);
     if(it_num < MAX_IT){
@@ -288,7 +291,7 @@ void SourceIteration::leftIteration(){
                 psi_c_lin[j][m] = 2*(psi_c[j][m]-psi_e[j][m])/h[j];
             }else if(alpha_mode ==30){
                 double tau = -sigma_t[region]*h[j]/mu_n[m];
-                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]*h[j]*tau/4/mu_n[m];
+                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 - source_edge[j][m]*h[j]*tau/4/mu_n[m];
                 double denominator = 1 + tau + tau*tau/2;
                 psi_e[j][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
@@ -300,7 +303,7 @@ void SourceIteration::leftIteration(){
                  */
             }else if(alpha_mode==31){
                 double tau = -sigma_t[region]*h[j]/mu_n[m];
-                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]*h[j]/mu_n[m]*tau*(0.25+tau/12);
+                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 - source_edge[j][m]*h[j]/mu_n[m]*tau*(0.25+tau/12);
                 //double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]/sigma_t[region]*(tau*tau/4+tau*tau*tau/12);
                 double denominator = 1 + tau + tau*tau/2 + tau*tau*tau/6;
                 psi_e[j][m] = numerator/denominator;
@@ -460,8 +463,6 @@ void SourceIteration::cmfd(){
             phi_0_CM[CM_index] /= h_CM[CM_index];
             Q_CM[CM_index] /= h_CM[CM_index];
             
-            //std::cout<<"Q_CM["<<CM_index<<"] = "<<Q_CM[CM_index]<<endl;
-            
             CM_index++;
         }
     }
@@ -492,7 +493,6 @@ void SourceIteration::cmfd(){
     //Middle of slab: (Equation 2.14)
     for(unsigned int i = 1; i < c_size;i++){
         D_c[i] = (phi_1_e_CM[i] + D_actual_CM[i-1]*(phi_0_CM[i]-phi_0_CM[i-1]))/(phi_0_CM[i]+phi_0_CM[i-1]);
-        //std::cout<<"D_c["<<i<<"] = "<<D_c[i]<<endl;
     }
     
     //Right edge: (Equation 2.15b)
@@ -503,9 +503,6 @@ void SourceIteration::cmfd(){
     D_c[c_size] = 2*out_curr;
     D_c[c_size] = (D_c[c_size]+phi_1_e_CM[c_size])/phi_0_CM[c_size-1];
     
-//    cout<<"in_curr = "<<in_curr<<" and out_curr = "<<out_curr<<endl;
-//    Utilities::print_dvector(D_c);
-    
     //
     //Formulate tridiagonal matrix for new coarse mesh fluxes and currents:   (Equations 2.16a-d)
     unsigned int phi_0_CM_size = phi_0_CM.size();
@@ -514,13 +511,10 @@ void SourceIteration::cmfd(){
     
     //Equation 5.20 of my notes:
     phi_0_CM_new[0] = Q_CM[0]*h_CM[0]+2*in_curr;
-    //std::cout<<"b["<<0<<"] = "<<phi_0_CM_new[0]<<endl;
     for(unsigned int i = 1; i<phi_0_CM_size-1;i++){
         phi_0_CM_new[i] = Q_CM[i]*h_CM[i];
-        //std::cout<<"b["<<i<<"] = "<<phi_0_CM_new[i]<<endl;
     }
     phi_0_CM_new[phi_0_CM_size-1] = Q_CM[phi_0_CM_size-1]*h_CM[phi_0_CM_size-1] + 2*out_curr;
-    //std::cout<<"b["<<phi_0_CM_size-1<<"] = "<<phi_0_CM_new[phi_0_CM_size-1]<<endl;
     
     //Equations 5.21 of my notes:
     A[0][1] = D_actual_CM[0]+opt_CM_a[0]+D_c[1]+D_c[0];
@@ -552,7 +546,6 @@ void SourceIteration::cmfd(){
         for(unsigned int j = 0; j<discret_CM[i];j++){
             for(; x_e[FM_index]<x_CM_e[CM_index+1];FM_index++){
                 phi_0[FM_index] *= phi_0_CM_new[CM_index]/phi_0_CM[CM_index];
-//                std::cout<<"Scaling "<<FM_index<<" by "<<phi_0_CM_new[CM_index]/phi_0_CM[CM_index]<<endl;
             }
             CM_index++;
         }
@@ -600,8 +593,6 @@ void SourceIteration::pcmfd(){
             }
             phi_0_CM[CM_index] /= h_CM[CM_index];
             Q_CM[CM_index] /= h_CM[CM_index];
-            
-            //std::cout<<"Q_CM["<<CM_index<<"] = "<<Q_CM[CM_index]<<endl;
             
             CM_index++;
         }
@@ -659,13 +650,10 @@ void SourceIteration::pcmfd(){
     
     //Equation 5.20 of my notes:
     phi_0_CM_new[0] = Q_CM[0]*h_CM[0]+2*phi_1_e_CMR[0];
-    //std::cout<<"b["<<0<<"] = "<<phi_0_CM_new[0]<<endl;
     for(unsigned int i = 1; i<phi_0_CM_size-1;i++){
         phi_0_CM_new[i] = Q_CM[i]*h_CM[i];
-        //std::cout<<"b["<<i<<"] = "<<phi_0_CM_new[i]<<endl;
     }
     phi_0_CM_new[phi_0_CM_size-1] = Q_CM[phi_0_CM_size-1]*h_CM[phi_0_CM_size-1] + 2*phi_1_e_CML[c_size];
-    //std::cout<<"b["<<phi_0_CM_size-1<<"] = "<<phi_0_CM_new[phi_0_CM_size-1]<<endl;
     
     //Equations 5.21 of my notes:
     if(accel_mode ==2){ //CMFD
@@ -710,7 +698,6 @@ void SourceIteration::pcmfd(){
         for(unsigned int j = 0; j<discret_CM[i];j++){
             for(; x_e[FM_index]<x_CM_e[CM_index+1];FM_index++){
                 phi_0[FM_index] *= phi_0_CM_new[CM_index]/phi_0_CM[CM_index];
-                //                std::cout<<"Scaling "<<FM_index<<" by "<<phi_0_CM_new[CM_index]/phi_0_CM[CM_index]<<endl;
             }
             CM_index++;
         }
@@ -865,13 +852,13 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
                 source[j][m] = sigma_s0[region]*phi_0[j]+3*mu_n[m]*sigma_s1[region]*phi_1[j]+Q[region]+Q_lin[region]*(x[j]-X[region]);
             }
         }
-        //Need to calculate edge sources:
+        //Need to calculate edge sources.  We are evaluating Q at the edge in order to preserve the linearity of the method.
         if(alpha_mode >=30){
             for(unsigned int m = 0; m < N/2;m++){
-                source_edge[j+1][m] = sigma_s0[region]*edgePhi0[j+1]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j+1] + Q[region] + Q_lin[region]*(x[j]+h[j]/4-X[region]);
+                source_edge[j+1][m] = sigma_s0[region]*edgePhi0[j+1]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j+1] + Q[region] + Q_lin[region]*(x_e[j+1]);
             }
             for(unsigned int m = N/2; m<N;m++){
-                source_edge[j][m] = sigma_s0[region]*edgePhi0[j]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j] + Q[region] + Q_lin[region]*(x[j]-h[j]/4-X[region]);
+                source_edge[j][m] = sigma_s0[region]*edgePhi0[j]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j] + Q[region] + Q_lin[region]*(x_e[j]);
             }
         }
         within_region_counter++;
