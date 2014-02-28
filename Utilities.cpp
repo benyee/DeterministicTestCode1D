@@ -167,3 +167,29 @@ vector<double> Utilities::solve_tridiag(vector<vector<double> > A, const vector<
     }
     return x;
 }
+
+int Utilities::blowUpChecker(vector<double> &test, double thres){
+    for(unsigned int i = 0; i<test.size(); i++){
+        if(abs(test[i]) > thres){
+            return i;
+        }
+    }
+    return -1;
+}
+
+vector<int> Utilities::blowUpChecker(vector<vector<double> > &test, double thres){
+    vector<int> out;
+    for(unsigned int i = 0; i<test.size(); i++){
+        for(unsigned int j = 0; j<test[0].size();j++){
+            if(abs(test[i][j]) > thres){
+                out.push_back(i);
+                out.push_back(j);
+                return out;
+            }
+        }
+    }
+    out.push_back(-1);
+    out.push_back(-1);
+    return out;
+
+}

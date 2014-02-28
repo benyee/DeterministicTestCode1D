@@ -24,10 +24,14 @@ int main ()
     InputDeck *input = new InputDeck();
     input->setfileName("input.txt");
     int debug = input->loadInputDeck();
+    if(debug){
+        return 0;
+    }
     //input->readValues();
     SourceIteration *input_run = new SourceIteration(input);
     input_run->iterate();
     input_run->printOutput(false);
+    
     
     /*
      //Testing tridiagonal matrix function:

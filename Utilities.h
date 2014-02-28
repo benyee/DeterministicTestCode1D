@@ -41,6 +41,10 @@ public:
     static vector<double> vector_add(vector<double> v1, vector<double> v2);
     static vector<double> vector_subtract(vector<double> v1, vector<double> v2);
     
+    //Find out if a vector is blowing up
+    static int blowUpChecker(vector<double> &test, double thres = 10^8);
+    static vector<int> blowUpChecker(vector<vector<double> > &test, double thres = 10^8);
+    
     //Linear algebra functions:
     static vector<double> solve_tridiag(vector<vector<double> > A, const vector<double> &b);
     
