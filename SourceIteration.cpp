@@ -487,9 +487,11 @@ void SourceIteration::cmfd(){
         for(unsigned int m = 0; m < N/2; m++){
             in_curr += mu_n[m]*psi_e[0][m]*w_n[m];
         }
+        D_c[0] = 2*in_curr;
+        D_c[0] = (D_c[0]-phi_1_e_CM[0])/phi_0_CM[0];
+    }else{
+        D_c[0] = 0;
     }
-    D_c[0] = 2*in_curr;
-    D_c[0] = (D_c[0]-phi_1_e_CM[0])/phi_0_CM[0];
     
     //Middle of slab: (Equation 2.14)
     for(unsigned int i = 1; i < c_size;i++){
@@ -502,9 +504,11 @@ void SourceIteration::cmfd(){
         for(unsigned int m = N/2; m < N; m++){
             out_curr -= mu_n[m]*psi_e[f_size][m]*w_n[m];
         }
+        D_c[c_size] = 2*out_curr;
+        D_c[c_size] = (D_c[c_size]+phi_1_e_CM[c_size])/phi_0_CM[c_size-1];
+    }else{
+        D_c[c_size] = 0;
     }
-    D_c[c_size] = 2*out_curr;
-    D_c[c_size] = (D_c[c_size]+phi_1_e_CM[c_size])/phi_0_CM[c_size-1];
     
     //
     //Formulate tridiagonal matrix for new coarse mesh fluxes and currents:   (Equations 2.16a-d)
@@ -621,7 +625,11 @@ void SourceIteration::pcmfd(){
     vector<double> D_cR(c_size+1,0); //Correction factors
     
     //Left edge: (Equation 2.15a)
-    D_cL[0] = (phi_1_e_CMR[0]+phi_1_e_CML[0])/phi_0_CM[0];
+    if(bc[0] == 1){ //reflective bc
+        D_cL[0] = 0;
+    }else{
+        D_cL[0] = (phi_1_e_CMR[0]+phi_1_e_CML[0])/phi_0_CM[0];
+    }
     
     //Middle of slab: (Equation 2.14)
     for(unsigned int i = 1; i < D_cL.size()-1;i++){
@@ -638,7 +646,11 @@ void SourceIteration::pcmfd(){
     }
     
     //Right edge: (Equation 2.15b)
-    D_cR[c_size] = (phi_1_e_CMR[c_size]+phi_1_e_CML[c_size])/phi_0_CM[c_size-1];
+    if(bc[1] ==1){ //reflective bc
+        D_cR[c_size] = 0;
+    }else{
+        D_cR[c_size] = (phi_1_e_CMR[c_size]+phi_1_e_CML[c_size])/phi_0_CM[c_size-1];
+    }
     
 //    Utilities::print_dvector(phi_0_CM);
 //    Utilities::print_dvector(D_actual_CM);
@@ -651,12 +663,26 @@ void SourceIteration::pcmfd(){
     vector<vector<double> > A(phi_0_CM_size,vector<double>(3,0));
     vector<double> phi_0_CM_new(phi_0_CM_size,0);
     
+    //To deal with reflective bc's:
+    double in_curr;
+    if(bc[0] ==1){
+        in_curr =0;
+    }else{
+        in_curr =phi_1_e_CMR[0];
+    }
+    double out_curr;
+    if(bc[1] ==1){
+        out_curr =0;
+    }else{
+        out_curr = phi_1_e_CML[c_size];
+    }
+    
     //Equation 5.20 of my notes:
-    phi_0_CM_new[0] = Q_CM[0]*h_CM[0]+2*phi_1_e_CMR[0];
+    phi_0_CM_new[0] = Q_CM[0]*h_CM[0]+2*in_curr;
     for(unsigned int i = 1; i<phi_0_CM_size-1;i++){
         phi_0_CM_new[i] = Q_CM[i]*h_CM[i];
     }
-    phi_0_CM_new[phi_0_CM_size-1] = Q_CM[phi_0_CM_size-1]*h_CM[phi_0_CM_size-1] + 2*phi_1_e_CML[c_size];
+    phi_0_CM_new[phi_0_CM_size-1] = Q_CM[phi_0_CM_size-1]*h_CM[phi_0_CM_size-1] + 2*out_curr;
     
     //Equations 5.21 of my notes:
     if(accel_mode ==2){ //CMFD
