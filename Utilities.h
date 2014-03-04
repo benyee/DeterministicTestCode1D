@@ -41,6 +41,8 @@ public:
     static vector<double> vector_add(vector<double> v1, vector<double> v2);
     static vector<double> vector_subtract(vector<double> v1, vector<double> v2);
     
+    static double symmetry_checker(vector<double> &v1);
+    
     //Find out if a vector is blowing up
     static int blowUpChecker(vector<double> &test, double thres = 10^8);
     static vector<int> blowUpChecker(vector<vector<double> > &test, double thres = 10^8);

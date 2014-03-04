@@ -141,6 +141,17 @@ vector<double> Utilities::vector_subtract(vector<double> v1, vector<double> v2){
     return diff;
 }
 
+double Utilities::symmetry_checker(vector<double> &v1){
+    double out = 0;
+    unsigned int vsize = v1.size();
+    for(unsigned int i=0;i<=vsize/2;i++){
+        double temp = abs(v1[i]-v1[vsize-i-1]);
+        if(temp > out){
+            out = temp;
+        }
+    }
+}
+
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 vector<double> Utilities::solve_tridiag(vector<vector<double> > A, const vector<double> &b){
