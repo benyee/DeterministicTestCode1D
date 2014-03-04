@@ -9,6 +9,8 @@
 #include "SourceIteration.h"
 
 SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
+    diverge = 1e5;
+    
     data = input;
     outfilename = outputfilename;
     
@@ -105,14 +107,21 @@ SourceIteration::~SourceIteration(){
     data = NULL;
 }
 
-int SourceIteration::iterate(bool isPrintingToWindow){
+int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile){
     isConverged = 0;
+    if(isPrintingToWindow){
+        cout<<"Performing source iteration..."<<endl;
+    }
     ofstream outfile;
-    outfile.open(outfilename.c_str());
-    cout<<"Performing source iteration..."<<endl;
-    outfile<<"Performing source iteration...\n";
-    outfile<<setw(5)<<"it_num"<<setw(20)<<"||Change in Flux||"<<setw(20);
-    outfile<<"Conv. Rate Est."<<setw(20)<<"Negative Fluxes"<<endl;;
+    if(isPrintingToFile){
+        outfile.open(outfilename.c_str());
+        outfile<<"Performing source iteration...\n";
+        outfile<<setw(5)<<"it_num"<<setw(20)<<"||Change in Flux||"<<setw(20);
+        outfile<<"Conv. Rate Est."<<setw(20)<<"Negative Fluxes"<<endl;
+        
+    }else if(isPrintingToWindow){
+        cout<<"WARNING: printOutput function will append instead of overwrite unless otherwise told"<<endl;
+    }
     double tol = (1-c)*abs(data->gettol());
     double error = 0;
     
@@ -146,34 +155,55 @@ int SourceIteration::iterate(bool isPrintingToWindow){
             updatePhi_calcSource(false);
         }
         
-        outfile<<setw(5)<<it_num<<setw(20)<<error<<setw(20);
         if(it_num ==1){
-            outfile<<"---";
             spec_rad = 0;
         }else{
-            outfile<<error/old_error;
             spec_rad = (spec_rad*(it_num-2)+error/old_error)/(it_num-1);
         }
-        outfile<<setw(20)<<checkNegativeFlux()<<'\n';
+        if(isPrintingToFile){
+            outfile<<setw(5)<<it_num<<setw(20)<<error<<setw(20);
+            if(it_num ==1){
+                outfile<<"---";
+            }else{
+                outfile<<error/old_error;
+            }
+            outfile<<setw(20)<<checkNegativeFlux()<<'\n';
+        }
+        
         if(isPrintingToWindow){
             cout<<"For iteration number "<<it_num<<", the error is "<<error<<endl;
         }
         old_error = error;
-    }while(error>tol && it_num < MAX_IT);
-    if(it_num < MAX_IT){
+        if(it_num == 1){
+            init_error = error;
+        }
+    }while(error>tol && it_num < MAX_IT && (it_num < 5 || (error/init_error)<diverge));
+    if(Utilities::nan_checker(phi_0)){
+        cout<<"The flux has NaN's in it!"<<endl;
+        Utilities::print_dvector(h);
+        Utilities::print_dmatrix(alpha);
+    }else if(error/init_error >= diverge){
+        cout<<"Source iterationd diverged in "<<it_num<<" iterations"<<endl;
+    }else if(it_num < MAX_IT){
         cout<<"Source iteration converged in "<<it_num<<" iterations"<<endl;
         isConverged = 1;
     }else{
         cout<<"Source iteration did NOT converge in "<<MAX_IT<<" iterations"<<endl;
     }
     
-    outfile.close();
+    if(isPrintingToWindow){
+        outfile.close();
+    }
     return 0;
 }
 
-void SourceIteration::printOutput(bool isPrintingToWindow,unsigned int tabwidth){
+void SourceIteration::printOutput(bool isPrintingToWindow,unsigned int tabwidth, bool newFile){
     ofstream outfile;
-    outfile.open (outfilename.c_str(), ios::app);
+    if(newFile){
+        outfile.open (outfilename.c_str());
+    }else{
+        outfile.open (outfilename.c_str(), ios::app);
+    }
     vector<double> phi_0e = calcEdgePhi(0);
     vector<double> phi_1e = calcEdgePhi(1);
     outfile<<setprecision(4);
@@ -812,7 +842,7 @@ void SourceIteration::initializeAlpha(){
     if(alpha_mode > 3){return;}
     unsigned int region = 0;
     unsigned int within_region_counter = 0;
-    for(unsigned int j = 0; j<=J;j++){
+    for(unsigned int j = 0; j<J;j++){
         vector<double> temp;
         alpha.push_back(temp);
         if(alpha_mode == 1){ //Step method
@@ -828,10 +858,10 @@ void SourceIteration::initializeAlpha(){
             }
         }else if(alpha_mode==2){ //Step characteristic
             for(unsigned int m=0; m<N;m++){
-                double tau = sigma_t[region]*h[j]/2/mu_n[m];
-                alpha[j].push_back(1/tanh(tau)-1/tau);
-                within_region_counter++;
+                double tau = sigma_t[region]*h[j]/2.0/mu_n[m];
+                alpha[j].push_back(1.0/tanh(tau)-1.0/tau);
             }
+            within_region_counter++;
         }else if(alpha_mode==3){ //Characteristic alternative (3.1 of notes)
             for(unsigned int m=0;m<N;m++){
                 double tau = sigma_t[region]*h[j]/2/mu_n[m];

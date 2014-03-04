@@ -27,8 +27,8 @@ public:
     
     SourceIteration(InputDeck *input,string outputfilename="output.txt");
     ~SourceIteration();
-    int iterate(bool isPrintingToWindow = true);
-    void printOutput( bool isPrintingToWindow = false,unsigned int tabwidth=20);
+    int iterate(bool isPrintingToWindow = true, bool isPrintingToFile = true);
+    void printOutput( bool isPrintingToWindow = false,unsigned int tabwidth=20, bool newFile = false);
     
     bool isConverged;
     
@@ -38,6 +38,8 @@ public:
     double get_spec_rad(){return spec_rad;}
     
     vector<vector<double> > get_psi_e(){return psi_e;}
+    
+    void set_diverge(double div){diverge = div;}
     
 private:
     InputDeck *data; //Input deck
@@ -91,6 +93,8 @@ private:
     unsigned int accel_mode;
     
     int it_num; //Iteraiton number
+    double init_error; //Stores the first error, used to check for divergence.
+    double diverge; //Divergence criterion.  Algorithm diverges if error/init_error > diverge.
     double old_error; //stores ||phi_{i}-phi_{i-1}|| from the previous iteration
     double spec_rad; //stores the latest estimate for the spectral radius (average of all the previous spectral radii)
     
