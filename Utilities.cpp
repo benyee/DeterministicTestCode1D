@@ -152,6 +152,15 @@ double Utilities::symmetry_checker(vector<double> &v1){
     }
 }
 
+bool Utilities::nan_checker(vector<double> &v1){
+    for(unsigned int i = 0; i<v1.size();i++){
+        if(v1[i]!=v1[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 vector<double> Utilities::solve_tridiag(vector<vector<double> > A, const vector<double> &b){

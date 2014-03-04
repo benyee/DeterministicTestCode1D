@@ -42,6 +42,7 @@ public:
     static vector<double> vector_subtract(vector<double> v1, vector<double> v2);
     
     static double symmetry_checker(vector<double> &v1);
+    static bool nan_checker(vector<double> &v1);
     
     //Find out if a vector is blowing up
     static int blowUpChecker(vector<double> &test, double thres = 10^8);
