@@ -21,209 +21,170 @@ int main ()
     cout << "Hello world!"<<endl;
     
     InputDeck *input = new InputDeck();
-    input->setfileName("defaultinput3.txt");
+    input->setfileName("defaultinput1.txt");
     int debug = input->loadInputDeck();
     
     
-    /* Problem I
+    /* Problem I*/
     //Generate input files:
     static const double X = 20;
-    static const double dx_arr[] = {4,2,1,0.5,0.125,0.01};
+    static const double dx_arr[] = {0.01};//{4,2,1,0.5,0.25,0.125,0.0625, 0.03125, 0.01};
     vector<double> dx(dx_arr,dx_arr+sizeof(dx_arr)/sizeof(dx_arr[0]));
-    static const double SigS_arr[] = {0.5};
+    static const double SigS_arr[] = {1,0.999,0.99,0.95,0.9,0.8};
     vector<double> SigS(SigS_arr,SigS_arr+sizeof(SigS_arr)/sizeof(SigS_arr[0]));
     static const double N_arr[] = {4};
     vector<double> N(N_arr,N_arr+sizeof(N_arr)/sizeof(N_arr[0]));
-    static const double alpha_arr[] = {0,2,30};
+    static const double alpha_arr[] = {0,2,30,33};
     vector<double> alpha_mode(alpha_arr,alpha_arr+sizeof(alpha_arr)/sizeof(alpha_arr[0]));
+    
+    static const double accel_arr[] = {1,2};
+    vector<double> accel_mode(accel_arr,accel_arr+sizeof(accel_arr)/sizeof(accel_arr[0]));
     
     SourceIteration *input_run;
     
-    
     input->setN(N[0]);
+    double spec_rad[8][10][10];
+    double p_esc[8][10][10];
+    double it_num[8][10][10][4];
+    
+    vector<double> mu_n = Utilities::calc_mu_n(N[0]);
+    vector<double> w_n = Utilities::calc_w_n(mu_n);
     
     for(unsigned int m = 0; m<alpha_mode.size();m++){
         for(unsigned int j = 0; j<dx.size();j++){
             for(unsigned int k = 0; k<SigS.size();k++){
-                cout<<"Running m = "<<m<<", j = "<<j<<", k = "<<k<<endl;
-                vector<double> temp;
-                temp.push_back(X);
-                input->setX(temp);
-                
-                input->setalpha_mode(alpha_mode[m]);
-                
-                vector<unsigned int> temp2;
-                temp2.push_back(X/dx[j]);
-                input->setdiscret(temp2);
-                
-                vector<double> temp3(temp2[0],0);
-                input->setphi_0_0(temp3);
-                input->setphi_1_0(temp3);
-                input->setphi_0_0_lin(temp3);
-                input->setphi_1_0_lin(temp3);
-                
-                temp[0] = SigS_arr[k];
-                input->setsigma_s0(temp);
-                temp[0] = 1.0-SigS_arr[k];
-                input->setsigma_a(temp);
-                
-                //Check input:
-                //input->readValues();
-                if(debug){
-                    cout << "There is an issue with the sizes of the input vectors!" << endl;
-                    cout<<"m = "<<m<<", j = "<<j<<", k = "<<k<<endl;
-                    return 1;
-                }
-                //cout << "Vector sizes look good!"<<endl;
-                
-                ostringstream ss;
-                if(m == 0){
-                    ss<<"OutputFiles/output_IV_DD_"<<j<<"_"<<k<<"_.txt";
-                }else if (alpha_mode[m] ==30){
-                    ss<<"OutputFiles/output_IV_new_"<<j<<"_"<<k<<"_.txt";
-                }else if (alpha_mode[m] ==2){
-                    ss<<"OutputFiles/output_IV_SC_"<<j<<"_"<<k<<"_.txt";
-                }else{
-                    ss<<"OutputFiles/output_IV_"<<alpha_mode[m]<<"_"<<j<<"_"<<k<<"_.txt";
-                }
-                input_run = new SourceIteration(input,ss.str());
-                input_run->iterate();
-                input_run->printOutput(false);
-                cout<<ss.str()<<endl;
-                
-                cout<<"Finished running m = "<<m<<", j = "<<j<<", k = "<<k<<endl;
-                cout<<"-----------------------------------"<<endl;
-                
-                delete input_run;
-            }
-        }
-    }/* */
-    
-    
-    /* Problem 3*/
-    static const double X = 20;
-    static const double dx_arr[] = {5,4,2,1,0.5,0.01};
-    vector<double> dx(dx_arr,dx_arr+sizeof(dx_arr)/sizeof(dx_arr[0]));
-    static const double SigS_arr[] = {0.999};
-    vector<double> SigS(SigS_arr,SigS_arr+sizeof(SigS_arr)/sizeof(SigS_arr[0]));
-    static const double N_arr[] = {4};
-    vector<double> N(N_arr,N_arr+sizeof(N_arr)/sizeof(N_arr[0]));
-    static const double alpha_arr[] = {0,2,30};
-    vector<double> alpha_mode(alpha_arr,alpha_arr+sizeof(alpha_arr)/sizeof(alpha_arr[0]));
-    
-    SourceIteration *input_run;
-    
-    static const int dx_size = sizeof(dx_arr)/sizeof(dx_arr[0]);
-    static const int alpha_size =sizeof(alpha_arr)/sizeof(alpha_arr[0]);
-    int it_num[dx_size][alpha_size][4];
-    double error[dx_size][alpha_size][4];
-    
-    input->setN(N[0]);
-    for(unsigned int j = 0; j<dx.size();j++){
-        for(unsigned int m = 0; m<alpha_mode.size();m++){
-            for(unsigned int k = 0; k<SigS.size();k++){
-                for(unsigned int i = 0; i<4;i++){
-                    cout<<"Running m = "<<m<<", j = "<<j<<", k = "<<k<<",i = "<<i<<endl;
-                    input->setaccel_mode(i);
-                    
-                    input->setalpha_mode(alpha_mode[m]);
-                    
-                    vector<double> temp;
-                    temp.push_back(X);
-                    input->setX(temp);
-                    
-                    vector<unsigned int> temp2;
-                    temp2.push_back(X/dx[j]);
-                    input->setdiscret(temp2);
-                    input->setdiscret_CM(temp2);
-                    
-                    vector<double> temp3(temp2[0],0);
-                    input->setphi_0_0(temp3);
-                    input->setphi_1_0(temp3);
-                    input->setphi_0_0_lin(temp3);
-                    input->setphi_1_0_lin(temp3);
-                    
-                    temp[0] = SigS_arr[k];
-                    input->setsigma_s0(temp);
-                    temp[0] = 1.0-SigS_arr[k];
-                    input->setsigma_a(temp);
-                    
-                    
-                    
-                    ostringstream ss;
-                    if(m == 0){
-                        ss<<"OutputFiles/output_V_DD_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
-                    }else if (alpha_mode[m] ==30){
-                        ss<<"OutputFiles/output_V_new_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
-                    }else if (alpha_mode[m] ==2){
-                        ss<<"OutputFiles/output_V_SC_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
-                    }else{
-                        ss<<"OutputFiles/output_V_"<<alpha_mode[m]<<"_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
+                for(unsigned int i = 0; i<accel_mode.size();i++){
+                    cout<<"Running i = "<<i<<", m = "<<m<<", j = "<<j<<", k = "<<k<<endl;
+                    if(i == 0){
+                        vector<double> temp;
+                        temp.push_back(X);
+                        input->setX(temp);
+                        
+                        input->setalpha_mode(alpha_mode[m]);
+                        
+                        vector<unsigned int> temp2;
+                        temp2.push_back(X/dx[j]);
+                        input->setdiscret(temp2);
+                        input->setdiscret_CM(temp2);
+                        
+                        vector<double> temp3(temp2[0],0);
+                        input->setphi_0_0(temp3);
+                        input->setphi_1_0(temp3);
+                        input->setphi_0_0_lin(temp3);
+                        input->setphi_1_0_lin(temp3);
+                        
+                        temp[0] = SigS_arr[k];
+                        input->setsigma_s0(temp);
+                        temp[0] = 1.0-SigS_arr[k];
+                        input->setsigma_a(temp);
                     }
-                    
-                    cout<<"Finished setting parameters..."<<endl;
-                    input_run = new SourceIteration(input,ss.str());
-                    input_run->iterate();
-                    input_run->printOutput(false);
-                    
-                    
-                    it_num[j][m][i] = input_run->get_it_num();
-                    error[j][m][i] = input_run->get_error();
-                    
+                    input->setaccel_mode(accel_mode[i]);
+                
+                
                     //Check input:
                     //input->readValues();
                     if(debug){
                         cout << "There is an issue with the sizes of the input vectors!" << endl;
-                        cout<<"m = "<<m<<", j = "<<j<<", k = "<<k<<",i = "<<i<<endl;
+                        cout<<"m = "<<m<<", j = "<<j<<", k = "<<k<<endl;
                         return 1;
                     }
                     //cout << "Vector sizes look good!"<<endl;
-                    cout<<"Finished running m = "<<m<<", j = "<<j<<", k = "<<k<<",i = "<<i<<endl;
+                    
+                    ostringstream ss;
+                    if(m == 0){
+                        ss<<"OutputFiles/output_9_DD_"<<j<<"_"<<k<<"_.txt";
+                    }else if (alpha_mode[m] == 30){
+                        ss<<"OutputFiles/output_9_new_"<<j<<"_"<<k<<"_.txt";
+                    }else if (alpha_mode[m] == 33){
+                        ss<<"OutputFiles/output_9_new3_"<<j<<"_"<<k<<"_.txt";
+                    }else if (alpha_mode[m] == 2){
+                        ss<<"OutputFiles/output_9_SC_"<<j<<"_"<<k<<"_.txt";
+                    }else{
+                        ss<<"OutputFiles/output_9_"<<alpha_mode[m]<<"_"<<j<<"_"<<k<<"_.txt";
+                    }
+                    input_run = new SourceIteration(input,ss.str());
+                    input_run->iterate(0);
+    //                input_run->printOutput(false);
+                    if(i == 0){
+                        spec_rad[m][j][k] = input_run->get_spec_rad();
+                        
+                        vector<vector<double> > psi_e = input_run->get_psi_e();
+                        unsigned int last = psi_e.size()-1;
+                        double numerator = (psi_e[last][0]*mu_n[0]*w_n[0] + psi_e[last][1]*mu_n[1]*w_n[1]);
+                        double denominator = (psi_e[0][0]*mu_n[0]*w_n[0] + psi_e[0][1]*mu_n[1]*w_n[1]);
+                        p_esc[m][j][k] = numerator/denominator;
+                    }
+                    
+                    //input_run->printOutput(false);
+                    cout<<ss.str()<<endl;
+                    
+                    it_num[m][j][k][i] = input_run->get_it_num();
+                    
+                    cout<<"Finished running m = "<<m<<", j = "<<j<<", k = "<<k<<endl;
                     cout<<"-----------------------------------"<<endl;
                     
-     
-//                    ostringstream ss;
-//                    if(alpha_arr[m] == 10){
-//                        ss<<"OutputFiles/output_III_LC_"<<i<<"_"<<j<<"_"<<k<<"_.txt";
-//                    }else if (alpha_arr[m]==20){
-//                        ss<<"OutputFiles/output_III_LD_"<<i<<"_"<<j<<"_"<<k<<"_.txt";
-//                    }else{
-//                        ss<<"OutputFiles/output_III_"<<i<<"_"<<j<<"_"<<k<<"_.txt";
-//                    }
-//                    input_run = new SourceIteration(input,ss.str());
-//                    input_run->iterate();
-//                    input_run->printOutput(false);
-//                    cout<<ss.str()<<endl;
-//                    cout<<"-----------------------------------"<<endl;
-     
                     delete input_run;
                 }
             }
         }
     }
     
-    for(unsigned int j = 0; j<dx.size();j++){
-        cout<<"----- dx = "<<dx[j]<<"-----"<<endl;
-        for(unsigned int m = 0; m<alpha_mode.size();m++){
-            cout<<"m = "<<m<<": [";
-            for(unsigned int i = 0; i<4;i++){
-                cout<<it_num[j][m][i]<<"\t";
-            }
-            cout<<"]"<<endl;
+    for(unsigned int m = 0; m<alpha_mode.size();m++){
+        cout<<"------------------------------------------"<<endl;
+        cout<<"------------------------------------------"<<endl;
+        cout<<"--SPECTRAL RADIUS FOR alpha_mode ="<<alpha_mode[m]<<" --"<<endl;
+        cout<<"Sigma_s = ..."<<'\t';
+        for(unsigned int k = 0; k<SigS.size();k++){
+            cout<<setprecision(4)<<SigS[k]<<setw(20);
         }
+        cout<<" "<<endl;
+        for(unsigned int j = 0; j<dx.size();j++){
+            cout<<"dx = "<<dx[j]<<": "<<'\t';
+            for(unsigned int k = 0; k<SigS.size();k++){
+                cout<<spec_rad[m][j][k]<<setw(20);
+            }
+            cout<<" "<<endl;
+        }
+        cout<<"------------------------------------------"<<endl;
     }
-    
-    for(unsigned int j = 0; j<dx.size();j++){
-        cout<<"----- dx = "<<dx[j]<<"-----"<<endl;
-        for(unsigned int m = 0; m<alpha_mode.size();m++){
-            cout<<"m = "<<m<<": [";
-            for(unsigned int i = 0; i<4;i++){
-                cout<<error[j][m][i]<<"\t";
-            }
-            cout<<"]"<<endl;
+    for(unsigned int m = 0; m<alpha_mode.size();m++){
+        cout<<"------------------------------------------"<<endl;
+        cout<<"------------------------------------------"<<endl;
+        cout<<"--p_esc FOR alpha_mode ="<<alpha_mode[m]<<" --"<<endl;
+        cout<<"Sigma_s = ..."<<'\t';
+        for(unsigned int k = 0; k<SigS.size();k++){
+            cout<<setprecision(4)<<SigS[k]<<setw(20);
         }
-    } /* */
-    
+        cout<<" "<<endl;
+        for(unsigned int j = 0; j<dx.size();j++){
+            cout<<"dx = "<<dx[j]<<": "<<'\t';
+            for(unsigned int k = 0; k<SigS.size();k++){
+                cout<<p_esc[m][j][k]<<setw(20);
+            }
+            cout<<" "<<endl;
+        }
+        cout<<"------------------------------------------"<<endl;
+    }
+    for(unsigned int m = 0; m<alpha_mode.size();m++){
+        cout<<"------------------------------------------"<<endl;
+        cout<<"------------------------------------------"<<endl;
+        cout<<"--It. Num. FOR alpha_mode ="<<alpha_mode[m]<<" --"<<endl;
+        cout<<"Sigma_s = ..."<<'\t'<<'\t'<<'\t';
+        for(unsigned int k = 0; k<SigS.size();k++){
+            cout<<setprecision(4)<<SigS[k]<<'\t';
+        }
+        cout<<" "<<endl;
+        for(unsigned int j = 0; j<dx.size();j++){
+            for(unsigned int i = 0; i<accel_mode.size();i++){
+                cout<<"dx = "<<dx[j]<<", accel_mode = "<<accel_mode[i]<<" : ";
+                for(unsigned int k = 0; k<SigS.size();k++){
+                    cout<<'\t'<<it_num[m][j][k][i];
+                }
+                cout<<" "<<endl;
+            }
+        }
+        cout<<"------------------------------------------"<<endl;
+    }
     
     /*
     //Read in input:

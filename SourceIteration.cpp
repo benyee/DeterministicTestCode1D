@@ -482,13 +482,14 @@ void SourceIteration::cmfd(){
     
     
     //Left edge: (Equation 2.15a)
-    double in_curr = mu_n[0]*psi_e[0][0]*w_n[0];
-    for(unsigned int m = 1; m < N/2; m++){
-        in_curr += mu_n[m]*psi_e[0][m]*w_n[m];
+    double in_curr = 0;
+    if(bc[0] != 1){
+        for(unsigned int m = 0; m < N/2; m++){
+            in_curr += mu_n[m]*psi_e[0][m]*w_n[m];
+        }
     }
     D_c[0] = 2*in_curr;
     D_c[0] = (D_c[0]-phi_1_e_CM[0])/phi_0_CM[0];
-    
     
     //Middle of slab: (Equation 2.14)
     for(unsigned int i = 1; i < c_size;i++){
@@ -496,9 +497,11 @@ void SourceIteration::cmfd(){
     }
     
     //Right edge: (Equation 2.15b)
-    double out_curr = -mu_n[N/2]*psi_e[f_size][N/2]*w_n[N/2];
-    for(unsigned int m = N/2; m < N; m++){
-        out_curr -= mu_n[m]*psi_e[f_size][m]*w_n[m];
+    double out_curr = 0;
+    if(bc[1] != 1){
+        for(unsigned int m = N/2; m < N; m++){
+            out_curr -= mu_n[m]*psi_e[f_size][m]*w_n[m];
+        }
     }
     D_c[c_size] = 2*out_curr;
     D_c[c_size] = (D_c[c_size]+phi_1_e_CM[c_size])/phi_0_CM[c_size-1];
