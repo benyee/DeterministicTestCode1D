@@ -63,16 +63,16 @@ public:
     void setfileName(string input){fileName=input;}
     
     vector<double> getphi_0_0(){return phi_0_0;}
-    vector<double> getphi_1_0(){return phi_0_0;}
+    vector<double> getphi_1_0(){return phi_1_0;}
     vector<double> getphi_0_0_lin(){return phi_0_0_lin;}
-    vector<double> getphi_1_0_lin(){return phi_0_0_lin;}
+    vector<double> getphi_1_0_lin(){return phi_1_0_lin;}
     vector<double> getpsi_bl(){return psi_bl;}
     vector<double> getpsi_br(){return psi_br;}
     
     void setphi_0_0(vector<double> input){phi_0_0=input;}
-    void setphi_1_0(vector<double> input){phi_0_0=input;}
+    void setphi_1_0(vector<double> input){phi_1_0=input;}
     void setphi_0_0_lin(vector<double> input){phi_0_0_lin=input;}
-    void setphi_1_0_lin(vector<double> input){phi_0_0_lin=input;}
+    void setphi_1_0_lin(vector<double> input){phi_1_0_lin=input;}
     void setpsi_bl(vector<double> input){psi_bl=input;}
     void setpsi_br(vector<double> input){psi_br=input;}
     
