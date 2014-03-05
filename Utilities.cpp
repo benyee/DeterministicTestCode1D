@@ -120,10 +120,10 @@ double Utilities::p_norm(vector<double> v1, vector<double> v2, unsigned int p){
     double p_norm = 0;
     unsigned int N = min(v1.size(),v2.size());
     for(unsigned int i = 0; i<N; i++){
-        p_norm += pow(v2[i]-v1[i],2);
+        p_norm += pow(v2[i]-v1[i],p);
     }
     p_norm = p_norm/N;
-    p_norm = sqrt(p_norm);
+    p_norm = pow(p_norm,1./p);
     return p_norm;
 }
 vector<double> Utilities::vector_add(vector<double> v1, vector<double> v2){
