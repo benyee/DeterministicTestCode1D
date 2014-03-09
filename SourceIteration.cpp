@@ -462,7 +462,7 @@ void SourceIteration::rightIteration(){
 
 void SourceIteration::cmfd(){
     vector<double> phi_0_CM;
-    vector<double> Q_CM;
+    vector<double> Q_CM; //Note that this is Q_CM*h_CM
     vector<double> phi_1_e_CM;
 
     vector<double> Q = data->getQ();
@@ -491,7 +491,6 @@ void SourceIteration::cmfd(){
                 Q_CM[CM_index] += Q[i]*h[FM_index];
             }
             phi_0_CM[CM_index] /= h_CM[CM_index];
-            Q_CM[CM_index] /= h_CM[CM_index];
             
             CM_index++;
         }
@@ -547,11 +546,14 @@ void SourceIteration::cmfd(){
     vector<double> phi_0_CM_new(phi_0_CM_size,0);
     
     //Equation 5.20 of my notes:
-    phi_0_CM_new[0] = Q_CM[0]*h_CM[0]+2*in_curr;
+    phi_0_CM_new[0] = Q_CM[0]+2*in_curr;
+//    phi_0_CM_new[0] = Q_CM[0]*h_CM[0]+2*in_curr;
     for(unsigned int i = 1; i<phi_0_CM_size-1;i++){
-        phi_0_CM_new[i] = Q_CM[i]*h_CM[i];
+        phi_0_CM_new[i] = Q_CM[i];
+//        phi_0_CM_new[i] = Q_CM[i]*h_CM[i];
     }
-    phi_0_CM_new[phi_0_CM_size-1] = Q_CM[phi_0_CM_size-1]*h_CM[phi_0_CM_size-1] + 2*out_curr;
+    phi_0_CM_new[phi_0_CM_size-1] = Q_CM[phi_0_CM_size-1] + 2*out_curr;
+//    phi_0_CM_new[phi_0_CM_size-1] = Q_CM[phi_0_CM_size-1]*h_CM[phi_0_CM_size-1] + 2*out_curr;
     
     //Equations 5.21 of my notes:
     A[0][1] = D_actual_CM[0]+opt_CM_a[0]+D_c[1]+D_c[0];
@@ -594,7 +596,7 @@ void SourceIteration::cmfd(){
 
 void SourceIteration::pcmfd(){
     vector<double> phi_0_CM;
-    vector<double> Q_CM;
+    vector<double> Q_CM;  //Note that this is Q_CM*h_CM
     vector<double> phi_1_e_CML; //Left edge current on coarse mesh
     vector<double> phi_1_e_CMR; //Right edge current on coarse mesh
     
@@ -629,7 +631,7 @@ void SourceIteration::pcmfd(){
                 Q_CM[CM_index] += Q[i]*h[FM_index];
             }
             phi_0_CM[CM_index] /= h_CM[CM_index];
-            Q_CM[CM_index] /= h_CM[CM_index];
+            //Q_CM[CM_index] /= h_CM[CM_index];
             
             CM_index++;
         }
@@ -708,11 +710,14 @@ void SourceIteration::pcmfd(){
     }
     
     //Equation 5.20 of my notes:
-    phi_0_CM_new[0] = Q_CM[0]*h_CM[0]+2*in_curr;
+    phi_0_CM_new[0] = Q_CM[0]+2*in_curr;
+//    phi_0_CM_new[0] = Q_CM[0]*h_CM[0]+2*in_curr;
     for(unsigned int i = 1; i<phi_0_CM_size-1;i++){
-        phi_0_CM_new[i] = Q_CM[i]*h_CM[i];
+        phi_0_CM_new[i] = Q_CM[i];
+//        phi_0_CM_new[i] = Q_CM[i]*h_CM[i];
     }
-    phi_0_CM_new[phi_0_CM_size-1] = Q_CM[phi_0_CM_size-1]*h_CM[phi_0_CM_size-1] + 2*out_curr;
+    phi_0_CM_new[phi_0_CM_size-1] = Q_CM[phi_0_CM_size-1] + 2*out_curr;
+//    phi_0_CM_new[phi_0_CM_size-1] = Q_CM[phi_0_CM_size-1]*h_CM[phi_0_CM_size-1] + 2*out_curr;
     
     //Equations 5.21 of my notes:
     if(accel_mode ==2){ //CMFD
