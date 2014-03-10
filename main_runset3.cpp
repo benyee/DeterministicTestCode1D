@@ -102,7 +102,7 @@ int main ()
     
     /* Problem 3 */
     static const double X = 20;
-    static const double dx_arr[] = {5,4,2,1,0.5,0.01};
+    static const double dx_arr[] = {0.01};//{5,4,2,1,0.5,0.25,0.125,0.01};
     vector<double> dx(dx_arr,dx_arr+sizeof(dx_arr)/sizeof(dx_arr[0]));
     static const double SigS_arr[] = {0.999};
     vector<double> SigS(SigS_arr,SigS_arr+sizeof(SigS_arr)/sizeof(SigS_arr[0]));
@@ -122,7 +122,7 @@ int main ()
     for(unsigned int j = 0; j<dx.size();j++){
         for(unsigned int m = 0; m<alpha_mode.size();m++){
             for(unsigned int k = 0; k<SigS.size();k++){
-                for(unsigned int i = 0; i<4;i++){
+                for(unsigned int i = 1; i<2;i++){
                     cout<<"Running m = "<<m<<", j = "<<j<<", k = "<<k<<",i = "<<i<<endl;
                     input->setaccel_mode(i);
                     
@@ -148,7 +148,6 @@ int main ()
                     temp[0] = 1.0-SigS_arr[k];
                     input->setsigma_a(temp);
                     
-                    
                     ostringstream ss;
                     if(m == 0){
                         ss<<"OutputFiles/output_V_DD_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
@@ -160,11 +159,14 @@ int main ()
                         ss<<"OutputFiles/output_V_"<<alpha_mode[m]<<"_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
                     }
                     
-                    
-                    cout<<"Finished setting parameters..."<<endl;
+//                  cout<<"Finished setting parameters..."<<endl;
                     input_run = new SourceIteration(input,ss.str());
-                    input_run->iterate(false);
-                    input_run->printOutput(false);
+                    if(m == 1 && !j && !k && !i){
+                        input->readValues();
+                    }
+                    bool writeToFile = 1;
+                    input_run->iterate(false,writeToFile);
+                    input_run->printOutput(false,20,!writeToFile);
                     
                     
                     it_num[j][m][i] = input_run->get_it_num();
@@ -178,12 +180,12 @@ int main ()
                         return 1;
                     }
                     //cout << "Vector sizes look good!"<<endl;
-                    cout<<"Finished running m = "<<m<<", j = "<<j<<", k = "<<k<<",i = "<<i<<endl;
+//                    cout<<"Finished running m = "<<m<<", j = "<<j<<", k = "<<k<<",i = "<<i<<endl;
                     cout<<"-----------------------------------"<<endl;
                     
      
 //                    ostringstream ss;
-//                    if(alpha_arr[m] == 10){
+//                    if(alpha_arr[m] == 10){`
 //                        ss<<"OutputFiles/output_III_LC_"<<i<<"_"<<j<<"_"<<k<<"_.txt";
 //                    }else if (alpha_arr[m]==20){
 //                        ss<<"OutputFiles/output_III_LD_"<<i<<"_"<<j<<"_"<<k<<"_.txt";
