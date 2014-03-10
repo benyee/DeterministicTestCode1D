@@ -38,6 +38,7 @@ public:
     double get_spec_rad(){return spec_rad;}
     
     vector<vector<double> > get_psi_e(){return psi_e;}
+    vector<vector<double> > get_solution(); //Returns the phi and x values from the solution.
     
     void set_diverge(double div){diverge = div;}
     

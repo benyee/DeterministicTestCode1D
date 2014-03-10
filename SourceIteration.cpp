@@ -1023,3 +1023,28 @@ unsigned int SourceIteration::checkNegativeFlux(){
     }
     return temp;
 }
+
+vector<vector<double> > SourceIteration::get_solution(){
+    vector<vector<double> > out;
+    
+    //Compute the x coordinates of the phi vector:
+    vector<double> x_total;
+    for(unsigned int i = 0; i<x.size();i++){
+        x_total.push_back(x_e[i]);
+        x_total.push_back(x[i]);
+    }
+    x_total.push_back(x_e[x.size()]);
+    
+    out.push_back(x_total);
+    
+    //Compute the phi vector (combining both edge and cell averaged)
+    vector<double> phi_total;
+    vector<double> phi_edge = calcEdgePhi(0);
+    for(unsigned int i = 0; i<phi_0.size();i++){
+        phi_total.push_back(phi_edge[i]);
+        phi_total.push_back(phi_0[i]);
+    }
+    phi_total.push_back(phi_edge[phi_0.size()]);
+    
+    return out;
+}
