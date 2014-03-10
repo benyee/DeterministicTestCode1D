@@ -1046,5 +1046,7 @@ vector<vector<double> > SourceIteration::get_solution(){
     }
     phi_total.push_back(phi_edge[phi_0.size()]);
     
+    out.push_back(phi_total);
+    
     return out;
 }
