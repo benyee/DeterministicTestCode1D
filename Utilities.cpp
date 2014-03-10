@@ -126,6 +126,50 @@ double Utilities::p_norm(vector<double> v1, vector<double> v2, unsigned int p){
     p_norm = pow(p_norm,1./p);
     return p_norm;
 }
+
+double Utilities::phi_error(vector<vector<double> > &ref_soln, vector<vector<double> > &soln, int norm){
+    unsigned int ref_soln_size = ref_soln[0].size();
+    unsigned int soln_size = soln[0].size();
+    if(ref_soln_size < soln_size){
+        cout<<"!"<<endl;
+        cout<<"!"<<endl;
+        cout<<"!"<<endl;
+        cout<<"ERROR: YOUR REFERENCE SOLUTION MUST BE MORE DETAILED THAN YOUR REGULAR SOLUTION."<<endl;
+        cout<<"!"<<endl;
+        cout<<"!"<<endl;
+        cout<<"!"<<endl;
+        return -1;
+    }else if(ref_soln[0][0] != soln[0][0] || ref_soln[0][ref_soln_size-1] != soln[0][soln_size-1] ){
+        cout<<"!"<<endl;
+        cout<<"!"<<endl;
+        cout<<"!"<<endl;
+        cout<<"ERROR: YOUR REFERENCE SOLUTION AND SOLUTION MUST HAVE MATCHING ENDPOINTS."<<endl;
+        cout<<"!"<<endl;
+        cout<<"!"<<endl;
+        cout<<"!"<<endl;
+        return -1;
+    }
+    vector<double> ref_phi(soln_size,0);
+    ref_phi[0] = ref_soln[1][0];
+    unsigned int soln_counter = 1;
+    for(unsigned int ref_counter = 1; ref_counter<ref_soln_size;ref_counter++){
+        if(ref_soln[0][ref_counter] >= soln[0][soln_counter]){
+            //Extrapolate...
+            ref_phi[soln_counter] = ref_soln[1][ref_counter-1]+
+                (ref_soln[1][ref_counter]-ref_soln[1][ref_counter-1])
+                *(soln[0][soln_counter]-ref_soln[0][ref_counter-1])/(ref_soln[0][ref_counter]-ref_soln[0][ref_counter-1]);
+            soln_counter++;
+        }
+    }
+    
+    //Compute p-norm between vectors and return result
+    if(norm <= 0){
+        return Utilities::inf_norm(ref_phi,soln[1]);
+    }else{
+        return Utilities::p_norm(ref_phi,soln[1],norm);
+    }
+}
+
 vector<double> Utilities::vector_add(vector<double> v1, vector<double> v2){
     vector<double> sum;
     for(unsigned int i = 0; i<min(v1.size(),v2.size()); i++){

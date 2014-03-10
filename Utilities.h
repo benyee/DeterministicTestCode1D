@@ -38,6 +38,12 @@ public:
 
     static double inf_norm(vector<double> &v1, vector<double> &v2);
     static double p_norm(vector<double> v1, vector<double> v2, unsigned int p);
+    
+    //phi_error computes the relative error between two solutions.  norm = p > 0 for p_norm, norm = -1 for inf norm
+    //the solution vectors should be 2xN and 2xM vectors respectively where N and M are the number of spatial points.  The first component should be the x-coordinates while the 2nd component should be the scalar flux values at those coordinates.
+    static double phi_error(vector<vector<double> > &ref_soln, vector<vector<double> > &soln, int norm);
+    
+    //Vector math:
     static vector<double> vector_add(vector<double> v1, vector<double> v2);
     static vector<double> vector_subtract(vector<double> v1, vector<double> v2);
     
