@@ -1,12 +1,11 @@
-from data_read import data_read
 from numpy import array
+import matplotlib
+from data_set import data_set
 
 X = 20
-dx = (4,2,1,0.5,0.25,0.01,)
-eps = (0.03,0.1,0.25,0.5,1,)
-alpha = ("DD","SC","FV")
+dx = (4.,0.01,)
+eps = (0.1,1.,)
+alpha = ("DD","SC","new")
 
-for j in range(0,len(dx)):
-    for m in range(0,len(alpha)):
-        for k in range(0,len(eps)):
-            print dx[j],alpha[m],eps[k]
+data_list = data_set(X,dx,alpha,eps)
+print data_list
