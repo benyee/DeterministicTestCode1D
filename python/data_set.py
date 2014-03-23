@@ -60,14 +60,14 @@ class data_set:
             pyplot.figure(fignum+1)
             if linesty_num == 0:
                 labels1[fignum][eps_num] = "$\epsilon = "+str(self.eps[eps_num])+"$"
-                handles1[fignum][eps_num], = pyplot.plot(data_obj.x,data_obj.phi,plotmod)
+                handles1[fignum][eps_num], = pyplot.plot(data_obj.x,data_obj.phi,plotmod,markevery=max(len(data_obj.x)/10,1))
                 if eps_num == 0:
-                    handles2[fignum][eps_num], =pyplot.plot(data_obj.x[0],data_obj.phi[0],data_set.linestyles[linesty_num]+color*'k')
+                    handles2[fignum][eps_num], =pyplot.plot(data_obj.x,data_obj.phi,data_set.linestyles[linesty_num]+color*'k',markevery=max(len(data_obj.x)/10,1))
                     labels2[fignum][eps_num] =self.alpha[0]
             else:
-                pyplot.plot(data_obj.x,data_obj.phi,plotmod)
+                pyplot.plot(data_obj.x,data_obj.phi,plotmod,markevery=max(len(data_obj.x)/10,1))
                 if eps_num == 0:
-                    handles2[fignum][linesty_num], = pyplot.plot(data_obj.x[0],data_obj.phi[0],data_set.linestyles[linesty_num]+color*'k')
+                    handles2[fignum][linesty_num], = pyplot.plot(data_obj.x[0],data_obj.phi[0],data_set.linestyles[linesty_num]+color*'k',markevery=max(len(data_obj.x)/10,1))
                     labels2[fignum][linesty_num]=self.alpha[linesty_num]
                         
         #Format figures and save:
