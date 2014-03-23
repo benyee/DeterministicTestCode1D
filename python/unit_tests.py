@@ -1,7 +1,7 @@
 from data_set import data_set
 
 X = 20
-dx = (4.,0.01,)
+dx = (4.,2.,1.,)
 eps = (0.1,1.,)
 alpha = ("DD","SC","new")
 
