@@ -1,4 +1,5 @@
 import math
+from numpy import array
 
 class data_object:
     def __init__(self,path,X,dx,alpha,eps = -1):
@@ -44,8 +45,8 @@ class data_object:
                 if line[0]=='<':
                     foundData = 1
 
-        self.x = x;
-        self.phi = phi;
+        self.x = array(x);
+        self.phi = array(phi);
         return 1
 
     def __str__(self):
