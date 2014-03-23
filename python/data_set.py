@@ -3,6 +3,7 @@ from matplotlib import pyplot
 from numpy import array, where
 
 class data_set:
+    #Plot symbols:
     symbols = ['s','*','o','x','d','1','p','2','3','4']
     linestyles = ['-',':','--','-.']
     colors = 'bgrkmc'
@@ -25,20 +26,20 @@ class data_set:
                     
                     self.data_list.append(temp)
 
-    def plot(self,path = "../figures/",color = 0,show = 1,mode = 0):
+    def plot(self,path = "./figures/",color = 0,show = 1,mode = 0):
         if self.eps == -1:
             return
         
         #Set of handles and labels for legend:
-#        handles_list1 = [[]]*len(self.dx)
-#        labels_list1 = [[]]*len(self.dx)
-#        handles_list2 = [[]]*len(self.dx)
-#        labels_list2 = [[]]*len(self.dx)
-
+        handles1 = [['']*len(self.eps)]*len(self.dx)
+        labels1 = [['']*len(self.eps)]*len(self.dx)
+        handles2 = [['']*len(self.alpha)]*len(self.dx)
+        labels2 = [['']*len(self.alpha)]*len(self.dx)
+        
         for data_obj in self.data_list:
             #Figure out which plot it should go on:
             fignum = where(data_obj.dx==self.dx)
-            fignum = fignum[0][0]+1
+            fignum = fignum[0][0]
             
             #Figure out how to annotate the plot:
             plotmod = ''
@@ -47,6 +48,7 @@ class data_set:
                 eps_num = where(data_obj.eps == array(self.eps))
             else:
                 eps_num = where(data_obj.eps==array(self.eps))
+                plotmod = plotmod+'k'
             eps_num = eps_num[0][0]
             plotmod = plotmod+data_set.symbols[eps_num]
             
@@ -54,33 +56,31 @@ class data_set:
             linesty_num = linesty_num[0][0]
             plotmod = plotmod+data_set.linestyles[linesty_num]
             
-            #Plot in a way to get the legend entries:
-            pyplot.figure(fignum)
-            handles1 = []
-            labels1 = []
-            handles2 = []
-            labels2 = []
+            #Plot in a way to get the legend entries right:
+            pyplot.figure(fignum+1)
             if linesty_num == 0:
-                temp = pyplot.plot(data_obj.x,data_obj.phi,plotmod)
-                handles1.append(temp)
-                labels1.append("$\epsilon = "+str(self.eps[eps_num])+"$")
-            elif eps_num == 0:
-                temp = pyplot.plot(data_obj.x,data_obj.phi,plotmod)
-                handles2.append(temp)
-                labels2.append(self.alpha[linesty_num])
+                labels1[fignum][eps_num] = "$\epsilon = "+str(self.eps[eps_num])+"$"
+                handles1[fignum][eps_num], = pyplot.plot(data_obj.x,data_obj.phi,plotmod)
+                if eps_num == 0:
+                    handles2[fignum][eps_num], =pyplot.plot(data_obj.x[0],data_obj.phi[0],data_set.linestyles[linesty_num])
+                    labels2[fignum][eps_num] =self.alpha[0]
             else:
                 pyplot.plot(data_obj.x,data_obj.phi,plotmod)
-                    
-
+                if eps_num == 0:
+                    handles2[fignum][linesty_num], = pyplot.plot(data_obj.x[0],data_obj.phi[0],data_set.linestyles[linesty_num])
+                    labels2[fignum][linesty_num]=self.alpha[linesty_num]
+                        
+        #Format figures and save:
         for i in range(0,len(self.dx)):
             pyplot.figure(i+1)
             pyplot.title("$\Delta x = "+str(self.dx[i])+"$")
-            pyplot.xlabel("$x$")
+            pyplot.xlabel("x")
             pyplot.ylabel("Scalar Flux")
-            #handles, legends = pyplot.get_legend_handles_labels()
-            pyplot.legend(loc=0)
+            pyplot.legend(handles1[i]+handles2[i],labels1[i]+labels2[i],loc=0)
+            pyplot.savefig(path+"dx_"+str(i)+".png")
         
-        pyplot.show()
+        if show:
+            pyplot.show()
         return 0
 
     def __str__(self):

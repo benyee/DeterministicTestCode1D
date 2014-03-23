@@ -6,5 +6,5 @@ eps = (0.1,1.,)
 alpha = ("DD","SC","new")
 
 data_list = data_set(X,dx,alpha,eps)
-data_list.plot('../figures/unit_test')
+data_list.plot('./figures/unit_test/')
 print data_list
