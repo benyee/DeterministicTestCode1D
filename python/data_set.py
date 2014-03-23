@@ -72,11 +72,23 @@ class data_set:
                         
         #Format figures and save:
         for i in range(0,len(self.dx)):
+            #Annotate:
             pyplot.figure(i+1)
             pyplot.title("$\Delta x = "+str(self.dx[i])+"$")
             pyplot.xlabel("x")
             pyplot.ylabel("Scalar Flux")
             pyplot.legend(handles1[i]+handles2[i],labels1[i]+labels2[i],loc=0)
+            
+            #Rescale y-axis on plot if necessary because it gets weird for some reason:
+            gca = pyplot.gca()
+            curr_ylim = gca.get_ylim()
+            curr_data = gca.get_lines()
+            curr_data = curr_data[0].get_ydata()
+            curr_data = float(max(curr_data))
+            if (curr_ylim[1]-curr_ylim[0])/(curr_data-curr_ylim[0]) < 1.1:
+                gca.set_ylim((curr_ylim[0],(curr_data - curr_ylim[0])*0.201+curr_ylim[1]))
+            
+            #Save:
             pyplot.savefig(path+"dx_"+str(i)+".png")
         
         if show:
