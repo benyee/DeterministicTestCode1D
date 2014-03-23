@@ -18,7 +18,7 @@ class data_set:
         for j in range(0,len(dx)):
             for m in range(0,len(alpha)):
                 for k in range(0,len(eps)):
-                    path = "../OutputFiles/Run11/output_11_"+alpha[m]+"_"+str(j)+"_"+str(j)+"_0_.txt"
+                    path = "../OutputFiles/Run11/output_11_"+alpha[m]+"_"+str(k)+"_"+str(j)+"_0_.txt"
                     
                     print "Reading in "+path
                     temp = data_object(path,X,dx[j],alpha[m],eps[k])
