@@ -62,12 +62,12 @@ class data_set:
                 labels1[fignum][eps_num] = "$\epsilon = "+str(self.eps[eps_num])+"$"
                 handles1[fignum][eps_num], = pyplot.plot(data_obj.x,data_obj.phi,plotmod)
                 if eps_num == 0:
-                    handles2[fignum][eps_num], =pyplot.plot(data_obj.x[0],data_obj.phi[0],data_set.linestyles[linesty_num])
+                    handles2[fignum][eps_num], =pyplot.plot(data_obj.x[0],data_obj.phi[0],data_set.linestyles[linesty_num]+color*'k')
                     labels2[fignum][eps_num] =self.alpha[0]
             else:
                 pyplot.plot(data_obj.x,data_obj.phi,plotmod)
                 if eps_num == 0:
-                    handles2[fignum][linesty_num], = pyplot.plot(data_obj.x[0],data_obj.phi[0],data_set.linestyles[linesty_num])
+                    handles2[fignum][linesty_num], = pyplot.plot(data_obj.x[0],data_obj.phi[0],data_set.linestyles[linesty_num]+color*'k')
                     labels2[fignum][linesty_num]=self.alpha[linesty_num]
                         
         #Format figures and save:
