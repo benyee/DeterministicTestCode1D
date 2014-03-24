@@ -33,8 +33,8 @@ class data_object:
                 if foundData2:
                     try:
                         temp = line.split();
-                        x.append(temp[0]);
-                        phi.append(temp[1]);
+                        x.append(float(temp[0]));
+                        phi.append(float(temp[1]));
                     except:
                         print "Reached end of data"
                         break;

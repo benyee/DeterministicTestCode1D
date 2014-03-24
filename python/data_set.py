@@ -72,15 +72,16 @@ class data_set:
                         
         #Format figures and save:
         for i in range(0,len(self.dx)):
+            pyplot.figure(i+1)
+            
             #Add in custom solution:
             if fun != "none":
-                funhand = pyplot(data_obj.x,fun(data_obj.x),"k-.4")
+                funhand = pyplot.plot(data_obj.x,fun(data_obj.x),"k-.4")
                 if funlabel != '':
                     handles2[i].append(funhand)
                     labels2[i].append(funlabel)
             
             #Annotate:
-            pyplot.figure(i+1)
             pyplot.title("$\Delta x = "+str(self.dx[i])+"$")
             pyplot.xlabel("x")
             pyplot.ylabel("Scalar Flux")
