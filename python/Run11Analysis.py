@@ -13,4 +13,4 @@ alpha = ("DD","SC","new")
 
 print type(diff_sol)
 data_list = data_set(X,dx,alpha,eps)
-data_list.plot("../OutputFiles/Run11/",show = 0,fun=diff_sol),funlabel="Diff. Soln.")
+data_list.plot("../OutputFiles/Run11/",show = 0,fun=diff_sol,funlabel="Diff. Soln.")

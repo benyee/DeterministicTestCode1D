@@ -31,10 +31,10 @@ class data_set:
             return
         
         #Set of handles and labels for legend:
-        handles1 = [['']*len(self.eps)]*len(self.dx)
-        labels1 = [['']*len(self.eps)]*len(self.dx)
-        handles2 = [['']*len(self.alpha)]*len(self.dx)
-        labels2 = [['']*len(self.alpha)]*len(self.dx)
+        handles1 = [[0 for x in range(0,len(self.eps))] for x in range(0,len(self.dx))]
+        labels1 = [[0 for x in range(0,len(self.eps))] for x in range(0,len(self.dx))]
+        handles2 = [[0 for x in range(0,len(self.alpha))] for x in range(0,len(self.dx))]
+        labels2 = [[0 for x in range(0,len(self.alpha))] for x in range(0,len(self.dx))]
         
         for data_obj in self.data_list:
             #Figure out which plot it should go on:
@@ -64,28 +64,26 @@ class data_set:
                 if eps_num == 0:
                     handles2[fignum][eps_num], =pyplot.plot(data_obj.x,data_obj.phi,data_set.linestyles[linesty_num]+(1-color)*'k',markevery=max(len(data_obj.x)/10,1))
                     labels2[fignum][eps_num] =self.alpha[0]
+                    if fun!="none":
+                        funhand, = pyplot.plot(data_obj.x,fun(data_obj.x),"c-.")
+                        if funlabel != '':
+                            handles2[fignum].append(funhand)
+                            labels2[fignum].append(funlabel)
             else:
                 pyplot.plot(data_obj.x,data_obj.phi,plotmod,markevery=max(len(data_obj.x)/10,1))
                 if eps_num == 0:
                     handles2[fignum][linesty_num], = pyplot.plot(data_obj.x[0],data_obj.phi[0],data_set.linestyles[linesty_num]+(1-color)*'k',markevery=max(len(data_obj.x)/10,1))
                     labels2[fignum][linesty_num]=self.alpha[linesty_num]
-                        
+            
         #Format figures and save:
         for i in range(0,len(self.dx)):
             pyplot.figure(i+1)
-            
-            #Add in custom solution:
-            if fun != "none":
-                funhand = pyplot.plot(data_obj.x,fun(data_obj.x),"k-.4")
-                if funlabel != '':
-                    handles2[i].append(funhand)
-                    labels2[i].append(funlabel)
             
             #Annotate:
             pyplot.title("$\Delta x = "+str(self.dx[i])+"$")
             pyplot.xlabel("x")
             pyplot.ylabel("Scalar Flux")
-            pyplot.legend(handles1[i]+handles2[i],labels1[i]+labels2[i],loc=0)
+            pyplot.legend(handles1[i]+handles2[i],labels1[i]+labels2[i],loc=0,ncol=2)
             
             #Rescale y-axis on plot if necessary because it gets weird for some reason:
             gca = pyplot.gca()
