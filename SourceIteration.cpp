@@ -184,7 +184,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile){
         Utilities::print_dmatrix(alpha);
     }else if(error/init_error >= diverge){
         cout<<"Source iterationd diverged in "<<it_num<<" iterations"<<endl;
-    }else if(it_num < MAX_IT){
+    }else if(it_num < MAX_IT && (it_num < MAX_IT_accel || accel_mode==0)){
         cout<<"Source iteration converged in "<<it_num<<" iterations"<<endl;
         isConverged = 1;
     }else{
