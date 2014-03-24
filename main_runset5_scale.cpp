@@ -30,7 +30,7 @@ int main ()
     vector<double> dx(dx_arr,dx_arr+sizeof(dx_arr)/sizeof(dx_arr[0]));
     static const double eps_arr[] = {0.03,0.1,0.25,0.5,1};
     vector<double> eps(eps_arr,eps_arr+sizeof(eps_arr)/sizeof(eps_arr[0]));
-    static const double alpha_arr[] = {2,0,30};
+    static const double alpha_arr[] = {0,2,30};
     vector<double> alpha_mode(alpha_arr,alpha_arr+sizeof(alpha_arr)/sizeof(alpha_arr[0]));
     
     SourceIteration *input_run;
@@ -44,6 +44,9 @@ int main ()
     
     //Store all the reference solutions here:
     vector<vector<vector<double> > > ref_soln;//ref_soln[soln_#][0 for x, 1 for phi][space #]
+    
+    bool writeToFile = 1;
+    bool printToScreen = 0;
     
     input->setN(4);
     for(unsigned int k = 0; k<eps.size();k++){
@@ -62,7 +65,7 @@ int main ()
                             input->setX(temp);
                             
                             vector<unsigned int> temp2;
-                            temp2.push_back(X/dx[j]);
+                            temp2.push_back(X/dx[j]/eps[k]);
                             input->setdiscret(temp2);
                             input->setdiscret_CM(temp2);
                             
@@ -81,29 +84,22 @@ int main ()
                             }
                         }
                     }
-//                    
-//                    vector<double> temp =input->getsigma_a();
-//                    vector<double> temp2 =input->getsigma_s0();
-//                    cout<<"For k = "<<k<<", j = "<<j<<", m = "<<m<<",i = "<<i<<", Sigma_t = "<<temp[0]+temp2[0]<<endl;
-//                    cout<<"For k = "<<k<<", j = "<<j<<", m = "<<m<<",i = "<<i<<", Sigma_s = "<<temp2[0]<<endl;
                     
                     //input->readValues();
                     ostringstream ss;
-                    if(alpha_mode[m] == 0){
-                        ss<<"OutputFiles/Run11/output_11_DD_"<<k<<"_"<<j<<"_"<<i<<"_.txt";
+                    if(m == 0){
+                        ss<<"OutputFiles/Run12/output_12_DD_"<<k<<"_"<<j<<"_"<<i<<"_.txt";
                     }else if (alpha_mode[m] ==30){
-                        ss<<"OutputFiles/Run11/output_11_new_"<<k<<"_"<<j<<"_"<<i<<"_.txt";
+                        ss<<"OutputFiles/Run12/output_12_new_"<<k<<"_"<<j<<"_"<<i<<"_.txt";
                     }else if (alpha_mode[m] ==2){
-                        ss<<"OutputFiles/Run11/output_11_SC_"<<k<<"_"<<j<<"_"<<i<<"_.txt";
+                        ss<<"OutputFiles/Run12/output_12_SC_"<<k<<"_"<<j<<"_"<<i<<"_.txt";
                     }else{
-                        ss<<"OutputFiles/Run11/output_11_"<<alpha_mode[m]<<"_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
+                        ss<<"OutputFiles/Run12/output_12_"<<alpha_mode[m]<<"_"<<j<<"_"<<k<<"_"<<i<<"_.txt";
                     }
                     
 //                  cout<<"Finished setting parameters..."<<endl;
                     input_run = new SourceIteration(input,ss.str());
 //                    input->readValues();
-                    bool writeToFile = 1;
-                    bool printToScreen = 0;
                     input_run->iterate(printToScreen,writeToFile);
                     if(writeToFile){
                         input_run->printOutput(false,20);
@@ -111,8 +107,11 @@ int main ()
                     
                     
                     it_num[k][j][m][i] = input_run->get_it_num();
+                    cout<<"The value of input_run->get_it_num() is "<<input_run->get_it_num()<<endl;
+                    cout<<"The value of it_num["<<k<<"]["<<j<<"]["<<m<<"]["<<i<<"] is "<<it_num[k][j][m][i]<<endl;
                     
                     
+                    /*
                     if(i == 0){
                         if(j == dx.size()-1 && m == 0){
                             ref_soln.push_back(input_run->get_solution());
@@ -120,7 +119,7 @@ int main ()
                             vector<vector<double> > tempsoln = input_run->get_solution();
                             error[k][j][m] = Utilities::phi_error(ref_soln[k], tempsoln, 2);
                         }
-                    }
+                    }*/
                     
                     //Check input:
                     if(debug){
@@ -169,7 +168,7 @@ int main ()
             }
         }
     }
-    
+    /*
     for(unsigned int m = 0; m<alpha_mode.size();m++){
         if(m == 0){
             cout<<"Diamond Difference:"<<endl;
@@ -192,7 +191,7 @@ int main ()
             }
             cout<<endl;
         }
-    }
+    }*/
     
     
     
