@@ -24,7 +24,7 @@ using namespace std;
 class SourceIteration{
 public:
     static const unsigned int MAX_IT = 30000;
-    static const unsigned int MAX_IT_accel = -5000;
+    static const unsigned int MAX_IT_accel = 5000;
     
     SourceIteration(InputDeck *input,string outputfilename="output.txt");
     ~SourceIteration();

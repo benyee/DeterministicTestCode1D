@@ -177,7 +177,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile){
         if(it_num == 1){
             init_error = error;
         }
-    }while(error>tol && it_num < MAX_IT && (it_num < MAX_IT_accel || !accel_mode) && (it_num < 5 || (error/init_error)<diverge));
+    }while(error>tol && it_num < MAX_IT && (it_num < MAX_IT_accel || accel_mode==0) && (it_num < 5 || (error/init_error)<diverge));
     if(Utilities::nan_checker(phi_0)){
         cout<<"The flux has NaN's in it!"<<endl;
         Utilities::print_dvector(h);
