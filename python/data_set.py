@@ -26,7 +26,7 @@ class data_set:
                     
                     self.data_list.append(temp)
 
-    def plot(self,path = "./figures/",color = 0,show = 1,mode = 0):
+    def plot(self,path = "./figures/",color = 0,show = 1,mode = 0,fun="none",funlabel=''):
         if self.eps == -1:
             return
         
@@ -72,6 +72,13 @@ class data_set:
                         
         #Format figures and save:
         for i in range(0,len(self.dx)):
+            #Add in custom solution:
+            if fun != "none":
+                funhand = pyplot(data_obj.x,fun(data_obj.x),"k-.4")
+                if funlabel != '':
+                    handles2[i].append(funhand)
+                    labels2[i].append(funlabel)
+            
             #Annotate:
             pyplot.figure(i+1)
             pyplot.title("$\Delta x = "+str(self.dx[i])+"$")
