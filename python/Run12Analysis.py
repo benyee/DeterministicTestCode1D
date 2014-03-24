@@ -7,10 +7,9 @@ def diff_sol(x):
     return (1 - 2*cosh(sqrt3*x)/(2*cosh(20*sqrt3)+4*sinh(sqrt3*20)/sqrt3))
 
 X = 20
-dx = (4,2,1,0.5,0.25,0.01,)
 eps = (0.03,0.1,0.25,0.5,1,)
+dx = (4,2,1,0.5,0.25,0.01,)
 alpha = ("new","SC","DD")
 
-print type(diff_sol)
-data_list = data_set(X,dx,alpha,eps)
-data_list.plot("../OutputFiles/Run11/",show = 0,fun=diff_sol,funlabel="Diff. Soln.")
+data_list = data_set(X,dx,alpha,eps,path_base="../OutputFiles/Run12/output_12_",dx_eps_scale = 1)
+data_list.plot("../OutputFiles/Run12/",show = 0,fun=diff_sol,funlabel="Diff. Soln.")
