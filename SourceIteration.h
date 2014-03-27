@@ -23,12 +23,12 @@ using namespace std;
 
 class SourceIteration{
 public:
-    static const unsigned int MAX_IT = 30000;
+    static const unsigned int MAX_IT = 100000;
     static const unsigned int MAX_IT_accel = 5000;
     
     SourceIteration(InputDeck *input,string outputfilename="output.txt");
     ~SourceIteration();
-    int iterate(bool isPrintingToWindow = true, bool isPrintingToFile = true);
+    int iterate(bool isPrintingToWindow = true, bool isPrintingToFile = true, bool falseConvCorrection = true);
     void printOutput( bool isPrintingToWindow = false,unsigned int tabwidth=20, bool newFile = false);
     
     bool isConverged;
@@ -42,6 +42,8 @@ public:
     vector<vector<double> > get_solution(); //Returns the phi and x values from the solution.
     
     void set_diverge(double div){diverge = div;}
+    
+    void set_outputfilename(string filename){outfilename = filename;}
     
 private:
     InputDeck *data; //Input deck
