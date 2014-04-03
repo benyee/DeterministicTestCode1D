@@ -62,6 +62,8 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
             vector<double> temp2;
             psi_c.push_back(temp);
             source.push_back(temp2);
+            edgePhi0.push_back(0);
+            edgePhi1.push_back(0);
         }
         vector<double> temp3;
         psi_e.push_back(temp3);
@@ -107,7 +109,16 @@ SourceIteration::~SourceIteration(){
     data = NULL;
 }
 
-int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile){
+int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool falseConvCorrection){
+    
+    //Remove later
+    ofstream interSoln;
+    if(intermedSoln){
+        string name = "InterSoln.txt";
+        interSoln.open(name.c_str());
+    }
+    //Remove later
+    
     isConverged = 0;
     if(isPrintingToWindow){
         cout<<"Performing source iteration..."<<endl;
@@ -122,7 +133,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile){
     }else if(isPrintingToWindow){
         cout<<"WARNING: printOutput function will append instead of overwrite unless otherwise told"<<endl;
     }
-    double tol = (1-c)*abs(data->gettol());
+    double tol = (1-c*falseConvCorrection)*abs(data->gettol());
     double error = 0;
     
     //Iterate until tolerance is achieved:
@@ -170,6 +181,14 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile){
             outfile<<setw(20)<<checkNegativeFlux()<<'\n';
         }
         
+        if(interSoln){
+            for(unsigned int i = 0; i<x.size();i++){
+                interSoln<<x_e[i]<<'\t'<<edgePhi0[i]<<'\n';
+                interSoln<<x[i]<<'\t'<<phi_0[i]<<'\n';
+            }
+            interSoln<<x_e[x.size()]<<'\t'<<edgePhi0[x.size()]<<'\n';
+        }
+        
         if(isPrintingToWindow){
             cout<<"For iteration number "<<it_num<<", the error is "<<error<<endl;
         }
@@ -180,15 +199,17 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile){
     }while(error>tol && it_num < MAX_IT && (it_num < MAX_IT_accel || accel_mode==0) && (it_num < 5 || (error/init_error)<diverge));
     if(Utilities::nan_checker(phi_0)){
         cout<<"The flux has NaN's in it!"<<endl;
-        Utilities::print_dvector(h);
-        Utilities::print_dmatrix(alpha);
     }else if(error/init_error >= diverge){
         cout<<"Source iterationd diverged in "<<it_num<<" iterations"<<endl;
     }else if(it_num < MAX_IT && (it_num < MAX_IT_accel || accel_mode==0)){
         cout<<"Source iteration converged in "<<it_num<<" iterations"<<endl;
         isConverged = 1;
     }else{
-        cout<<"Source iteration did NOT converge in "<<MAX_IT<<" iterations"<<endl;
+        if(accel_mode==0){
+            cout<<"Source iteration did NOT converge in "<<MAX_IT<<" iterations"<<endl;
+        }else{
+            cout<<"Source iteration did NOT converge in "<<MAX_IT_accel<<" iterations"<<endl;
+        }
         cout<<"The final error was "<<error<<endl;
     }
     
@@ -572,12 +593,12 @@ void SourceIteration::cmfd(){
     //Solve A*phi = b:
     phi_0_CM_new = Utilities::solve_tridiag(A,phi_0_CM_new);
     
-    //Need to solve for phi_1:
-    
-    
     //Now we need to update phi_0:
     FM_index = 0; //This tells you where you are in terms of fine grid cells.
     CM_index = 0; //This tells you where you are in terms of coarse grid cells.
+    
+    //Store a copy of old phi_0:
+    vector<double> old_phi_0(phi_0);
     
     //i tracks which material region you're in
     //j tracks the CM cell that you're in within region i
@@ -586,12 +607,69 @@ void SourceIteration::cmfd(){
         for(unsigned int j = 0; j<discret_CM[i];j++){
             for(; x_e[FM_index]<x_CM_e[CM_index+1];FM_index++){
                 phi_0[FM_index] *= phi_0_CM_new[CM_index]/phi_0_CM[CM_index];
+                phi_1[FM_index] *= phi_0_CM_new[CM_index]/phi_0_CM[CM_index];
             }
             CM_index++;
         }
     }
     
-    //Update phi_1:
+    if(alpha_mode >=30 || alpha_mode==11){
+        if(EDGE_ACCEL_MODE==1){
+            unsigned int psize = phi_0.size();
+            if(old_phi_0[0] != 0){
+                edgePhi0[0] *= phi_0[0]/old_phi_0[0];
+                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
+            }
+            //Update phi_0_edge:
+            for(unsigned int i = 1; i < psize;i++){
+                if(old_phi_0[i]+old_phi_0[i-1]!=0){
+                    edgePhi0[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
+                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
+                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
+                }
+            }
+            if(old_phi_0[psize-1] != 0){
+                edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+            }
+        }else if(EDGE_ACCEL_MODE==2){
+            unsigned int psize = phi_0.size();
+            edgePhi0[0] = edgePhi0[0] + phi_0[0]-old_phi_0[0];
+            if(old_phi_0[0] != 0){
+                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
+            }
+            //Update phi_0_edge:
+            for(unsigned int i = 1; i < psize;i++){
+                if(old_phi_0[i]+old_phi_0[i-1]!=0){
+                    edgePhi0[i] = edgePhi0[i]+ (phi_0[i]+phi_0[i-1])/2 - (old_phi_0[i]+old_phi_0[i-1])/2;
+                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
+                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
+                }
+            }
+            edgePhi0[psize] = edgePhi0[psize] + phi_0[psize-1]-old_phi_0[psize-1];
+            if(old_phi_0[psize-1] != 0){
+                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+            }
+        }else if(EDGE_ACCEL_MODE==3){
+            unsigned int psize = phi_0.size();
+            if(old_phi_0[0] != 0){
+                edgePhi0[0] *= phi_0[0]/old_phi_0[0];
+                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
+            }
+            //Update phi_0_edge:
+            for(unsigned int i = 1; i < psize;i++){
+                if(old_phi_0[i]+old_phi_0[i-1]!=0){
+                    edgePhi0[i] *= (phi_0[i]/old_phi_0[i]+ phi_0[i-1]/old_phi_0[i-1])/2;
+                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
+                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
+                }
+            }
+            if(old_phi_0[psize-1] != 0){
+                edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+            }
+        }
+    }
     
 }
 
@@ -749,12 +827,12 @@ void SourceIteration::pcmfd(){
     //Solve A*phi = b:
     phi_0_CM_new = Utilities::solve_tridiag(A,phi_0_CM_new);
     
-    //Need to solve for phi_1:
-    
-    
     //Now we need to update phi_0:
     FM_index = 0; //This tells you where you are in terms of fine grid cells.
     CM_index = 0; //This tells you where you are in terms of coarse grid cells.
+    
+    //Store a copy of old phi_0:
+    vector<double> old_phi_0(phi_0);
     
     //i tracks which material region you're in
     //j tracks the CM cell that you're in within region i
@@ -763,12 +841,69 @@ void SourceIteration::pcmfd(){
         for(unsigned int j = 0; j<discret_CM[i];j++){
             for(; x_e[FM_index]<x_CM_e[CM_index+1];FM_index++){
                 phi_0[FM_index] *= phi_0_CM_new[CM_index]/phi_0_CM[CM_index];
+                phi_1[FM_index] *= phi_0_CM_new[CM_index]/phi_0_CM[CM_index];
             }
             CM_index++;
         }
     }
     
-    //Update phi_1:
+    if(alpha_mode >=30 || alpha_mode==11){
+        if(EDGE_ACCEL_MODE==1){
+            unsigned int psize = phi_0.size();
+            if(old_phi_0[0] != 0){
+                edgePhi0[0] *= phi_0[0]/old_phi_0[0];
+                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
+            }
+            //Update phi_0_edge:
+            for(unsigned int i = 1; i < psize;i++){
+                if(old_phi_0[i]+old_phi_0[i-1]!=0){
+                    edgePhi0[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
+                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
+                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
+                }
+            }
+            if(old_phi_0[psize-1] != 0){
+                edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+            }
+        }else if(EDGE_ACCEL_MODE==2){
+            unsigned int psize = phi_0.size();
+            edgePhi0[0] = edgePhi0[0] + phi_0[0]-old_phi_0[0];
+            if(old_phi_0[0] != 0){
+                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
+            }
+            //Update phi_0_edge:
+            for(unsigned int i = 1; i < psize;i++){
+                if(old_phi_0[i]+old_phi_0[i-1]!=0){
+                    edgePhi0[i] = edgePhi0[i]+ (phi_0[i]+phi_0[i-1])/2 - (old_phi_0[i]+old_phi_0[i-1])/2;
+                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
+                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
+                }
+            }
+            edgePhi0[psize] = edgePhi0[psize] + phi_0[psize-1]-old_phi_0[psize-1];
+            if(old_phi_0[psize-1] != 0){
+                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+            }
+        }else if(EDGE_ACCEL_MODE==3){
+            unsigned int psize = phi_0.size();
+            if(old_phi_0[0] != 0){
+                edgePhi0[0] *= phi_0[0]/old_phi_0[0];
+                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
+            }
+            //Update phi_0_edge:
+            for(unsigned int i = 1; i < psize;i++){
+                if(old_phi_0[i]+old_phi_0[i-1]!=0){
+                    edgePhi0[i] *= (phi_0[i]/old_phi_0[i]+ phi_0[i-1]/old_phi_0[i-1])/2;
+                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
+                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
+                }
+            }
+            if(old_phi_0[psize-1] != 0){
+                edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+            }
+        }
+    }
     
 }
 
@@ -894,14 +1029,13 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
     vector<double> Q_lin = data->getQ_lin();
     int region = 0;
     unsigned int within_region_counter = 0;
-    vector<double> edgePhi0;
-    vector<double> edgePhi1;
-    if(alpha_mode == 11 || alpha_mode >= 30){
-        edgePhi0 = calcEdgePhi(0);
-        edgePhi1 = calcEdgePhi(1);
+    
+    if(usePsi && (alpha_mode == 11 || alpha_mode >= 30)){
+       edgePhi0 = calcEdgePhi(0);
+       edgePhi1 = calcEdgePhi(1);
     }
     for(unsigned int j = 0; j<J;j++){
-        if(usePsi){
+        if(usePsi){ //If updating phi's with psi:
             phi_0[j] = 0;
             phi_1[j] = 0;
             //Integrate over angle:
