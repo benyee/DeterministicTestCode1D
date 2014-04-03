@@ -264,6 +264,12 @@ int InputDeck::loadInputDeck(){
     
     inputFile.close();
     
+    //Initialize edge fluxes:
+    vector<double> temp(phi_0_0.size()+1,0);
+    edgePhi0_0 = temp;
+    vector<double> temp2(phi_0_0.size()+1,0);
+    edgePhi1_0 = temp2;
+    
     //Check to make sure all these vectors are the same size:
     int vectorSizes[] = {X.size(), discret.size(),sigma_s0.size(),sigma_s1.size(),sigma_a.size(), Q.size(),Q_lin.size()};
     for(unsigned int i = 0; i < 6; i++){
@@ -414,5 +420,88 @@ bool InputDeck::searchForInput(ifstream &file, string inp, bool hasErrorOutput){
         cout<<"We couldn't find "<<inp<<"!"<<endl;
     }
     return 0;
+}
+
+void InputDeck::diffusionSolve(){
+    if(discret.size() > 1){
+        cout<<"This doesn't work for multi-region problems yet."<<endl;
+        return;
+    }
+    
+    vector<double> temp(discret[0]+1,0);
+    vector<double> temp2(discret[0]+1,0);
+    
+    edgePhi0_0 = temp;
+    edgePhi1_0 = temp2;
+    
+    double dx = X[0]/discret[0];
+    double D = 1.0/3/(sigma_s0[0]-sigma_s1[0]+sigma_a[0]);
+    vector<double> mu_n = Utilities::calc_mu_n(N);
+    vector<double> w_n = Utilities::calc_w_n(mu_n);
+    
+    vector<vector<double> > A(2*discret[0]+1,vector<double>(3,0));
+    vector<double> b(2*discret[0]+1,Q[0]);
+    b[0] = 0;
+    if(bc[0] == 1){
+        A[0][1] = 1;
+        A[0][2] = -1;
+    }else{
+        A[0][1] = (1 - 4*D/dx);
+        A[0][2] = 4*D/dx;
+        if(bc[0] == 2){
+            for(unsigned int m = 0; m < psi_bl.size();m++){
+                b[0] += mu_n[m]*w_n[m]*psi_bl[m];
+            }
+            b[0] *=4;
+        }
+    }
+    
+    for(unsigned int i = 1; i<A.size()-1;i++){
+        A[i][0] = -4*D/dx/dx;
+        A[i][1] = (8*D/dx/dx + sigma_a[0]);
+        A[i][2] = -4*D/dx/dx;
+    }
+    
+    unsigned int bsizem1 = b.size()-1;
+    b[bsizem1] = 0;
+    if(bc[1] == 1){
+        A[bsizem1][0] = -1;
+        A[bsizem1][1] = 1;
+    }else{
+        A[bsizem1][0] = 4*D/dx;
+        A[bsizem1][1] = (1 - 4*D/dx);
+        if(bc[1]==2){
+            for(unsigned int m = N/2; m < N;m++){
+                b[bsizem1] -= mu_n[m]*w_n[m]*psi_br[m-N/2];
+            }
+            b[bsizem1] *=4;
+        }
+    }
+//    Utilities::print_dmatrix(A);
+//    Utilities::print_dvector(b);
+    
+    vector<double> temp_phi = Utilities::solve_tridiag(A,b);
+//    Utilities::print_dvector(temp_phi);
+    Utilities::split_Phi(temp_phi,edgePhi0_0,phi_0_0);
+    vector<double> temp_phi_1(temp_phi);
+    
+    //Estimate initial currents:
+    temp_phi_1[0] = 2*D*(temp_phi[0]-temp_phi[1])/dx;
+    for(unsigned int i = 1; i<temp_phi.size()-1;i++){
+        temp_phi_1[i] = (temp_phi[i-1]-temp_phi[i+1])/dx*D;
+    }
+    temp_phi_1[temp_phi.size()-1] = 2*(temp_phi[temp_phi.size()-2] - temp_phi[temp_phi.size()-1])*D/dx;
+    Utilities::split_Phi(temp_phi_1,edgePhi1_0,phi_1_0);
+    
+    //Make sure nothing is negative:
+    for(unsigned int i = 0; i<phi_0_0.size();i++){
+        if(phi_0_0[i] < 0){
+            phi_0_0[i] == 0;
+        }
+    }
+    cout<<"End of diffusion solve!"<<endl;
+//    Utilities::print_dvector(temp_phi);
+//    Utilities::print_dvector(phi_0_0);
+//    Utilities::print_dvector(edgePhi0_0);
 }
 

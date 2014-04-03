@@ -257,3 +257,16 @@ vector<int> Utilities::blowUpChecker(vector<vector<double> > &test, double thres
     return out;
 
 }
+
+
+void Utilities::split_Phi(const vector<double> &phi_all, vector<double> &phi_edge, vector<double> &phi_cent){
+    if(phi_all.size()==0){
+        cout<<"Trying to split an empty vector!"<<endl;
+        return;
+    }
+    phi_edge[0] = phi_all[0];
+    for(unsigned int i = 0; i<phi_edge.size();i++){
+        phi_cent[i] = phi_all[2*i+1];
+        phi_edge[i+1] = phi_all[2*(i+1)];
+    }
+}

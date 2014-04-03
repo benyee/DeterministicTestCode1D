@@ -64,6 +64,8 @@ public:
     
     vector<double> getphi_0_0(){return phi_0_0;}
     vector<double> getphi_1_0(){return phi_1_0;}
+    vector<double> getedgePhi0_0(){return edgePhi0_0;}
+    vector<double> getedgePhi1_0(){return edgePhi1_0;}
     vector<double> getphi_0_0_lin(){return phi_0_0_lin;}
     vector<double> getphi_1_0_lin(){return phi_1_0_lin;}
     vector<double> getpsi_bl(){return psi_bl;}
@@ -71,6 +73,8 @@ public:
     
     void setphi_0_0(vector<double> input){phi_0_0=input;}
     void setphi_1_0(vector<double> input){phi_1_0=input;}
+    void setedgePhi0_0(vector<double> input){edgePhi0_0=input;}
+    void setedgePhi1_0(vector<double> input){edgePhi1_0=input;}
     void setphi_0_0_lin(vector<double> input){phi_0_0_lin=input;}
     void setphi_1_0_lin(vector<double> input){phi_1_0_lin=input;}
     void setpsi_bl(vector<double> input){psi_bl=input;}
@@ -79,6 +83,8 @@ public:
     void readValues(); //Read out input values
     
     void setDefaultValues();
+    
+    void diffusionSolve();
 
 private:
     string fileName; //input file name
@@ -100,6 +106,9 @@ private:
     vector<double> phi_1_0; //initial guess for source iteration, should be of size (\sum_{i=0}^{size(xborders)} discret[i] )
     vector<double> phi_0_0_lin; //initial guess for source iteration, should be of size (\sum_{i=0}^{size(xborders)} discret[i] )
     vector<double> phi_1_0_lin; //initial guess for source iteration, should be of size (\sum_{i=0}^{size(xborders)} discret[i] )
+    
+    vector<double> edgePhi0_0;
+    vector<double> edgePhi1_0;
     
     vector<double> psi_bl; //user specified left boundary, should be of size N/2
     vector<double> psi_br; //user specified right boundary, should be of size N/2

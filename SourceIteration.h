@@ -25,7 +25,7 @@ class SourceIteration{
 public:
     static const unsigned int MAX_IT = 100000;
     static const unsigned int MAX_IT_accel = 5000;
-    static const unsigned int EDGE_ACCEL_MODE = 2;
+    static const unsigned int EDGE_ACCEL_MODE = 0;
     static const bool intermedSoln = 0;
     
     SourceIteration(InputDeck *input,string outputfilename="output.txt");
@@ -66,6 +66,7 @@ private:
     vector<double> edgePhi0;
     vector<double> edgePhi1;
     vector<double> phi_0; //Cell-averaged scalar flux
+    vector<double> old_phi_0;
     vector<double> phi_1; //Cell-averaged net current in x direction
     vector<vector<double> > psi_e; //Edge angular flux
     vector<vector<double> > psi_c; //Cell-averaged angular flux

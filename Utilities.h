@@ -60,6 +60,9 @@ public:
     //Remove the last four characters of a string:
     static string remove_ext(string input_string){return input_string.substr(0,input_string.length());}
     
+    //Split up a phi vector into cell + edge fluxes
+    static void split_Phi(const vector<double> &phi_all, vector<double> &phi_edge, vector<double> &phi_cent);
+    
 private:
     Utilities();
 };

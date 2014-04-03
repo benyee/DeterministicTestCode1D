@@ -17,6 +17,8 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     //Store useful information from input deck:
     phi_0 = data->getphi_0_0();
     phi_1 = data->getphi_1_0();
+    edgePhi0 = data->getedgePhi0_0();
+    edgePhi1 = data->getedgePhi1_0();
     J = phi_0.size();
     bc = data->getbc();
     alpha_mode = data->getalpha_mode();
@@ -62,8 +64,6 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
             vector<double> temp2;
             psi_c.push_back(temp);
             source.push_back(temp2);
-            edgePhi0.push_back(0);
-            edgePhi1.push_back(0);
         }
         vector<double> temp3;
         psi_e.push_back(temp3);
@@ -134,12 +134,14 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         cout<<"WARNING: printOutput function will append instead of overwrite unless otherwise told"<<endl;
     }
     double tol = (1-c*falseConvCorrection)*abs(data->gettol());
-    double error = 0;
+    double error = 0;;
     
     //Iterate until tolerance is achieved:
     it_num = 0;
     do{
         it_num++;
+        
+        
         //Go either right then left or left then right:
         if(bc[0] == 1 && bc[1] == 0){
             leftIteration();
@@ -155,7 +157,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         }
         
         
-        error = updatePhi_calcSource();
+        error=updatePhi_calcSource();
         
         //CMFD acceleration:
         if(accel_mode == 1){
@@ -165,6 +167,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             pcmfd();
             updatePhi_calcSource(false);
         }
+        
         
         if(it_num ==1){
             spec_rad = 0;
@@ -615,6 +618,7 @@ void SourceIteration::cmfd(){
     
     if(alpha_mode >=30 || alpha_mode==11){
         if(EDGE_ACCEL_MODE==1){
+            Utilities::print_dvector(edgePhi0);
             unsigned int psize = phi_0.size();
             if(old_phi_0[0] != 0){
                 edgePhi0[0] *= phi_0[0]/old_phi_0[0];
@@ -632,6 +636,8 @@ void SourceIteration::cmfd(){
                 edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
                 edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
             }
+            Utilities::print_dvector(edgePhi0);
+            Utilities::print_dvector(phi_0);
         }else if(EDGE_ACCEL_MODE==2){
             unsigned int psize = phi_0.size();
             edgePhi0[0] = edgePhi0[0] + phi_0[0]-old_phi_0[0];
@@ -1150,7 +1156,7 @@ vector<double> SourceIteration::calcEdgePhi(int num){
 }
 
 unsigned int SourceIteration::checkNegativeFlux(){
-    int temp = 0;
+    unsigned int temp = 0;
     for(unsigned int j = 0; j<J;j++){
         if(phi_0[j] < 0){
             temp++;
