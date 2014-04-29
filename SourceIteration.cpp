@@ -137,10 +137,8 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
     double error = 0;;
     
     //Iterate until tolerance is achieved:
-    it_num = 0;
+    it_num = 0.5;
     do{
-        it_num++;
-        
         
         //Go either right then left or left then right:
         if(bc[0] == 1 && bc[1] == 0){
@@ -158,6 +156,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         
         
         error=updatePhi_calcSource();
+        it_num += 0.5;
         
         //CMFD acceleration:
         if(accel_mode == 1){
@@ -167,6 +166,8 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             pcmfd();
             updatePhi_calcSource(false);
         }
+        
+        it_num += 0.5;
         
         
         if(it_num ==1){
@@ -503,10 +504,7 @@ void SourceIteration::cmfd(){
     //k tracks the FM cell that you're in within the j-th CM cell of region i
     for(unsigned int i = 0; i<discret_CM.size(); i++){
         for(unsigned int j = 0; j<discret_CM[i];j++){
-            phi_1_e_CM.push_back(0);
-            for(unsigned int m = 0; m<N;m++){
-                phi_1_e_CM[CM_index] += w_n[m]*mu_n[m]*psi_e[FM_index][m];
-            }
+            phi_1_e_CM.push_back(edgePhi1[FM_index]);
             
             phi_0_CM.push_back(0);
             Q_CM.push_back(0);
@@ -522,10 +520,7 @@ void SourceIteration::cmfd(){
     }
     
     //Get the last current value (there's an extra because there's always one more edge than there are cells)
-    phi_1_e_CM.push_back(0);
-    for(unsigned int m = 0; m<N;m++){
-        phi_1_e_CM[CM_index] += w_n[m]*mu_n[m]*psi_e[FM_index][m];
-    }
+    phi_1_e_CM.push_back(edgePhi1[FM_index]);
     
     //
     //Calculate correction factors:
@@ -596,12 +591,24 @@ void SourceIteration::cmfd(){
     //Solve A*phi = b:
     phi_0_CM_new = Utilities::solve_tridiag(A,phi_0_CM_new);
     
+    //Calculate new edge fluxes:
+    vector<double> phi_1_e_CM_new(phi_1_e_CM);
+    //Equations 2.16b-d:
+    phi_1_e_CM_new[0] = 2*in_curr - D_c[0]*phi_0_CM_new[0];
+    for(unsigned int i = 1; i<phi_0_CM_size;i++){
+        phi_1_e_CM_new[i] = -D_actual_CM[i]*(phi_0_CM_new[i]-phi_0_CM_new[i-1])+D_c[i]*(phi_0_CM_new[i]+phi_0_CM_new[i-1]);
+    }
+    phi_1_e_CM_new[phi_0_CM_size] = D_c[phi_0_CM_size]*phi_0_CM_new[phi_0_CM_size-1] - 2*out_curr;
+    
+    
     //Now we need to update phi_0:
     FM_index = 0; //This tells you where you are in terms of fine grid cells.
     CM_index = 0; //This tells you where you are in terms of coarse grid cells.
     
     //Store a copy of old phi_0:
     vector<double> old_phi_0(phi_0);
+    //Store a copy of the old edgePhi1:
+    vector<double> old_edgePhi1(edgePhi1);
     
     //i tracks which material region you're in
     //j tracks the CM cell that you're in within region i
@@ -611,68 +618,113 @@ void SourceIteration::cmfd(){
             for(; x_e[FM_index]<x_CM_e[CM_index+1];FM_index++){
                 phi_0[FM_index] *= phi_0_CM_new[CM_index]/phi_0_CM[CM_index];
                 phi_1[FM_index] *= phi_0_CM_new[CM_index]/phi_0_CM[CM_index];
-            }
+                if(phi_1_e_CM[CM_index] != 0){
+                    edgePhi1[FM_index] *= phi_1_e_CM_new[CM_index]/phi_1_e_CM[CM_index];
+                }
+             }
             CM_index++;
         }
     }
+    if(phi_1_e_CM[CM_index] != 0){
+        edgePhi1[FM_index] *= phi_1_e_CM_new[CM_index]/phi_1_e_CM[CM_index];
+    }
+    
+    unsigned int psize = phi_0.size();
     
     if(alpha_mode >=30 || alpha_mode==11){
         if(EDGE_ACCEL_MODE==1){
             Utilities::print_dvector(edgePhi0);
-            unsigned int psize = phi_0.size();
             if(old_phi_0[0] != 0){
                 edgePhi0[0] *= phi_0[0]/old_phi_0[0];
-                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
             }
             //Update phi_0_edge:
             for(unsigned int i = 1; i < psize;i++){
                 if(old_phi_0[i]+old_phi_0[i-1]!=0){
                     edgePhi0[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
-                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
-                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
                 }
             }
             if(old_phi_0[psize-1] != 0){
                 edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
-                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
             }
-            Utilities::print_dvector(edgePhi0);
-            Utilities::print_dvector(phi_0);
         }else if(EDGE_ACCEL_MODE==2){
-            unsigned int psize = phi_0.size();
             edgePhi0[0] = edgePhi0[0] + phi_0[0]-old_phi_0[0];
-            if(old_phi_0[0] != 0){
-                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
-            }
             //Update phi_0_edge:
             for(unsigned int i = 1; i < psize;i++){
                 if(old_phi_0[i]+old_phi_0[i-1]!=0){
                     edgePhi0[i] = edgePhi0[i]+ (phi_0[i]+phi_0[i-1])/2 - (old_phi_0[i]+old_phi_0[i-1])/2;
-                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
-                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
                 }
             }
             edgePhi0[psize] = edgePhi0[psize] + phi_0[psize-1]-old_phi_0[psize-1];
-            if(old_phi_0[psize-1] != 0){
-                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
-            }
         }else if(EDGE_ACCEL_MODE==3){
-            unsigned int psize = phi_0.size();
             if(old_phi_0[0] != 0){
                 edgePhi0[0] *= phi_0[0]/old_phi_0[0];
-                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
             }
             //Update phi_0_edge:
             for(unsigned int i = 1; i < psize;i++){
                 if(old_phi_0[i]+old_phi_0[i-1]!=0){
                     edgePhi0[i] *= (phi_0[i]/old_phi_0[i]+ phi_0[i-1]/old_phi_0[i-1])/2;
-                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
-                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
                 }
             }
             if(old_phi_0[psize-1] != 0){
                 edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
-                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+            }
+        }else if(EDGE_ACCEL_MODE==4){//HERE I AM
+            //This only works if the fine mesh and coarse mesh are the same.
+            //This only works if the regions are all uniform
+            double lnSth = log(1 + 2.0/sigma_t[0]/h[0]);
+            double Sth = sigma_t[0]*h[0];
+            double Ssh = sigma_s0[0]*h[0];
+            double Aed = (1 - Sth/2*lnSth)/(1 - Ssh/2*lnSth);
+            double Bed =3*(Sth*(Sth/2*lnSth-1)+1)/8/(1 - Ssh/2*lnSth);
+            double Ced =h[0]/2*lnSth/(1 - Ssh/2*lnSth);
+            double Ded =(Sth*(Sth*lnSth-2)+2)/4;
+            double Eed =(3*Sth*(Sth*Sth*log(Sth/(2+Sth))+ 2*Sth-2)+8 )/8;
+            double Fed =(2 - Sth*lnSth)/4;
+            
+            double const1 =(Aed-Bed*Ded/Eed)/2;
+            double const2 = Bed/Eed;
+            
+            double denom = 1.0/(Bed*Fed*Ssh/Eed+1);
+            
+            double Q_mod =(Ced-Bed*Fed*h[0]/Eed)*Q[0];
+            
+            //First calculate correction factors:
+            vector<double> D_cm(edgePhi0);
+            if(bc[0] == 1){
+                D_cm[0] = (edgePhi0[0] - ( 2*const1*old_phi_0[0] + Q_mod)/denom )/2/old_phi_0[0];
+            }else{
+                D_cm[0] = (4*in_curr-2*phi_1_e_CM[0])/edgePhi0[0];
+            }
+            for(unsigned int i = 1; i <psize;i++){
+                D_cm[i] = (edgePhi0[i] - ( const1*(old_phi_0[i] + old_phi_0[i-1]) + const2*old_edgePhi1[i] + Q_mod)\
+                           /denom )/(old_phi_0[i]+old_phi_0[i-1]);
+            }
+            if(bc[1] == 1){
+                D_cm[psize] = (edgePhi0[psize] - ( 2*const1*old_phi_0[psize-1] + Q_mod)/denom )/2/old_phi_0[psize-1];
+            }else{
+                D_cm[psize] = (4*out_curr+2*phi_1_e_CM[psize])/edgePhi0[psize];
+            }
+
+            Utilities::print_dvector(D_cm);
+//            cout<<"Params"<<endl; //HERE I AM
+//            cout<<edgePhi0[2]<<endl;
+//            cout<<const1*(old_phi_0[2] + old_phi_0[1])/denom<<endl;
+//            cout<<const2*old_edgePhi1[2]/denom<<endl;
+            
+            //Correct:
+            if(bc[0] ==1){
+                edgePhi0[0] = ( 2*const1*phi_0[0] + Q_mod )/denom + D_cm[0]*phi_0[0]*2;
+            }else{
+                edgePhi0[0] = (4*in_curr-2*phi_1_e_CM[0])/D_cm[0];
+            }
+            for(unsigned int i = 1; i <psize;i++){
+                edgePhi0[i] = (const1*( phi_0[i] + phi_0[i-1] ) + const2*edgePhi1[i] + Q_mod)\
+                    /denom + D_cm[i]*( phi_0[i] + phi_0[i-1] );
+            }
+            if(bc[1] == 1){
+                edgePhi0[psize] = ( 2*const1*phi_0[psize-1] + Q_mod )/denom + D_cm[psize]*phi_0[psize-1]*2;
+            }else{
+                edgePhi0[psize] = ( 4*out_curr+2*phi_1_e_CM[psize] )/D_cm[psize];
             }
         }
     }
@@ -1036,7 +1088,7 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
     int region = 0;
     unsigned int within_region_counter = 0;
     
-    if(usePsi && (alpha_mode == 11 || alpha_mode >= 30)){
+    if(usePsi){
        edgePhi0 = calcEdgePhi(0);
        edgePhi1 = calcEdgePhi(1);
     }

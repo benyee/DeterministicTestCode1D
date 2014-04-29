@@ -15,11 +15,14 @@
 #include <string>
 #include <math.h>
 #include <vector>
+#include <map>
 
 #include "Utilities.h"
 #include "InputDeck.h"
 
 using namespace std;
+
+typedef std::map<string, double> Dict;
 
 class SourceIteration{
 public:
@@ -35,7 +38,7 @@ public:
     
     bool isConverged;
     
-    int get_it_num(){if(isConverged){return it_num;} return -it_num;}
+    double get_it_num(){if(isConverged){return it_num;} return -it_num;}
     
     double get_error(){return old_error;}
     double get_spec_rad(){return spec_rad;}
@@ -45,11 +48,15 @@ public:
     
     void set_diverge(double div){diverge = div;}
     
+    void print_dictionary();
+    
     void set_outputfilename(string filename){outfilename = filename;}
     
 private:
     InputDeck *data; //Input deck
     string outfilename; //Name of outpile file
+    
+    Dict variable_status; //Keeps track of which iteration number each variable is at.
     
     //Fine Grid:
     vector<double> x; //List of x-values at cell centers
@@ -101,7 +108,7 @@ private:
     unsigned int alpha_mode;
     unsigned int accel_mode;
     
-    int it_num; //Iteraiton number
+    double it_num; //Iteration number.  Can have half iterations.
     double init_error; //Stores the first error, used to check for divergence.
     double diverge; //Divergence criterion.  Algorithm diverges if error/init_error > diverge.
     double old_error; //stores ||phi_{i}-phi_{i-1}|| from the previous iteration
