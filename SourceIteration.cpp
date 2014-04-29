@@ -109,6 +109,15 @@ SourceIteration::~SourceIteration(){
     data = NULL;
 }
 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//------------------------CONSTRUCTOR-----------------------------------------//
+//------------------------CONSTRUCTOR-----------------------------------------//
+
+//----------------------------------------------------------------------------//
+
+//------------------------MAIN LOOP-------------------------------------------//
+//------------------------MAIN LOOP-------------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool falseConvCorrection){
     
     //Remove later
@@ -223,6 +232,54 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
     return 0;
 }
 
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//--------------------MAIN LOOP-----------------------------------------------//
+//--------------------MAIN LOOP-----------------------------------------------//
+
+//----------------------------------------------------------------------------//
+
+//--------------------GET SOLUTION--------------------------------------------//
+//--------------------GET SOLUTION--------------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+vector<vector<double> > SourceIteration::get_solution(){
+    vector<vector<double> > out;
+    
+    //Compute the x coordinates of the phi vector:
+    vector<double> x_total;
+    for(unsigned int i = 0; i<x.size();i++){
+        x_total.push_back(x_e[i]);
+        x_total.push_back(x[i]);
+    }
+    x_total.push_back(x_e[x.size()]);
+    
+    out.push_back(x_total);
+    
+    //Compute the phi vector (combining both edge and cell averaged)
+    vector<double> phi_total;
+    vector<double> phi_edge = calcEdgePhi(0);
+    for(unsigned int i = 0; i<phi_0.size();i++){
+        phi_total.push_back(phi_edge[i]);
+        phi_total.push_back(phi_0[i]);
+    }
+    phi_total.push_back(phi_edge[phi_0.size()]);
+    
+    out.push_back(phi_total);
+    
+    return out;
+}
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//--------------------GET SOLUTION--------------------------------------------//
+//--------------------GET SOLUTION--------------------------------------------//
+
+
+//----------------------------------------------------------------------------//
+
+//--------------------PRINT STUFF--------------------------------------------//
+//--------------------PRINT STUFF--------------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+
 void SourceIteration::printOutput(bool isPrintingToWindow,unsigned int tabwidth, bool newFile){
     ofstream outfile;
     if(newFile){
@@ -299,193 +356,69 @@ void SourceIteration::printOutput(bool isPrintingToWindow,unsigned int tabwidth,
     outfile.close();
 }
 
-void SourceIteration::leftIteration(){
-    if(bc[1]==1){
-        for(unsigned int m=0; m<N/2;m++){
-            psi_e[J][N-m-1] = psi_e[J][m];
-        }
-    }else if(bc[1]==2){
-        vector<double> temp = data->getpsi_br();
-        for(unsigned int m=0; m<N/2;m++){
-            psi_e[J][m+N/2] = temp[m];
-        }
-    }
-    int region;
-    unsigned int within_region_counter;
-    for(unsigned int m = N/2; m<N;m++){
-        region = discret.size()-1;
-        within_region_counter=0;
-        for(int j = J-1; j>=0;j--){
-            double halfhj = h[j]/2.0;
-            if(alpha_mode==10){//For linear characteristic stuff
-                double twosigt = 2*sigma_t[region];
-                double musig = mu_n[m]/sigma_t[region];
-                double sighmu = h[j]/musig;
-                double srctwosigt = source[j][m]/twosigt;
-                double srclintwosigt = source_lin[j][m]/twosigt;
-                double C0 = psi_e[j+1][m] - srctwosigt - srclintwosigt*(halfhj-musig);
-                double esighmu = exp(sighmu);
-                psi_c[j][m] = C0/sighmu*(esighmu-1.0) + srctwosigt-srclintwosigt*musig;
-                psi_c_lin[j][m] = srclintwosigt - 6.0*C0/sighmu/h[j]*(1.0 + esighmu-2.0/sighmu*(esighmu-1.0));
-                psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhj + musig) + srctwosigt;
-            }else if(alpha_mode==11){
-                double twosigt = 2*sigma_t[region];
-                double musig = mu_n[m]/sigma_t[region];
-                double sighmu = h[j]/musig;
-                double srctwosigt = source[j][m]/twosigt;
-                double srclintwosigt = source_lin[j][m]/twosigt;
-                double C0 = psi_e[j+1][m] - srctwosigt - srclintwosigt*(halfhj-musig);
-                double esighmu = exp(sighmu);
-                psi_c[j][m] = C0/sighmu*(esighmu-1.0) + srctwosigt-srclintwosigt*musig;
-                psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhj + musig) + srctwosigt;
-            }else if(alpha_mode==20){
-                double tau = sigma_t[region]*h[j]/2/mu_n[m];
-                double numerator = h[j]*h[j]*tau*source_lin[j][m] + 2*h[j]*(3-tau)*source[j][m]-4*mu_n[m]*(3+2*tau)*psi_e[j+1][m];
-                double denominator = 4*(4*mu_n[m]*tau-3*mu_n[m]-sigma_t[region]*h[j]*tau);
-                psi_e[j][m] = numerator/denominator;
-                psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
-                psi_c_lin[j][m] = 2*(psi_c[j][m]-psi_e[j][m])/h[j];
-            }else if(alpha_mode ==30){
-                double tau = -sigma_t[region]*h[j]/mu_n[m];
-                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 - source_edge[j][m]*h[j]*tau/4/mu_n[m];
-                double denominator = 1 + tau + tau*tau/2;
-                psi_e[j][m] = numerator/denominator;
-                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-                /*
-                double twomu_h = mu_n[m]/halfhj;
-                double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
-                psi_e[j][m] = (twomu_h*mu_hsigt*psi_e[j+1][m]-mu_hsigt*source[j][m]+source_edge[j][m]/2)/(twomu_h*(mu_hsigt-1)+sigma_t[region]);
-                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-                 */
-            }else if(alpha_mode==31){
-                double tau = -sigma_t[region]*h[j]/mu_n[m];
-                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 - source_edge[j][m]*h[j]/mu_n[m]*tau*(0.25+tau/12);
-                //double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]/sigma_t[region]*(tau*tau/4+tau*tau*tau/12);
-                double denominator = 1 + tau + tau*tau/2 + tau*tau*tau/6;
-                psi_e[j][m] = numerator/denominator;
-                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-            }else if(alpha_mode==32){
-                double tau = -sigma_t[region]*h[j]/mu_n[m];
-                double etau = exp(tau);
-                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]/sigma_t[region]/2*(etau-1-tau);
-                psi_e[j][m] = numerator/etau;
-                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-            }else if(alpha_mode==33){
-                double tau = -sigma_t[region]*h[j]/mu_n[m];
-                double tau_a = (sigma_s0[region]-sigma_t[region])*h[j]/mu_n[m];
-                double etau = exp(tau_a) - 1 - tau_a - tau_a*tau_a/2;
-                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]/sigma_t[region]*(tau*tau/4+etau/2);
-                double denominator = 1 + tau + tau*tau/2 + etau;
-                psi_e[j][m] = numerator/denominator;
-                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-            }else{ //Regular finite difference
-                double numerator = (-mu_n[m]-(sigma_t[region])*halfhj*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*halfhj;
-                double denominator = -mu_n[m]+(sigma_t[region])*halfhj*(1.0-alpha[j][m]);
-                psi_e[j][m] = numerator/denominator;
-            }
-            within_region_counter++;
-            if(within_region_counter==discret[region]){
-                within_region_counter = 0;
-                region--;
-            }
-        }
-    }
-    return;
-}
-void SourceIteration::rightIteration(){
-    //Reflective boundary conditions:
-    if(bc[0]==1){
-        for(unsigned int m=0; m<N/2;m++){
-            psi_e[0][m] = psi_e[0][N-m-1];
-        }
-    }else if(bc[0]==2){
-        vector<double> temp = data->getpsi_bl();
-        for(unsigned int m=0; m<N/2;m++){
-            psi_e[0][m] = temp[m];
-        }
-    }
-    int region;
-    unsigned int within_region_counter;
-    for(unsigned int m = 0; m<N/2;m++){
-        region = 0;
-        within_region_counter=0;
-        for(unsigned int j = 0; j<J;j++){
-            double halfhj = h[j]/2.0;
-            if(alpha_mode==10){ //For Linear Characteristic stuff
-                double twosigt = 2*sigma_t[region];
-                double musig = mu_n[m]/sigma_t[region];
-                double sighmu = h[j]/musig;
-                double srctwosigt = source[j][m]/twosigt;
-                double srclintwosigt = source_lin[j][m]/twosigt;
-                double C0 = psi_e[j][m] - srctwosigt + srclintwosigt*(halfhj+musig);
-                double esighmu = exp(-sighmu);
-                psi_c[j][m] = C0/sighmu*(1.0 - esighmu) + srctwosigt-srclintwosigt*musig;
-                psi_c_lin[j][m] = srclintwosigt - 6.0*C0/sighmu/h[j]*(1.0 + esighmu+2.0/sighmu*(esighmu-1));
-                psi_e[j+1][m] = C0*esighmu+ srclintwosigt*(halfhj - musig) + srctwosigt;
-            }else if(alpha_mode==11){ //"tilting method" (linear alternative)
-                double twosigt = 2*sigma_t[region];
-                double musig = mu_n[m]/sigma_t[region];
-                double sighmu = h[j]/musig;
-                double srctwosigt = source[j][m]/twosigt;
-                double srclintwosigt = source_lin[j][m]/twosigt;
-                double C0 = psi_e[j][m] - srctwosigt + srclintwosigt*(halfhj+musig);
-                double esighmu = exp(-sighmu);
-                psi_c[j][m] = C0/sighmu*(1.0 - esighmu) + srctwosigt-srclintwosigt*musig;
-                psi_e[j+1][m] = C0*esighmu+ srclintwosigt*(halfhj - musig) + srctwosigt;
-            }else if(alpha_mode==20){ // LD
-                double tau = sigma_t[region]*halfhj/mu_n[m];
-                double numerator = h[j]*h[j]*tau*source_lin[j][m] + 2*h[j]*(3+tau)*source[j][m]+4*mu_n[m]*(3-2*tau)*psi_e[j][m];
-                double denominator = 4*(4*mu_n[m]*tau+3*mu_n[m]+sigma_t[region]*h[j]*tau);
-                psi_e[j+1][m] = numerator/denominator;
-                psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
-                psi_c_lin[j][m] = 2*(psi_e[j+1][m] - psi_c[j][m])/h[j];
-            }else if(alpha_mode ==30){
-                double tau = sigma_t[region]*h[j]/mu_n[m];
-                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]*h[j]/mu_n[m]*tau/4;
-                double denominator = 1 + tau + tau*tau/2;
-                psi_e[j+1][m] = numerator/denominator;
-                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-                /*
-                double twomu_h = mu_n[m]/halfhj;
-                double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
-                psi_e[j+1][m] = (twomu_h*mu_hsigt*psi_e[j][m]+mu_hsigt*source[j][m]+source_edge[j+1][m]/2)/(twomu_h*(mu_hsigt+1)+sigma_t[region]);
-                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];*/
-            }else if(alpha_mode==31){
-                double tau = sigma_t[region]*h[j]/mu_n[m];
-                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]*h[j]/mu_n[m]*tau*(0.25+tau/12);
-                double denominator = 1 + tau + tau*tau/2 + tau*tau*tau/6;
-                psi_e[j+1][m] = numerator/denominator;
-                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-            }else if(alpha_mode==32){
-                double tau = sigma_t[region]*h[j]/mu_n[m];
-                double etau = exp(tau);
-                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]/sigma_t[region]/2*(etau-1-tau);
-                psi_e[j+1][m] = numerator/etau;
-                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-            }else if(alpha_mode==33){
-                double tau = sigma_t[region]*h[j]/mu_n[m];
-                double tau_a = (sigma_t[region]-sigma_s0[region])*h[j]/mu_n[m];
-                double etau = exp(tau_a) - 1 - tau_a - tau_a*tau_a/2;
-                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]/sigma_t[region]*(tau*tau/4+etau/2);
-                double denominator = 1 + tau + tau*tau/2 + etau;
-                psi_e[j+1][m] = numerator/denominator;
-                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-            }else{
-                double numerator = (mu_n[m]-(sigma_t[region])*halfhj*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*halfhj;
-                double denominator = mu_n[m]+(sigma_t[region])*halfhj*(1.0+alpha[j][m]);
-                psi_e[j+1][m] = numerator/denominator;
-            }
-            
-            within_region_counter++;
-            if(within_region_counter==discret[region]){
-                within_region_counter = 0;
-                region++;
-            }
-        }
-    }
-    return;
+void SourceIteration::print_dictionary(){
+    
 }
 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//--------------------PRINT STUFF--------------------------------------------//
+//--------------------PRINT STUFF--------------------------------------------//
+
+//----------------------------------------------------------------------------//
+
+//--------------------CALCULATE EDGE PHI-------------------------------------//
+//--------------------CALCULATE EDGE PHI-------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+vector<double> SourceIteration::calcEdgePhi(int num){
+    vector<double> edgePhi;
+    if(!num){
+        for(unsigned int j = 0; j<J+1;j++){
+            edgePhi.push_back(0);
+            for(unsigned int m = 0; m<N;m++){
+                edgePhi[j]+= w_n[m]*psi_e[j][m];
+            }
+        }
+    }else{
+        for(unsigned int j = 0; j<J+1;j++){
+            edgePhi.push_back(0);
+            for(unsigned int m = 0; m<N;m++){
+                edgePhi[j]+= mu_n[m]*w_n[m]*psi_e[j][m];
+            }
+        }
+    }
+    return edgePhi;
+    
+}
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//--------------------CALCULATE EDGE PHI-------------------------------------//
+//--------------------CALCULATE EDGE PHI-------------------------------------//
+
+//----------------------------------------------------------------------------//
+
+//--------------------CHECK FOR NEGATIVE FLUX--------------------------------//
+//--------------------CHECK FOR NEGATIVE FLUX--------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+unsigned int SourceIteration::checkNegativeFlux(){
+    unsigned int temp = 0;
+    for(unsigned int j = 0; j<J;j++){
+        if(phi_0[j] < 0){
+            temp++;
+        }
+    }
+    return temp;
+}
+
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//--------------------CHECK FOR NEGATIVE FLUX--------------------------------//
+//--------------------CHECK FOR NEGATIVE FLUX--------------------------------//
+
+//----------------------------------------------------------------------------//
+
+//--------------------CMFD/PCMFD----------------------------------------------//
+//--------------------CMFD/PCMFD----------------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 void SourceIteration::cmfd(){
     vector<double> phi_0_CM;
     vector<double> Q_CM; //Note that this is Q_CM*h_CM
@@ -965,6 +898,18 @@ void SourceIteration::pcmfd(){
     
 }
 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//--------------------CMFD/PCMFD----------------------------------------------//
+//--------------------CMFD/PCMFD----------------------------------------------//
+
+
+//----------------------------------------------------------------------------//
+
+//----------------FINITE DIFFERENCE--------------------------------------------//
+//----------------FINITE DIFFERENCE--------------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+
+
 void SourceIteration::finiteDifference(){
     for(unsigned int j = 0; j<J;j++){
         for(unsigned int m = 0; m<N;m++){
@@ -972,6 +917,59 @@ void SourceIteration::finiteDifference(){
         }
     }
     return;
+}
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//--------------------FINITE DIFFERENCE---------------------------------------//
+//--------------------FINITE DIFFERENCE---------------------------------------//
+
+
+//----------------------------------------------------------------------------//
+
+//----------------INITIALIZE STUFF--------------------------------------------//
+//----------------INITIALIZE STUFF--------------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+
+void SourceIteration::initializeAlpha(){
+    if(alpha.size()){return;}
+    if(alpha_mode > 3){return;}
+    unsigned int region = 0;
+    unsigned int within_region_counter = 0;
+    for(unsigned int j = 0; j<J;j++){
+        vector<double> temp;
+        alpha.push_back(temp);
+        if(alpha_mode == 1){ //Step method
+            for(unsigned int m=0; m<N/2;m++){
+                alpha[j].push_back(1);
+            }
+            for(unsigned int m=N/2;m<N;m++){
+                alpha[j].push_back(-1);
+            }
+        }else if(alpha_mode==0){ //Diamond Difference
+            for(unsigned int m=0; m<N;m++){
+                alpha[j].push_back(0);
+            }
+        }else if(alpha_mode==2){ //Step characteristic
+            for(unsigned int m=0; m<N;m++){
+                double tau = sigma_t[region]*h[j]/2.0/mu_n[m];
+                alpha[j].push_back(1.0/tanh(tau)-1.0/tau);
+            }
+            within_region_counter++;
+        }else if(alpha_mode==3){ //Characteristic alternative (3.1 of notes)
+            for(unsigned int m=0;m<N;m++){
+                double tau = sigma_t[region]*h[j]/2/mu_n[m];
+                if(m < N/2){
+                    alpha[j].push_back(tau+1);
+                }else{
+                    alpha[j].push_back(tau-1);
+                }
+            }
+        }
+        if(within_region_counter == discret[region]){
+            within_region_counter=0;
+            region++;
+        }
+    }
 }
 
 void SourceIteration::initializeGrid(){
@@ -1036,47 +1034,213 @@ void SourceIteration::initializeGrid(){
     }
 }
 
-void SourceIteration::initializeAlpha(){
-    if(alpha.size()){return;}
-    if(alpha_mode > 3){return;}
-    unsigned int region = 0;
-    unsigned int within_region_counter = 0;
-    for(unsigned int j = 0; j<J;j++){
-        vector<double> temp;
-        alpha.push_back(temp);
-        if(alpha_mode == 1){ //Step method
-            for(unsigned int m=0; m<N/2;m++){
-                alpha[j].push_back(1);
-            }
-            for(unsigned int m=N/2;m<N;m++){
-                alpha[j].push_back(-1);
-            }
-        }else if(alpha_mode==0){ //Diamond Difference
-            for(unsigned int m=0; m<N;m++){
-                alpha[j].push_back(0);
-            }
-        }else if(alpha_mode==2){ //Step characteristic
-            for(unsigned int m=0; m<N;m++){
-                double tau = sigma_t[region]*h[j]/2.0/mu_n[m];
-                alpha[j].push_back(1.0/tanh(tau)-1.0/tau);
-            }
-            within_region_counter++;
-        }else if(alpha_mode==3){ //Characteristic alternative (3.1 of notes)
-            for(unsigned int m=0;m<N;m++){
-                double tau = sigma_t[region]*h[j]/2/mu_n[m];
-                if(m < N/2){
-                    alpha[j].push_back(tau+1);
-                }else{
-                    alpha[j].push_back(tau-1);
-                }
-            }
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//----------------INITIALIZE STUFF--------------------------------------------//
+//----------------INITIALIZE STUFF--------------------------------------------//
+
+
+//----------------------------------------------------------------------------//
+
+//-----------LEFT AND RIGHT ITERATE------------------------------------------//
+//-----------LEFT AND RIGHT ITERATE------------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+
+void SourceIteration::leftIteration(){
+    if(bc[1]==1){
+        for(unsigned int m=0; m<N/2;m++){
+            psi_e[J][N-m-1] = psi_e[J][m];
         }
-        if(within_region_counter == discret[region]){
-            within_region_counter=0;
-            region++;
+    }else if(bc[1]==2){
+        vector<double> temp = data->getpsi_br();
+        for(unsigned int m=0; m<N/2;m++){
+            psi_e[J][m+N/2] = temp[m];
         }
     }
+    int region;
+    unsigned int within_region_counter;
+    for(unsigned int m = N/2; m<N;m++){
+        region = discret.size()-1;
+        within_region_counter=0;
+        for(int j = J-1; j>=0;j--){
+            double halfhj = h[j]/2.0;
+            if(alpha_mode==10){//For linear characteristic stuff
+                double twosigt = 2*sigma_t[region];
+                double musig = mu_n[m]/sigma_t[region];
+                double sighmu = h[j]/musig;
+                double srctwosigt = source[j][m]/twosigt;
+                double srclintwosigt = source_lin[j][m]/twosigt;
+                double C0 = psi_e[j+1][m] - srctwosigt - srclintwosigt*(halfhj-musig);
+                double esighmu = exp(sighmu);
+                psi_c[j][m] = C0/sighmu*(esighmu-1.0) + srctwosigt-srclintwosigt*musig;
+                psi_c_lin[j][m] = srclintwosigt - 6.0*C0/sighmu/h[j]*(1.0 + esighmu-2.0/sighmu*(esighmu-1.0));
+                psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhj + musig) + srctwosigt;
+            }else if(alpha_mode==11){
+                double twosigt = 2*sigma_t[region];
+                double musig = mu_n[m]/sigma_t[region];
+                double sighmu = h[j]/musig;
+                double srctwosigt = source[j][m]/twosigt;
+                double srclintwosigt = source_lin[j][m]/twosigt;
+                double C0 = psi_e[j+1][m] - srctwosigt - srclintwosigt*(halfhj-musig);
+                double esighmu = exp(sighmu);
+                psi_c[j][m] = C0/sighmu*(esighmu-1.0) + srctwosigt-srclintwosigt*musig;
+                psi_e[j][m] = C0*esighmu- srclintwosigt*(halfhj + musig) + srctwosigt;
+            }else if(alpha_mode==20){
+                double tau = sigma_t[region]*h[j]/2/mu_n[m];
+                double numerator = h[j]*h[j]*tau*source_lin[j][m] + 2*h[j]*(3-tau)*source[j][m]-4*mu_n[m]*(3+2*tau)*psi_e[j+1][m];
+                double denominator = 4*(4*mu_n[m]*tau-3*mu_n[m]-sigma_t[region]*h[j]*tau);
+                psi_e[j][m] = numerator/denominator;
+                psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
+                psi_c_lin[j][m] = 2*(psi_c[j][m]-psi_e[j][m])/h[j];
+            }else if(alpha_mode ==30){
+                double tau = -sigma_t[region]*h[j]/mu_n[m];
+                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 - source_edge[j][m]*h[j]*tau/4/mu_n[m];
+                double denominator = 1 + tau + tau*tau/2;
+                psi_e[j][m] = numerator/denominator;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+                /*
+                 double twomu_h = mu_n[m]/halfhj;
+                 double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
+                 psi_e[j][m] = (twomu_h*mu_hsigt*psi_e[j+1][m]-mu_hsigt*source[j][m]+source_edge[j][m]/2)/(twomu_h*(mu_hsigt-1)+sigma_t[region]);
+                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+                 */
+            }else if(alpha_mode==31){
+                double tau = -sigma_t[region]*h[j]/mu_n[m];
+                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 - source_edge[j][m]*h[j]/mu_n[m]*tau*(0.25+tau/12);
+                //double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]/sigma_t[region]*(tau*tau/4+tau*tau*tau/12);
+                double denominator = 1 + tau + tau*tau/2 + tau*tau*tau/6;
+                psi_e[j][m] = numerator/denominator;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+            }else if(alpha_mode==32){
+                double tau = -sigma_t[region]*h[j]/mu_n[m];
+                double etau = exp(tau);
+                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]/sigma_t[region]/2*(etau-1-tau);
+                psi_e[j][m] = numerator/etau;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+            }else if(alpha_mode==33){
+                double tau = -sigma_t[region]*h[j]/mu_n[m];
+                double tau_a = (sigma_s0[region]-sigma_t[region])*h[j]/mu_n[m];
+                double etau = exp(tau_a) - 1 - tau_a - tau_a*tau_a/2;
+                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]/sigma_t[region]*(tau*tau/4+etau/2);
+                double denominator = 1 + tau + tau*tau/2 + etau;
+                psi_e[j][m] = numerator/denominator;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+            }else{ //Regular finite difference
+                double numerator = (-mu_n[m]-(sigma_t[region])*halfhj*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*halfhj;
+                double denominator = -mu_n[m]+(sigma_t[region])*halfhj*(1.0-alpha[j][m]);
+                psi_e[j][m] = numerator/denominator;
+            }
+            within_region_counter++;
+            if(within_region_counter==discret[region]){
+                within_region_counter = 0;
+                region--;
+            }
+        }
+    }
+    return;
 }
+void SourceIteration::rightIteration(){
+    //Reflective boundary conditions:
+    if(bc[0]==1){
+        for(unsigned int m=0; m<N/2;m++){
+            psi_e[0][m] = psi_e[0][N-m-1];
+        }
+    }else if(bc[0]==2){
+        vector<double> temp = data->getpsi_bl();
+        for(unsigned int m=0; m<N/2;m++){
+            psi_e[0][m] = temp[m];
+        }
+    }
+    int region;
+    unsigned int within_region_counter;
+    for(unsigned int m = 0; m<N/2;m++){
+        region = 0;
+        within_region_counter=0;
+        for(unsigned int j = 0; j<J;j++){
+            double halfhj = h[j]/2.0;
+            if(alpha_mode==10){ //For Linear Characteristic stuff
+                double twosigt = 2*sigma_t[region];
+                double musig = mu_n[m]/sigma_t[region];
+                double sighmu = h[j]/musig;
+                double srctwosigt = source[j][m]/twosigt;
+                double srclintwosigt = source_lin[j][m]/twosigt;
+                double C0 = psi_e[j][m] - srctwosigt + srclintwosigt*(halfhj+musig);
+                double esighmu = exp(-sighmu);
+                psi_c[j][m] = C0/sighmu*(1.0 - esighmu) + srctwosigt-srclintwosigt*musig;
+                psi_c_lin[j][m] = srclintwosigt - 6.0*C0/sighmu/h[j]*(1.0 + esighmu+2.0/sighmu*(esighmu-1));
+                psi_e[j+1][m] = C0*esighmu+ srclintwosigt*(halfhj - musig) + srctwosigt;
+            }else if(alpha_mode==11){ //"tilting method" (linear alternative)
+                double twosigt = 2*sigma_t[region];
+                double musig = mu_n[m]/sigma_t[region];
+                double sighmu = h[j]/musig;
+                double srctwosigt = source[j][m]/twosigt;
+                double srclintwosigt = source_lin[j][m]/twosigt;
+                double C0 = psi_e[j][m] - srctwosigt + srclintwosigt*(halfhj+musig);
+                double esighmu = exp(-sighmu);
+                psi_c[j][m] = C0/sighmu*(1.0 - esighmu) + srctwosigt-srclintwosigt*musig;
+                psi_e[j+1][m] = C0*esighmu+ srclintwosigt*(halfhj - musig) + srctwosigt;
+            }else if(alpha_mode==20){ // LD
+                double tau = sigma_t[region]*halfhj/mu_n[m];
+                double numerator = h[j]*h[j]*tau*source_lin[j][m] + 2*h[j]*(3+tau)*source[j][m]+4*mu_n[m]*(3-2*tau)*psi_e[j][m];
+                double denominator = 4*(4*mu_n[m]*tau+3*mu_n[m]+sigma_t[region]*h[j]*tau);
+                psi_e[j+1][m] = numerator/denominator;
+                psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
+                psi_c_lin[j][m] = 2*(psi_e[j+1][m] - psi_c[j][m])/h[j];
+            }else if(alpha_mode ==30){
+                double tau = sigma_t[region]*h[j]/mu_n[m];
+                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]*h[j]/mu_n[m]*tau/4;
+                double denominator = 1 + tau + tau*tau/2;
+                psi_e[j+1][m] = numerator/denominator;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+                /*
+                 double twomu_h = mu_n[m]/halfhj;
+                 double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
+                 psi_e[j+1][m] = (twomu_h*mu_hsigt*psi_e[j][m]+mu_hsigt*source[j][m]+source_edge[j+1][m]/2)/(twomu_h*(mu_hsigt+1)+sigma_t[region]);
+                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];*/
+            }else if(alpha_mode==31){
+                double tau = sigma_t[region]*h[j]/mu_n[m];
+                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]*h[j]/mu_n[m]*tau*(0.25+tau/12);
+                double denominator = 1 + tau + tau*tau/2 + tau*tau*tau/6;
+                psi_e[j+1][m] = numerator/denominator;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+            }else if(alpha_mode==32){
+                double tau = sigma_t[region]*h[j]/mu_n[m];
+                double etau = exp(tau);
+                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]/sigma_t[region]/2*(etau-1-tau);
+                psi_e[j+1][m] = numerator/etau;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+            }else if(alpha_mode==33){
+                double tau = sigma_t[region]*h[j]/mu_n[m];
+                double tau_a = (sigma_t[region]-sigma_s0[region])*h[j]/mu_n[m];
+                double etau = exp(tau_a) - 1 - tau_a - tau_a*tau_a/2;
+                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]/sigma_t[region]*(tau*tau/4+etau/2);
+                double denominator = 1 + tau + tau*tau/2 + etau;
+                psi_e[j+1][m] = numerator/denominator;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+            }else{
+                double numerator = (mu_n[m]-(sigma_t[region])*halfhj*(1.0-alpha[j][m]))*psi_e[j][m]+source[j][m]*halfhj;
+                double denominator = mu_n[m]+(sigma_t[region])*halfhj*(1.0+alpha[j][m]);
+                psi_e[j+1][m] = numerator/denominator;
+            }
+            
+            within_region_counter++;
+            if(within_region_counter==discret[region]){
+                within_region_counter = 0;
+                region++;
+            }
+        }
+    }
+    return;
+}
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-----------LEFT AND RIGHT ITERATE------------------------------------------//
+//-----------LEFT AND RIGHT ITERATE------------------------------------------//
+
+//----------------------------------------------------------------------------//
+
+//---------------UPDATE PHI, CALC SOURCE--------------------------------------//
+//---------------UPDATE PHI, CALC SOURCE--------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 
 //Update phi, calculate source:
 double SourceIteration::updatePhi_calcSource(bool usePsi){
@@ -1183,63 +1347,4 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
     }
     return (Utilities::p_norm(old_phi_0,phi_0,2));
     
-}
-
-//Update phi, calculate source:
-vector<double> SourceIteration::calcEdgePhi(int num){
-    vector<double> edgePhi;
-    if(!num){
-        for(unsigned int j = 0; j<J+1;j++){
-            edgePhi.push_back(0);
-            for(unsigned int m = 0; m<N;m++){
-                edgePhi[j]+= w_n[m]*psi_e[j][m];
-            }
-        }
-    }else{
-        for(unsigned int j = 0; j<J+1;j++){
-            edgePhi.push_back(0);
-            for(unsigned int m = 0; m<N;m++){
-                edgePhi[j]+= mu_n[m]*w_n[m]*psi_e[j][m];
-            }
-        }
-    }
-    return edgePhi;
-    
-}
-
-unsigned int SourceIteration::checkNegativeFlux(){
-    unsigned int temp = 0;
-    for(unsigned int j = 0; j<J;j++){
-        if(phi_0[j] < 0){
-            temp++;
-        }
-    }
-    return temp;
-}
-
-vector<vector<double> > SourceIteration::get_solution(){
-    vector<vector<double> > out;
-    
-    //Compute the x coordinates of the phi vector:
-    vector<double> x_total;
-    for(unsigned int i = 0; i<x.size();i++){
-        x_total.push_back(x_e[i]);
-        x_total.push_back(x[i]);
-    }
-    x_total.push_back(x_e[x.size()]);
-    
-    out.push_back(x_total);
-    
-    //Compute the phi vector (combining both edge and cell averaged)
-    vector<double> phi_total;
-    vector<double> phi_edge = calcEdgePhi(0);
-    for(unsigned int i = 0; i<phi_0.size();i++){
-        phi_total.push_back(phi_edge[i]);
-        phi_total.push_back(phi_0[i]);
-    }
-    phi_total.push_back(phi_edge[phi_0.size()]);
-    
-    out.push_back(phi_total);
-    
-    return out;
 }
