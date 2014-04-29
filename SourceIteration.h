@@ -28,7 +28,7 @@ class SourceIteration{
 public:
     static const unsigned int MAX_IT = 100000;
     static const unsigned int MAX_IT_accel = 5000;
-    static const unsigned int EDGE_ACCEL_MODE = 0;
+    static const unsigned int EDGE_ACCEL_MODE = 1;
     static const bool intermedSoln = 0;
     
     bool isConverged;

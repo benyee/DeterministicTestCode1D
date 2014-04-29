@@ -594,24 +594,133 @@ void SourceIteration::cmfd(){
     
     unsigned int psize = phi_0.size();
     
-    /*
+    
     if(alpha_mode >=30 || alpha_mode==11){
         if(EDGE_ACCEL_MODE==1){
             Utilities::print_dvector(edgePhi0);
-            if(old_phi_0[0] != 0){
-                edgePhi0[0] *= phi_0[0]/old_phi_0[0];
+            unsigned int region_L = 0;
+            unsigned int region_R = 0;
+            
+            //Left edge:
+            double left_coeff = 0;
+            double right_coeff = 0;
+            double Q_addition = 0;
+            double phi_addition = 0;
+            
+            double Sth_L;
+            double Sth_R = sigma_t[region_R]*h[0];
+            for(unsigned int m = 0; m< N/2; m++){
+                left_coeff += psi_e[0][m] * w_n[m];
+                right_coeff += 2 * fabs(mu_n[N-m-1]) * psi_c[0][N-m-1] * \
+                    w_n[N-m-1] / ( Sth_R + 2 * fabs(mu_n[N-m-1]) );
+                
+                Q_addition += w_n[N-m-1] / ( Sth_R + 2 * fabs(mu_n[N-m-1]) )/2;
+                phi_addition += h[0]*sigma_s0[region_R] * w_n[N-m-1]/ 2 / \
+                    ( Sth_R + 2 * fabs(mu_n[N-m-1]) );
             }
-            //Update phi_0_edge:
-            for(unsigned int i = 1; i < psize;i++){
-                if(old_phi_0[i]+old_phi_0[i-1]!=0){
-                    edgePhi0[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
+            right_coeff /= old_phi_0[0];
+            Q_addition *= h[0]*Q[region_R];
+            
+            if(bc[0] != 1){
+                edgePhi0[0] = left_coeff+right_coeff*phi_0[0] + Q_addition;
+                edgePhi0[0] /= 1 - phi_addition;
+            }else{
+                edgePhi0[0] = 2*(right_coeff*phi_0[0] + Q_addition);
+                edgePhi0[0] /= 1 - 2*phi_addition;
+            }
+            
+            unsigned int within_region_counter_L = 0;
+            unsigned int within_region_counter_R = 1;
+            if(within_region_counter_L == discret[region_L]){
+                within_region_counter_L=0;
+                region_L++;
+            }
+            if(within_region_counter_R == discret[region_R]){
+                within_region_counter_R=0;
+                region_R++;
+            }
+            
+            for(unsigned int i = 1; i<edgePhi0.size()-1;i++){
+                left_coeff = 0;
+                right_coeff = 0;
+                Q_addition = 0;
+                phi_addition = 0;
+                
+                Sth_L = sigma_t[region_L]*h[i-1];
+                Sth_R = sigma_t[region_R]*h[i];
+                
+                double Q_L = h[i-1]*Q[region_L];
+                double Q_R = h[i]*Q[region_R];
+                
+                for(unsigned int m = 0; m< N/2; m++){
+                    left_coeff += 2 * fabs(mu_n[m]) * psi_c[i-1][m] * w_n[m] / \
+                        ( Sth_L + 2 * fabs(mu_n[m]) ) ;
+                    right_coeff += 2 * fabs(mu_n[N-m-1]) * psi_c[i][N-m-1] * \
+                        w_n[N-m-1] / ( Sth_R + 2 * fabs(mu_n[N-m-1]) );
+                    
+                    Q_addition += Q_L * w_n[m] / \
+                        ( Sth_L + 2 * fabs(mu_n[m]) )/2;
+                    Q_addition += Q_R * w_n[N-m-1] / \
+                        ( Sth_R + 2 * fabs(mu_n[N-m-1]) )/2;
+                    
+                    phi_addition += h[i-1]*sigma_s0[region_L] * w_n[m]/ 2 / \
+                        ( Sth_L + 2 * mu_n[m] );
+                    phi_addition += h[i]*sigma_s0[region_R] * w_n[N-m-1]/ 2 / \
+                        ( Sth_R + 2 * fabs(mu_n[N-m-1]) );
                 }
+                left_coeff /= old_phi_0[i-1];
+                right_coeff /= old_phi_0[i];
+                
+                edgePhi0[i] = left_coeff*phi_0[i-1]+right_coeff*phi_0[i] + \
+                    Q_addition;
+                edgePhi0[i] /= 1 - phi_addition;
+                
+                within_region_counter_L++;
+                within_region_counter_R++;
+                if(within_region_counter_L == discret[region_L]){
+                    within_region_counter_L=0;
+                    region_L++;
+                }
+                if(within_region_counter_R == discret[region_R]){
+                    within_region_counter_R=0;
+                    region_R++;
+                }
+
             }
-            if(old_phi_0[psize-1] != 0){
-                edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
+            
+            //Right edge:
+            left_coeff = 0;
+            right_coeff = 0;
+            Q_addition = 0;
+            phi_addition = 0;
+            unsigned int i = h.size();
+            
+            Sth_L = sigma_t[region_L]*h[i-1];
+            
+            for(unsigned int m = 0; m< N/2; m++){
+                left_coeff += 2 * mu_n[m] * psi_c[i-1][m] * w_n[m] / \
+                ( Sth_L + 2 * mu_n[m] ) ;
+                right_coeff += psi_e[i][m];
+                
+                Q_addition += w_n[m] / ( Sth_L + 2 * fabs(mu_n[m]) ) / 2;
+                phi_addition += h[i-1]*sigma_s0[region_L] * w_n[m]/ 2 / \
+                    ( Sth_L + 2 * mu_n[m] );
             }
+            
+            left_coeff /= old_phi_0[i-1];
+            Q_addition *= h[i-1]*sigma_t[region_L];
+            
+            if(bc[1]!=1){
+                edgePhi0[i] = left_coeff*phi_0[i-1]+right_coeff + Q_addition;
+                edgePhi0[i] /= 1 - phi_addition;
+            }else{
+                edgePhi0[i] = 2*(left_coeff*phi_0[i-1] + Q_addition);
+                edgePhi0[i] /= 1 - 2*phi_addition;
+            }
+
+            Utilities::print_dvector(edgePhi0);
         }
-    }*/
+    }
     
     variable_status["edgePhi0"] += 0.5;
     variable_status["edgePhi1"] += 0.5;
