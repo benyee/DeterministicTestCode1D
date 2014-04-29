@@ -38,7 +38,7 @@ public:
     int iterate(bool isPrintingToWindow = true, bool isPrintingToFile = true, bool falseConvCorrection = true);
     vector<vector<double> > get_solution(); //Returns the phi and x values from the solution.
     void printOutput( bool isPrintingToWindow = false,unsigned int tabwidth=20, bool newFile = false);
-    void print_dictionary();
+    void printDictionary();
     
     double get_error(){return old_error;}
     double get_it_num(){if(isConverged){return it_num;} return -it_num;}

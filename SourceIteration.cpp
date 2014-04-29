@@ -105,6 +105,7 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     }
     
     updatePhi_calcSource();
+    initializeDictionary();
 }
 
 SourceIteration::~SourceIteration(){
@@ -115,7 +116,7 @@ SourceIteration::~SourceIteration(){
 //------------------------CONSTRUCTOR-----------------------------------------//
 //------------------------CONSTRUCTOR-----------------------------------------//
 
-//0IIIIIIII
+//0IIIII
 //----------------------------------------------------------------------------//
 
 //------------------------MAIN LOOP-------------------------------------------//
@@ -149,9 +150,8 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
     double error = 0;;
     
     //Iterate until tolerance is achieved:
-    it_num = 0.5;
+    it_num = 0;
     do{
-        
         //Go either right then left or left then right:
         if(bc[0] == 1 && bc[1] == 0){
             leftIteration();
@@ -166,6 +166,9 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             finiteDifference();
         }
         
+        variable_status["psi_e"] += 1;
+        variable_status["psi_c"] += 1;
+        
         
         error=updatePhi_calcSource();
         it_num += 0.5;
@@ -177,6 +180,20 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         }else if(accel_mode == 2 || accel_mode == 3){
             pcmfd();
             updatePhi_calcSource(false);
+        }else{
+            variable_status["phi_0"] += 0.5;
+            variable_status["phi_1"] += 0.5;
+            variable_status["edgePhi0"] += 0.5;
+            variable_status["edgePhi1"] += 0.5;
+            variable_status["source"] += 0.5;
+            variable_status["source_edge"] += 0.5;
+        }
+        //This may or may not need to go inside the else statement above:
+        if(hasLinearTerms){
+            variable_status["phi_0_lin"] += 0.5;
+            variable_status["phi_1_lin"] += 0.5;
+            variable_status["phi_c_lin"] += 0.5;
+            variable_status["source_lin"] += 0.5;
         }
         
         it_num += 0.5;
@@ -360,8 +377,12 @@ void SourceIteration::printOutput(bool isPrintingToWindow,unsigned int tabwidth,
     outfile.close();
 }
 
-void SourceIteration::print_dictionary(){
-    
+//0PPPPPPP
+void SourceIteration::printDictionary(){
+    for(Dict::const_iterator it(variable_status.begin());\
+      it != variable_status.end(); it++){
+        cout<<it->first<<" is at iteration "<<it->second<<endl;
+    }
 }
 
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
@@ -384,6 +405,7 @@ vector<double> SourceIteration::calcEdgePhi(int num){
                 edgePhi[j]+= w_n[m]*psi_e[j][m];
             }
         }
+        variable_status["edgePhi0"] = variable_status["psi_e"];
     }else{
         for(unsigned int j = 0; j<J+1;j++){
             edgePhi.push_back(0);
@@ -391,6 +413,7 @@ vector<double> SourceIteration::calcEdgePhi(int num){
                 edgePhi[j]+= mu_n[m]*w_n[m]*psi_e[j][m];
             }
         }
+        variable_status["edgePhi1"] = variable_status["psi_e"];
     }
     return edgePhi;
     
@@ -571,6 +594,7 @@ void SourceIteration::cmfd(){
     
     unsigned int psize = phi_0.size();
     
+    /*
     if(alpha_mode >=30 || alpha_mode==11){
         if(EDGE_ACCEL_MODE==1){
             Utilities::print_dvector(edgePhi0);
@@ -586,88 +610,13 @@ void SourceIteration::cmfd(){
             if(old_phi_0[psize-1] != 0){
                 edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
             }
-        }else if(EDGE_ACCEL_MODE==2){
-            edgePhi0[0] = edgePhi0[0] + phi_0[0]-old_phi_0[0];
-            //Update phi_0_edge:
-            for(unsigned int i = 1; i < psize;i++){
-                if(old_phi_0[i]+old_phi_0[i-1]!=0){
-                    edgePhi0[i] = edgePhi0[i]+ (phi_0[i]+phi_0[i-1])/2 - (old_phi_0[i]+old_phi_0[i-1])/2;
-                }
-            }
-            edgePhi0[psize] = edgePhi0[psize] + phi_0[psize-1]-old_phi_0[psize-1];
-        }else if(EDGE_ACCEL_MODE==3){
-            if(old_phi_0[0] != 0){
-                edgePhi0[0] *= phi_0[0]/old_phi_0[0];
-            }
-            //Update phi_0_edge:
-            for(unsigned int i = 1; i < psize;i++){
-                if(old_phi_0[i]+old_phi_0[i-1]!=0){
-                    edgePhi0[i] *= (phi_0[i]/old_phi_0[i]+ phi_0[i-1]/old_phi_0[i-1])/2;
-                }
-            }
-            if(old_phi_0[psize-1] != 0){
-                edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
-            }
-        }else if(EDGE_ACCEL_MODE==4){//HERE I AM
-            //This only works if the fine mesh and coarse mesh are the same.
-            //This only works if the regions are all uniform
-            double lnSth = log(1 + 2.0/sigma_t[0]/h[0]);
-            double Sth = sigma_t[0]*h[0];
-            double Ssh = sigma_s0[0]*h[0];
-            double Aed = (1 - Sth/2*lnSth)/(1 - Ssh/2*lnSth);
-            double Bed =3*(Sth*(Sth/2*lnSth-1)+1)/8/(1 - Ssh/2*lnSth);
-            double Ced =h[0]/2*lnSth/(1 - Ssh/2*lnSth);
-            double Ded =(Sth*(Sth*lnSth-2)+2)/4;
-            double Eed =(3*Sth*(Sth*Sth*log(Sth/(2+Sth))+ 2*Sth-2)+8 )/8;
-            double Fed =(2 - Sth*lnSth)/4;
-            
-            double const1 =(Aed-Bed*Ded/Eed)/2;
-            double const2 = Bed/Eed;
-            
-            double denom = 1.0/(Bed*Fed*Ssh/Eed+1);
-            
-            double Q_mod =(Ced-Bed*Fed*h[0]/Eed)*Q[0];
-            
-            //First calculate correction factors:
-            vector<double> D_cm(edgePhi0);
-            if(bc[0] == 1){
-                D_cm[0] = (edgePhi0[0] - ( 2*const1*old_phi_0[0] + Q_mod)/denom )/2/old_phi_0[0];
-            }else{
-                D_cm[0] = (4*in_curr-2*phi_1_e_CM[0])/edgePhi0[0];
-            }
-            for(unsigned int i = 1; i <psize;i++){
-                D_cm[i] = (edgePhi0[i] - ( const1*(old_phi_0[i] + old_phi_0[i-1]) + const2*old_edgePhi1[i] + Q_mod)\
-                           /denom )/(old_phi_0[i]+old_phi_0[i-1]);
-            }
-            if(bc[1] == 1){
-                D_cm[psize] = (edgePhi0[psize] - ( 2*const1*old_phi_0[psize-1] + Q_mod)/denom )/2/old_phi_0[psize-1];
-            }else{
-                D_cm[psize] = (4*out_curr+2*phi_1_e_CM[psize])/edgePhi0[psize];
-            }
-
-            Utilities::print_dvector(D_cm);
-//            cout<<"Params"<<endl; //HERE I AM
-//            cout<<edgePhi0[2]<<endl;
-//            cout<<const1*(old_phi_0[2] + old_phi_0[1])/denom<<endl;
-//            cout<<const2*old_edgePhi1[2]/denom<<endl;
-            
-            //Correct:
-            if(bc[0] ==1){
-                edgePhi0[0] = ( 2*const1*phi_0[0] + Q_mod )/denom + D_cm[0]*phi_0[0]*2;
-            }else{
-                edgePhi0[0] = (4*in_curr-2*phi_1_e_CM[0])/D_cm[0];
-            }
-            for(unsigned int i = 1; i <psize;i++){
-                edgePhi0[i] = (const1*( phi_0[i] + phi_0[i-1] ) + const2*edgePhi1[i] + Q_mod)\
-                    /denom + D_cm[i]*( phi_0[i] + phi_0[i-1] );
-            }
-            if(bc[1] == 1){
-                edgePhi0[psize] = ( 2*const1*phi_0[psize-1] + Q_mod )/denom + D_cm[psize]*phi_0[psize-1]*2;
-            }else{
-                edgePhi0[psize] = ( 4*out_curr+2*phi_1_e_CM[psize] )/D_cm[psize];
-            }
         }
-    }
+    }*/
+    
+    variable_status["edgePhi0"] += 0.5;
+    variable_status["edgePhi1"] += 0.5;
+    variable_status["phi_0"] += 0.5;
+    variable_status["phi_1"] += 0.5;
     
 }
 
@@ -845,63 +794,10 @@ void SourceIteration::pcmfd(){
         }
     }
     
-    if(alpha_mode >=30 || alpha_mode==11){
-        if(EDGE_ACCEL_MODE==1){
-            unsigned int psize = phi_0.size();
-            if(old_phi_0[0] != 0){
-                edgePhi0[0] *= phi_0[0]/old_phi_0[0];
-                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
-            }
-            //Update phi_0_edge:
-            for(unsigned int i = 1; i < psize;i++){
-                if(old_phi_0[i]+old_phi_0[i-1]!=0){
-                    edgePhi0[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
-                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
-                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
-                }
-            }
-            if(old_phi_0[psize-1] != 0){
-                edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
-                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
-            }
-        }else if(EDGE_ACCEL_MODE==2){
-            unsigned int psize = phi_0.size();
-            edgePhi0[0] = edgePhi0[0] + phi_0[0]-old_phi_0[0];
-            if(old_phi_0[0] != 0){
-                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
-            }
-            //Update phi_0_edge:
-            for(unsigned int i = 1; i < psize;i++){
-                if(old_phi_0[i]+old_phi_0[i-1]!=0){
-                    edgePhi0[i] = edgePhi0[i]+ (phi_0[i]+phi_0[i-1])/2 - (old_phi_0[i]+old_phi_0[i-1])/2;
-                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
-                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
-                }
-            }
-            edgePhi0[psize] = edgePhi0[psize] + phi_0[psize-1]-old_phi_0[psize-1];
-            if(old_phi_0[psize-1] != 0){
-                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
-            }
-        }else if(EDGE_ACCEL_MODE==3){
-            unsigned int psize = phi_0.size();
-            if(old_phi_0[0] != 0){
-                edgePhi0[0] *= phi_0[0]/old_phi_0[0];
-                edgePhi1[0] *= phi_0[0]/old_phi_0[0];
-            }
-            //Update phi_0_edge:
-            for(unsigned int i = 1; i < psize;i++){
-                if(old_phi_0[i]+old_phi_0[i-1]!=0){
-                    edgePhi0[i] *= (phi_0[i]/old_phi_0[i]+ phi_0[i-1]/old_phi_0[i-1])/2;
-                    //This is a cheap way to get edgePhi1.  In reality, you can calculate it from the CMFD equations.
-                    edgePhi1[i] *= (phi_0[i]+phi_0[i-1])/(old_phi_0[i]+old_phi_0[i-1]);
-                }
-            }
-            if(old_phi_0[psize-1] != 0){
-                edgePhi0[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
-                edgePhi1[psize] *= phi_0[psize-1]/old_phi_0[psize-1];
-            }
-        }
-    }
+    variable_status["edgePhi0"] += 0.5;
+    variable_status["edgePhi1"] += 0.5;
+    variable_status["phi_0"] += 0.5;
+    variable_status["phi_1"] += 0.5;
     
 }
 
@@ -932,7 +828,7 @@ void SourceIteration::finiteDifference(){
 //--------------------FINITE DIFFERENCE---------------------------------------//
 
 
-//1IIIIIIIIII
+//1IIIIII
 //----------------------------------------------------------------------------//
 
 //----------------INITIALIZE STUFF--------------------------------------------//
@@ -981,6 +877,34 @@ void SourceIteration::initializeAlpha(){
     }
 }
 
+//1IIIIII
+void SourceIteration::initializeDictionary(){
+    variable_status["edgePhi0"] = 0;
+    variable_status["edgePhi1"] = 0;
+    variable_status["phi_0"] = 0;
+    variable_status["phi_1"] = 0;
+    variable_status["psi_e"] = -0.5;
+    variable_status["psi_c"] = -0.5;
+    variable_status["source"] = 0;
+    if(alpha_mode >=30){
+        variable_status["source_edge"] = 0;
+    }else{
+        variable_status["source_edge"] = -1;
+    }
+    if(hasLinearTerms){
+        variable_status["phi_0_lin"] = 0;
+        variable_status["phi_1_lin"] = 0;
+        variable_status["phi_c_lin"] = 0;
+        variable_status["source_lin"] = 0;
+    }else{
+        variable_status["phi_0_lin"] = -1;
+        variable_status["phi_1_lin"] = -1;
+        variable_status["phi_c_lin"] = -1;
+        variable_status["source_lin"] = -1;
+    }
+}
+
+//1IIIIII
 void SourceIteration::initializeGrid(){
     discret = data->getdiscret();
     if(x.size()){return;}
@@ -1299,6 +1223,16 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
             region++;
         }
     }
+    if(!hasLinearTerms){
+        variable_status["source"] += 0.5;
+        if(usePsi){
+            variable_status["phi_0"] = variable_status["psi_c"];
+            variable_status["phi_1"] = variable_status["psi_c"];
+        }
+    }
+    if(alpha_mode >=30){
+        variable_status["source_edge"] += 0.5;
+    }
     
     if(hasLinearTerms){
         if(alpha_mode !=11){
@@ -1325,6 +1259,12 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
                     region++;
                 }
             }
+            variable_status["source"] += 0.5;
+            if(usePsi){
+                variable_status["phi_0"] = variable_status["psi_c"];
+                variable_status["phi_1"] = variable_status["psi_c"];
+            }
+            variable_status["source_lin"] += 0.5;
         }else{
             region = 0;
             within_region_counter = 0;
@@ -1354,6 +1294,8 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
                     region++;
                 }
             }
+            variable_status["source"] += 0.5;
+            variable_status["source_lin"] += 0.5;
         }
     }
     return (Utilities::p_norm(old_phi_0,phi_0,2));
