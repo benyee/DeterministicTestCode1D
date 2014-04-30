@@ -22,16 +22,19 @@ int main ()
     cout << "Hello world!"<<endl;
     
     InputDeck *input = new InputDeck();
-    input->setfileName("input.txt");
+    input->setfileName("defaultinput7.txt");
     int debug = input->loadInputDeck();
+//    input->readValues();
+//    return 0;
     if(debug){
         return 0;
     }
     //input->readValues();
+    input->diffusionSolve();
     SourceIteration *input_run = new SourceIteration(input);
     input_run->iterate();
     input_run->printOutput(false);
-    
+    Utilities::print_dmatrix(input_run->get_solution());
     
     /*
      //Testing tridiagonal matrix function:
