@@ -26,7 +26,7 @@ typedef std::map<string, double> Dict;
 
 class SourceIteration{
 public:
-    static const unsigned int MAX_IT = 100000;
+    static const unsigned int MAX_IT = 10000;
     static const unsigned int MAX_IT_accel = 5000;
     static const unsigned int EDGE_ACCEL_MODE = 1;
     static const bool intermedSoln = 0;
