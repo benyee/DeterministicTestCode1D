@@ -265,9 +265,9 @@ int InputDeck::loadInputDeck(){
     inputFile.close();
     
     //Initialize edge fluxes:
-    vector<double> temp(phi_0_0.size()+1,0);
+    vector<double> temp(phi_0_0.size()+1,0.0);
     edgePhi0_0 = temp;
-    vector<double> temp2(phi_0_0.size()+1,0);
+    vector<double> temp2(phi_0_0.size()+1,0.0);
     edgePhi1_0 = temp2;
     
     //Check to make sure all these vectors are the same size:
