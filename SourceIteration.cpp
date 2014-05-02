@@ -113,16 +113,16 @@ SourceIteration::~SourceIteration(){
     data = NULL;
 }
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//------------------------CONSTRUCTOR-----------------------------------------//
-//------------------------CONSTRUCTOR-----------------------------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//----------------------CONSTRUCTOR---------------------------------------//
+//----------------------CONSTRUCTOR---------------------------------------//
 
 //0IIIII
-//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------//
 
-//------------------------MAIN LOOP-------------------------------------------//
-//------------------------MAIN LOOP-------------------------------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//-----------------------MAIN LOOP----------------------------------------//
+//-----------------------MAIN LOOP----------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool falseConvCorrection){
     
     //Remove later
@@ -153,7 +153,9 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
     //Iterate until tolerance is achieved:
     it_num = 0;
     do{
-        vector<double> old_phi_0 = phi_0; //HERE I AM
+        vector<double> old_phi_0 = phi_0;
+        
+//        Utilities::print_dmatrix(get_solution()); //HERE I AM
         //Go either right then left or left then right:
         if(bc[0] == 1 && bc[1] == 0){
             leftIteration();
@@ -177,10 +179,11 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         
         
         error=updatePhi_calcSource();
+//        Utilities::print_dmatrix(get_solution()); //HERE I AM
         it_num += 0.5;
         
         //CMFD acceleration:
-        if(accel_mode == 1){
+        if(accel_mode == 1){// && it_num >= 1){
             cmfd();
             updatePhi_calcSource(false);
         }else if(accel_mode == 2 || accel_mode == 3){
@@ -195,6 +198,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             variable_status["source_edge"] += 0.5;
         }
         //This may or may not need to go inside the else statement above:
+        //Depends on whether or not I feel like implementing CMFD with linear terms and whether they need to be accelerated.
         if(hasLinearTerms){
             variable_status["phi_0_lin"] += 0.5;
             variable_status["phi_1_lin"] += 0.5;
@@ -219,6 +223,9 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             }
             outfile<<setw(20)<<checkNegativeFlux()<<'\n';
         }
+        if(checkNegativeFlux()){
+            cout<<"WARNING: "<<checkNegativeFlux()<<" negative flux values in iteration "<<it_num<<endl;
+        }
         
         if(interSoln){
             for(unsigned int i = 0; i<x.size();i++){
@@ -234,27 +241,42 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         old_error = error;
         if(it_num == 1){
             init_error = error;
+            //If this is the first iteration, we skipped CMFD.  Continue at least one more iteration.
+            continue;
         }
-    }while(error>tol && it_num < MAX_IT && (it_num < MAX_IT_accel || accel_mode==0) && (it_num < 5 || (error/init_error)<diverge));
-    if(Utilities::nan_checker(phi_0)){
-        cout<<"The flux has NaN's in it!"<<endl;
-    }else if(error/init_error >= diverge){
-        cout<<"Source iteration diverged in "<<it_num<<" iterations"<<endl;
-    }else if(checkNegativeFlux()){
-        cout<<"Source iteration converged to a negative solution in "<<it_num<<" iterations"<<endl;
-        it_num += 0.25;
-    }else if(it_num < MAX_IT && (it_num < MAX_IT_accel || accel_mode==0)){
-        cout<<"Source iteration converged in "<<it_num<<" iterations"<<endl;
-        isConverged = 1;
-    }else{
-        if(accel_mode==0){
+        
+        
+        //Check for stopping conditions:
+        if(Utilities::nan_checker(phi_0)){ //NaN's in solution!
+            cout<<"The flux has NaN's in it!"<<endl;
+            break;
+        }else if(error <= tol){ //if converged
+            if(checkNegativeFlux()){ //Convergence to unphysical solution
+                cout<<"Source iteration converged to a negative solution in "<<it_num<<" iterations"<<endl;
+                it_num += 0.25;
+            }else{  //Convergence to real solution
+                cout<<"Source iteration converged in "<<it_num<<" iterations"<<endl;
+                isConverged = 1;
+            }
+            break;
+        }else if(it_num >= MAX_IT){
+            //Max. # of iterations reached.  Did not converge.
             cout<<"Source iteration did NOT converge in "<<MAX_IT<<" iterations"<<endl;
-        }else{
+            cout<<"The final error was "<<error<<endl;
+            break;
+        }else if(it_num >= MAX_IT_accel && !accel_mode){
+            //Max. # of iterations reached.  Did not converge.
             cout<<"Source iteration did NOT converge in "<<MAX_IT_accel<<" iterations"<<endl;
+            cout<<"The final error was "<<error<<endl;
+            break;
+        }else if(it_num >= 5 && (error/init_error) >= diverge){
+            //Solution has diverged significantly.
+            cout<<"Source iteration diverged in "<<it_num<<" iterations"<<endl;
+            break;
         }
-        cout<<"The final error was "<<error<<endl;
-    }
-    
+        
+    }while(true);
+    //while(error>tol && it_num < MAX_IT && (it_num < MAX_IT_accel || accel_mode==0) && (it_num < 5 || (error/init_error)<diverge));
     if(isPrintingToWindow){
         outfile.close();
     }
@@ -262,16 +284,16 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
 }
 
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//--------------------MAIN LOOP-----------------------------------------------//
-//--------------------MAIN LOOP-----------------------------------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-------------------MAIN LOOP--------------------------------------------//
+//-------------------MAIN LOOP--------------------------------------------//
 
 //0GGGGGGG
-//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------//
 
-//--------------------GET SOLUTION--------------------------------------------//
-//--------------------GET SOLUTION--------------------------------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//-------------------GET SOLUTION-----------------------------------------//
+//-------------------GET SOLUTION-----------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 vector<vector<double> > SourceIteration::get_solution(){
     vector<vector<double> > out;
     
@@ -305,16 +327,16 @@ vector<vector<double> > SourceIteration::get_solution(){
     return out;
 }
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//--------------------GET SOLUTION--------------------------------------------//
-//--------------------GET SOLUTION--------------------------------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-------------------GET SOLUTION------------------------------------------//
+//-------------------GET SOLUTION------------------------------------------//
 
 //0PPPPPP
-//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------//
 
-//--------------------PRINT STUFF--------------------------------------------//
-//--------------------PRINT STUFF--------------------------------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//-------------------PRINT STUFF------------------------------------------//
+//-------------------PRINT STUFF------------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 
 void SourceIteration::printOutput(bool isPrintingToWindow,unsigned int tabwidth, bool newFile){
     ofstream outfile;
@@ -400,17 +422,17 @@ void SourceIteration::printDictionary(){
     }
 }
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//--------------------PRINT STUFF--------------------------------------------//
-//--------------------PRINT STUFF--------------------------------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-------------------PRINT STUFF------------------------------------------//
+//-------------------PRINT STUFF------------------------------------------//
 
 //1111111
 //1CCCCCC
-//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------//
 
-//--------------------CALCULATE EDGE PHI-------------------------------------//
-//--------------------CALCULATE EDGE PHI-------------------------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//-------------------CALCULATE EDGE PHI------------------------------------//
+//-------------------CALCULATE EDGE PHI------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 vector<double> SourceIteration::calcEdgePhi(int num){
     vector<double> edgePhi;
     if(!num){
@@ -434,15 +456,15 @@ vector<double> SourceIteration::calcEdgePhi(int num){
     
 }
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//--------------------CALCULATE EDGE PHI-------------------------------------//
-//--------------------CALCULATE EDGE PHI-------------------------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-------------------CALCULATE EDGE PHI------------------------------------//
+//-------------------CALCULATE EDGE PHI------------------------------------//
 
-//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------//
 
-//--------------------CHECK FOR NEGATIVE FLUX--------------------------------//
-//--------------------CHECK FOR NEGATIVE FLUX--------------------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//-------------------CHECK FOR NEGATIVE FLUX-------------------------------//
+//-------------------CHECK FOR NEGATIVE FLUX-------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 unsigned int SourceIteration::checkNegativeFlux(){
     unsigned int temp = 0;
     for(unsigned int j = 0; j<J;j++){
@@ -454,16 +476,16 @@ unsigned int SourceIteration::checkNegativeFlux(){
 }
 
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//--------------------CHECK FOR NEGATIVE FLUX--------------------------------//
-//--------------------CHECK FOR NEGATIVE FLUX--------------------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-------------------CHECK FOR NEGATIVE FLUX-------------------------------//
+//-------------------CHECK FOR NEGATIVE FLUX-------------------------------//
 
 //1CCCCCC
-//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------//
 
-//--------------------CMFD/PCMFD----------------------------------------------//
-//--------------------CMFD/PCMFD----------------------------------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//-------------------CMFD/PCMFD--------------------------------------------//
+//-------------------CMFD/PCMFD--------------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 void SourceIteration::cmfd(){
     vector<double> phi_0_CM;
     vector<double> Q_CM; //Note that this is Q_CM*h_CM
@@ -533,9 +555,12 @@ void SourceIteration::cmfd(){
         }
         D_c[c_size] = 2*out_curr;
         D_c[c_size] = (D_c[c_size]+phi_1_e_CM[c_size])/phi_0_CM[c_size-1];
+//        cout<<"phi_1_e_CM[c_size] = "<<phi_1_e_CM[c_size]<<endl;
     }else{
         D_c[c_size] = 0;
     }
+    
+//    Utilities::print_dvector(D_c);
     
     //
     //Formulate tridiagonal matrix for new coarse mesh fluxes and currents:   (Equations 2.16a-d)
@@ -934,17 +959,17 @@ void SourceIteration::pcmfd(){
     
 }
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//--------------------CMFD/PCMFD----------------------------------------------//
-//--------------------CMFD/PCMFD----------------------------------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-------------------CMFD/PCMFD--------------------------------------------//
+//-------------------CMFD/PCMFD--------------------------------------------//
 
 
 //1FFFFFFF
-//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------//
 
-//----------------FINITE DIFFERENCE--------------------------------------------//
-//----------------FINITE DIFFERENCE--------------------------------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//----------------FINITE DIFFERENCE------------------------------------------//
+//----------------FINITE DIFFERENCE------------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 
 
 void SourceIteration::finiteDifference(){
@@ -956,17 +981,17 @@ void SourceIteration::finiteDifference(){
     return;
 }
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//--------------------FINITE DIFFERENCE---------------------------------------//
-//--------------------FINITE DIFFERENCE---------------------------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-------------------FINITE DIFFERENCE-------------------------------------//
+//-------------------FINITE DIFFERENCE-------------------------------------//
 
 
 //1IIIIII
-//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------//
 
-//----------------INITIALIZE STUFF--------------------------------------------//
-//----------------INITIALIZE STUFF--------------------------------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//----------------INITIALIZE STUFF------------------------------------------//
+//----------------INITIALIZE STUFF------------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 
 void SourceIteration::initializeAlpha(){
     if(alpha.size()){return;}
@@ -1100,17 +1125,17 @@ void SourceIteration::initializeGrid(){
     }
 }
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//----------------INITIALIZE STUFF--------------------------------------------//
-//----------------INITIALIZE STUFF--------------------------------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//----------------INITIALIZE STUFF------------------------------------------//
+//----------------INITIALIZE STUFF------------------------------------------//
 
 
 //1IIIIIIII
-//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------//
 
-//-----------LEFT AND RIGHT ITERATE------------------------------------------//
-//-----------LEFT AND RIGHT ITERATE------------------------------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//-----------LEFT AND RIGHT ITERATE----------------------------------------//
+//-----------LEFT AND RIGHT ITERATE----------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 
 void SourceIteration::leftIteration(){
     if(bc[1]==1){
@@ -1299,38 +1324,39 @@ void SourceIteration::rightIteration(){
     return;
 }
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//-----------LEFT AND RIGHT ITERATE------------------------------------------//
-//-----------LEFT AND RIGHT ITERATE------------------------------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-----------LEFT AND RIGHT ITERATE----------------------------------------//
+//-----------LEFT AND RIGHT ITERATE----------------------------------------//
 
 //1SSSSSSS
-//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------//
 
-//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI---------------------//
-//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI---------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI--------------------//
+//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI--------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 
 void SourceIteration::setEdgePhi_toAvgPhi(){
     unsigned int phisize = phi_0.size();
-    edgePhi0[0] = phi_0[0];
+    edgePhi0[0] = phi_0[0] - (phi_0[1] - phi_0[0])/(x[1]-x[0])*(x[0]-x_e[0]);
     for(unsigned int i = 1; i < phisize;i++){
         edgePhi0[i] = (phi_0[i-1] + phi_0[i])/2;
     }
-    edgePhi0[phisize] = 0;
+    edgePhi0[phisize] = phi_0[phisize-1]+(phi_0[phisize-1]-phi_0[phisize-2])/\
+        (x[phisize-1]-x[phisize-2])*(x_e[phisize]-x[phisize-1]);
 }
 
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI---------------------//
-//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI---------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI--------------------//
+//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI--------------------//
 
 
 //1UUUUUUU
-//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------//
 
-//---------------UPDATE PHI, CALC SOURCE--------------------------------------//
-//---------------UPDATE PHI, CALC SOURCE--------------------------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//---------------UPDATE PHI, CALC SOURCE------------------------------------//
+//---------------UPDATE PHI, CALC SOURCE------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 
 //Update phi, calculate source:
 double SourceIteration::updatePhi_calcSource(bool usePsi){
