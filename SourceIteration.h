@@ -120,6 +120,7 @@ private:
     void initializeGrid(); //Calculate values associated with grid locations
     void rightIteration(); //Sweep left to right
         void leftIteration(); //Sweep right to left
+    void setEdgePhi_toAvgPhi(); //Used to make a crude improvement of the initial edge flux guess
     double updatePhi_calcSource(bool usePsi = true); //Update fluxes and currents, calculate new source, calculate difference between new and old scalar flux
 };
 

@@ -104,7 +104,8 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
         cout<<"c corrected to "<<c<<endl;
     }
     
-    updatePhi_calcSource();
+    updatePhi_calcSource(false);
+    setEdgePhi_toAvgPhi();
     initializeDictionary();
 }
 
@@ -152,7 +153,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
     //Iterate until tolerance is achieved:
     it_num = 0;
     do{
-//        Utilities::print_dmatrix(psi_e);
+        vector<double> old_phi_0 = phi_0; //HERE I AM
         //Go either right then left or left then right:
         if(bc[0] == 1 && bc[1] == 0){
             leftIteration();
@@ -162,6 +163,8 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             leftIteration();
         }
         
+//        Utilities::print_dvector(phi_0);
+//        Utilities::print_dvector(calcEdgePhi(0));
         //Special case:
         if(alpha_mode < 10){
             finiteDifference();
@@ -201,7 +204,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         
         it_num += 0.5;
         
-        
+        error = Utilities::p_norm(old_phi_0,phi_0,2);
         if(it_num ==1){
             spec_rad = 0;
         }else{
@@ -237,6 +240,9 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         cout<<"The flux has NaN's in it!"<<endl;
     }else if(error/init_error >= diverge){
         cout<<"Source iteration diverged in "<<it_num<<" iterations"<<endl;
+    }else if(checkNegativeFlux()){
+        cout<<"Source iteration converged to a negative solution in "<<it_num<<" iterations"<<endl;
+        it_num += 0.25;
     }else if(it_num < MAX_IT && (it_num < MAX_IT_accel || accel_mode==0)){
         cout<<"Source iteration converged in "<<it_num<<" iterations"<<endl;
         isConverged = 1;
@@ -281,7 +287,13 @@ vector<vector<double> > SourceIteration::get_solution(){
     
     //Compute the phi vector (combining both edge and cell averaged)
     vector<double> phi_total;
-    vector<double> phi_edge = calcEdgePhi(0);
+    vector<double> phi_edge;
+    if(accel_mode != 1 || EDGE_ACCEL_MODE == 0){
+        phi_edge = calcEdgePhi(0);
+        cout<<"lalalala"<<endl; 
+    }else{
+        phi_edge = edgePhi0;
+    }
     for(unsigned int i = 0; i<phi_0.size();i++){
         phi_total.push_back(phi_edge[i]);
         phi_total.push_back(phi_0[i]);
@@ -554,8 +566,11 @@ void SourceIteration::cmfd(){
     
 //    Utilities::print_dmatrix(A);
 //    Utilities::print_dvector(D_c);
+    
+//    Utilities::print_dvector(phi_0_CM_new);
     //Solve A*phi = b:
     phi_0_CM_new = Utilities::solve_tridiag(A,phi_0_CM_new);
+//    Utilities::print_dvector(phi_0_CM_new);
     
     //Calculate new edge fluxes:
     vector<double> phi_1_e_CM_new(phi_1_e_CM);
@@ -1287,6 +1302,28 @@ void SourceIteration::rightIteration(){
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
 //-----------LEFT AND RIGHT ITERATE------------------------------------------//
 //-----------LEFT AND RIGHT ITERATE------------------------------------------//
+
+//1SSSSSSS
+//----------------------------------------------------------------------------//
+
+//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI---------------------//
+//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI---------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+
+void SourceIteration::setEdgePhi_toAvgPhi(){
+    unsigned int phisize = phi_0.size();
+    edgePhi0[0] = phi_0[0];
+    for(unsigned int i = 1; i < phisize;i++){
+        edgePhi0[i] = (phi_0[i-1] + phi_0[i])/2;
+    }
+    edgePhi0[phisize] = 0;
+}
+
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI---------------------//
+//----------------CALC EDGE PHI AS AVG OF NEIGHBORING PHI---------------------//
+
 
 //1UUUUUUU
 //----------------------------------------------------------------------------//

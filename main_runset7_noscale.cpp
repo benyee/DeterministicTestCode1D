@@ -29,7 +29,7 @@ int main ()
     static const double X = 20;
     static const double dx_arr[] = {4,2,1,0.5,0.25,0.01};
     vector<double> dx(dx_arr,dx_arr+sizeof(dx_arr)/sizeof(dx_arr[0]));
-    static const double eps_arr[] = {0.01,0.03,0.1,0.25,0.5,1};
+    static const double eps_arr[] = {1e-6,1e-5,0.0001,0.001,0.01,0.03,0.1,0.25,0.5,1};
     vector<double> eps(eps_arr,eps_arr+sizeof(eps_arr)/sizeof(eps_arr[0]));
     static const double alpha_arr[] = {2,30};
     vector<double> alpha_mode(alpha_arr,alpha_arr+sizeof(alpha_arr)/sizeof(alpha_arr[0]));
@@ -41,7 +41,7 @@ int main ()
     static const int alpha_size =sizeof(alpha_arr)/sizeof(alpha_arr[0]);
     static const int accel_start = 1;
     static const int accel_size = 2;
-    int it_num[eps_size][dx_size][alpha_size][accel_size];
+    double it_num[eps_size][dx_size][alpha_size][accel_size];
     double error[eps_size][dx_size-1][alpha_size];
     
     //Store all the reference solutions here:
@@ -113,7 +113,7 @@ int main ()
                         ss<<"OutputFiles/Runset"<<runnum<<"/noscale/output_"<<runnum<<"_"<<alpha_mode[m]<<"_"<<k<<"_"<<j<<"_"<<i<<"_.txt";
                     }
                     
-                    //input->diffusionSolve();
+                    input->diffusionSolve();
 //                  cout<<"Finished setting parameters..."<<endl;
                     input_run = new SourceIteration(input,ss.str());
                     input_run->iterate(printToScreen,writeToFile,false);

@@ -32,6 +32,7 @@ int main ()
     //input->readValues();
     input->diffusionSolve();
     SourceIteration *input_run = new SourceIteration(input);
+    Utilities::print_dmatrix(input_run->get_solution());
     input_run->iterate();
     input_run->printOutput(false);
     Utilities::print_dmatrix(input_run->get_solution());
