@@ -104,8 +104,8 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
         cout<<"c corrected to "<<c<<endl;
     }
     
-    updatePhi_calcSource(false);
     setEdgePhi_toAvgPhi();
+    updatePhi_calcSource(false);
     initializeDictionary();
 }
 
@@ -155,7 +155,6 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
     do{
         vector<double> old_phi_0 = phi_0;
         
-//        Utilities::print_dmatrix(get_solution()); //HERE I AM
         //Go either right then left or left then right:
         if(bc[0] == 1 && bc[1] == 0){
             leftIteration();
@@ -179,11 +178,10 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         
         
         error=updatePhi_calcSource();
-//        Utilities::print_dmatrix(get_solution()); //HERE I AM
         it_num += 0.5;
         
         //CMFD acceleration:
-        if(accel_mode == 1){// && it_num >= 1){
+        if(accel_mode == 1){
             cmfd();
             updatePhi_calcSource(false);
         }else if(accel_mode == 2 || accel_mode == 3){
@@ -1337,12 +1335,14 @@ void SourceIteration::rightIteration(){
 
 void SourceIteration::setEdgePhi_toAvgPhi(){
     unsigned int phisize = phi_0.size();
-    edgePhi0[0] = phi_0[0] - (phi_0[1] - phi_0[0])/(x[1]-x[0])*(x[0]-x_e[0]);
+    edgePhi0[0] = max(0.0, \
+        phi_0[0] - (phi_0[1] - phi_0[0])/(x[1]-x[0])*(x[0]-x_e[0]));
     for(unsigned int i = 1; i < phisize;i++){
         edgePhi0[i] = (phi_0[i-1] + phi_0[i])/2;
     }
-    edgePhi0[phisize] = phi_0[phisize-1]+(phi_0[phisize-1]-phi_0[phisize-2])/\
-        (x[phisize-1]-x[phisize-2])*(x_e[phisize]-x[phisize-1]);
+    edgePhi0[phisize] = max(0.0,phi_0[phisize-1] + (phi_0[phisize-1]-\
+        phi_0[phisize-2]) / (x[phisize-1]-x[phisize-2]) * \
+        (x_e[phisize]-x[phisize-1]));
 }
 
 
