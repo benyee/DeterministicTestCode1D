@@ -270,3 +270,35 @@ void Utilities::split_Phi(const vector<double> &phi_all, vector<double> &phi_edg
         phi_edge[i+1] = phi_all[2*(i+1)];
     }
 }
+
+double Utilities::find_kappa(double c, const vector<double> &mu_n, const vector<double> &w_n, double tol){
+    unsigned int N = w_n.size();
+    
+    double x = 1.0;
+    double x_old = -1000;
+    
+    while (abs( (x-x_old) / (x+tol*tol) ) > tol){
+        x_old = x;
+        x -= kappa_fun(c,mu_n,w_n, x)/kappa_fun_deriv(c,mu_n,w_n, x);
+    }
+    
+    return x;
+}
+
+
+double Utilities::kappa_fun(double c, const vector<double> &mu_n, const vector<double> &w_n, double kappa){
+    double sum = 2./c;
+    for(unsigned int i = 0; i < mu_n.size(); i++){
+        sum -= w_n[i]/(1 - kappa*mu_n[i]);
+    }
+    return sum;
+}
+
+double Utilities::kappa_fun_deriv(double c, const vector<double> &mu_n, const vector<double> &w_n, double kappa){
+    double sum = 0;
+    for(unsigned int i = 0; i < mu_n.size(); i++){
+        double term =1 - kappa*mu_n[i];
+        sum -= mu_n[i]*w_n[i]/term/term;
+    }
+    return sum;
+}

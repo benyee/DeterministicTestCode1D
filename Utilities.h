@@ -63,7 +63,13 @@ public:
     //Split up a phi vector into cell + edge fluxes
     static void split_Phi(const vector<double> &phi_all, vector<double> &phi_edge, vector<double> &phi_cent);
     
+    //Solve for kappa where kappa is the constant in the solution psi_n(x) = a_n e^{-\Sigma_t \kappa x}
+    static double find_kappa(double c, const vector<double> &mu_n, const vector<double> &w_n, double tol = 1e-6);
+    
 private:
+    static double kappa_fun(double c, const vector<double> &mu_n, const vector<double> &w_n, double kappa); //Helper function for find_kappa()
+    static double kappa_fun_deriv(double c, const vector<double> &mu_n, const vector<double> &w_n, double kappa); //Helper function for find_kappa(), derivative of kappa_fun()
+    
     Utilities();
 };
 
