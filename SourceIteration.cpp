@@ -78,6 +78,7 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
             psi_e[j].push_back(0);
             source_edge[j].push_back(0);
         }
+        Qhat_edge.push_back(0);
     }
     initializeGrid();
     initializeAlpha();
@@ -104,6 +105,16 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
         cout<<"c corrected to "<<c<<endl;
     }
     
+    kappa = Utilities::find_kappa(c,mu_n,w_n);
+    cout << "kappa is "<< kappa << endl;
+    
+    //Temporary value for rho.  This needs to be made a vector for non-uniform meshes.
+    double term =sigma_t[0]*kappa*h[0];
+    rho = exp(-term) - 2 + exp(term);
+    rho /= (3*sigma_t[0]*sigma_a[0]*h[0]*h[0]);
+    cout << "rho = " << rho << endl;
+    //ZZZZZZZ
+    
     setEdgePhi_toAvgPhi();
     updatePhi_calcSource(false);
     initializeDictionary();
@@ -114,14 +125,14 @@ SourceIteration::~SourceIteration(){
 }
 
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//----------------------CONSTRUCTOR---------------------------------------//
-//----------------------CONSTRUCTOR---------------------------------------//
+//------------------------CONSTRUCTOR---------------------------------------//
+//------------------------CONSTRUCTOR---------------------------------------//
 
 //0IIIII
-//------------------------------------------------------------------------//
+//--------------------------------------------------------------------------//
 
-//-----------------------MAIN LOOP----------------------------------------//
-//-----------------------MAIN LOOP----------------------------------------//
+//-------------------------MAIN LOOP----------------------------------------//
+//-------------------------MAIN LOOP----------------------------------------//
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool falseConvCorrection){
     
@@ -164,7 +175,6 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             leftIteration();
         }
         
-//        Utilities::print_dvector(phi_0);
 //        Utilities::print_dvector(calcEdgePhi(0));
         //Special case:
         if(alpha_mode < 10){
@@ -202,6 +212,14 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             variable_status["phi_1_lin"] += 0.5;
             variable_status["phi_c_lin"] += 0.5;
             variable_status["source_lin"] += 0.5;
+        }
+        
+        
+        if(alpha_mode == 41){
+            cout << "edgePhi1 = " << endl;
+            Utilities::print_dvector(edgePhi1);
+            updateQhat_edge();
+            variable_status["Qhat_edge"] += 1;
         }
         
         it_num += 0.5;
@@ -444,7 +462,7 @@ vector<double> SourceIteration::calcEdgePhi(int num){
     }else{
         for(unsigned int j = 0; j<J+1;j++){
             edgePhi.push_back(0);
-            for(unsigned int m = 0; m<N;m++){
+            for( unsigned int m = 0; m < N ; m++ ){
                 edgePhi[j]+= mu_n[m]*w_n[m]*psi_e[j][m];
             }
         }
@@ -634,7 +652,6 @@ void SourceIteration::cmfd(){
     }
     
     unsigned int psize = phi_0.size();
-    
     
     if(alpha_mode >=30 || alpha_mode==11){
         if(EDGE_ACCEL_MODE==1){
@@ -1047,6 +1064,9 @@ void SourceIteration::initializeDictionary(){
     }else{
         variable_status["source_edge"] = -1;
     }
+    if(alpha_mode == 40){
+        variable_status["Qhat_edge"] = 0;
+    }
     if(hasLinearTerms){
         variable_status["phi_0_lin"] = 0;
         variable_status["phi_1_lin"] = 0;
@@ -1214,6 +1234,12 @@ void SourceIteration::leftIteration(){
                 double denominator = 1 + tau + tau*tau/2 + etau;
                 psi_e[j][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+            }else if(alpha_mode==41){
+                double tau = -sigma_t[region]*h[j]/mu_n[m];
+                double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 - (source_edge[j][m] - mu_n[m]*Qhat_edge[j]*2)*h[j]*rho*tau/4/mu_n[m];
+                double denominator = 1 + tau + rho*tau*tau/2;
+                psi_e[j][m] = numerator/denominator;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
             }else{ //Regular finite difference
                 double numerator = (-mu_n[m]-(sigma_t[region])*halfhj*(1.0+alpha[j][m]))*psi_e[j+1][m]+source[j][m]*halfhj;
                 double denominator = -mu_n[m]+(sigma_t[region])*halfhj*(1.0-alpha[j][m]);
@@ -1304,6 +1330,12 @@ void SourceIteration::rightIteration(){
                 double etau = exp(tau_a) - 1 - tau_a - tau_a*tau_a/2;
                 double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]/sigma_t[region]*(tau*tau/4+etau/2);
                 double denominator = 1 + tau + tau*tau/2 + etau;
+                psi_e[j+1][m] = numerator/denominator;
+                psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
+            }else if(alpha_mode==41){
+                double tau = sigma_t[region]*h[j]/mu_n[m];
+                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + (source_edge[j+1][m]-mu_n[m]*Qhat_edge[j+1]*2)*rho*h[j]/mu_n[m]*tau/4;
+                double denominator = 1 + tau + rho*tau*tau/2;
                 psi_e[j+1][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
             }else{
@@ -1480,5 +1512,55 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
         }
     }
     return (Utilities::p_norm(old_phi_0,phi_0,2));
+    
+}
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//---------------UPDATE PHI, CALC SOURCE------------------------------------//
+//---------------UPDATE PHI, CALC SOURCE------------------------------------//
+
+
+//1UUUUUUU
+//------------------------------------------------------------------------//
+
+//---------------UPDATE QHAT_EDGE-----------------------------------------//
+//---------------UPDATE QHAT_EDGE-----------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+
+void SourceIteration::updateQhat_edge(){
+    //ZZZZ THIS ONLY WORKS FOR ONE ZONE UNIFORM MESH RIGHT NOW
+    double term = - 9. / ( 4 * rho * h[0] );
+    
+    double J_inc_L = 0; //left incoming current
+    for(unsigned int m = 0; m < N/2; m++){
+        J_inc_L += abs(mu_n[m]) * w_n[m] * psi_e[0][m];
+    }
+    double J_out_L = 0; //left outgoing current
+    for(unsigned int m = N/2; m < N; m++){
+        J_out_L += abs(mu_n[m]) * w_n[m] * psi_e[0][m];
+    }
+    Qhat_edge[0] = 0;//-term * ( phi_1[0] - edgePhi1[0] ) + 3 * sigma_t[0] * (J_inc_L + J_out_L)/2 - 3./4 * sigma_s0[0] * phi_0[0];
+    
+    cout << "First part = " <<  -term * ( phi_1[0] - edgePhi1[0] ) << endl;
+    cout << "Second part = " << 3 * sigma_t[0] * (J_inc_L + J_out_L)/2 - 3./4 * sigma_s0[0] * phi_0[0] << endl;
+    
+    unsigned int lastind = Qhat_edge.size()-1;
+    for(unsigned int i = 1; i < lastind; i++){
+        Qhat_edge[i] = edgePhi1[i] - (phi_1[i-1]+phi_1[i])/2;
+        Qhat_edge[i] *= term;
+    }
+    
+    double J_inc_R = 0; //right incoming current
+    for( unsigned int m = N/2; m < N; m++ ){
+        J_inc_R += abs(mu_n[m]) * w_n[m] * psi_e[lastind][m];
+    }
+    double J_out_R = 0; //right incoming current
+    for( unsigned int m = 0; m < N/2; m++ ){
+        J_out_R += abs(mu_n[m]) * w_n[m] * psi_e[lastind][m];
+    }
+    Qhat_edge[lastind] = 0;//term * ( edgePhi1[lastind] - phi_1[lastind-1] ) - 3 * sigma_t[0] * (J_inc_R + J_out_R)/2 + 3./4 * sigma_s0[0] * phi_0[lastind-1];
+    
+    
+    cout << "Qhat_edge" << endl;
+    Utilities::print_dvector(Qhat_edge);
     
 }

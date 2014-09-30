@@ -75,6 +75,8 @@ private:
     vector<vector<double> > psi_c; //Cell-averaged angular flux
     vector< vector<double> > source;  //Source term for source iteration
     vector< vector<double> > source_edge;  //Source term for source iteration
+    vector<double> Qhat_edge; //Correction to multiple balance method that helps enforce Fick's Law
+    //mu_n*Qhat_edge is subtracted from the source_edge terms in the multiple balance auxiliary equations
     
     //Linear neutron info for higher order approximations:
     bool hasLinearTerms;
@@ -92,6 +94,9 @@ private:
     vector<double> sigma_t; //absorption cross section in cm^{-1}
     double c;  //This is max(sigma_s0/sigma_t) unless this gives c >= 1.
     //In that case, c = max( sigma_s0/(sigma_t+DB^2) ))
+    
+    double kappa; //Constant in psi_n(x) = a_n e^{-\Sigma_t \kappa x}
+    double rho; //dx becomes rho*dx in the multiple balance aux. equations
     
     vector< vector<double> > alpha; //Finite difference coefficients
     
@@ -122,6 +127,7 @@ private:
         void leftIteration(); //Sweep right to left
     void setEdgePhi_toAvgPhi(); //Used to make a crude improvement of the initial edge flux guess
     double updatePhi_calcSource(bool usePsi = true); //Update fluxes and currents, calculate new source, calculate difference between new and old scalar flux
+    void updateQhat_edge(); //For MB-3 (modified MB method)
 };
 
 #endif /* defined(____SourceIteration__) */
