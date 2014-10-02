@@ -37,6 +37,7 @@ public:
     static void print_dmatrix(vector<vector<double> > A,char space = ' ');
 
     static double inf_norm(vector<double> &v1, vector<double> &v2);
+    static double p_norm(vector<double> v1, unsigned int p); //v2 = zero vector
     static double p_norm(vector<double> v1, vector<double> v2, unsigned int p);
     
     //phi_error computes the relative error between two solutions.  norm = p > 0 for p_norm, norm = -1 for inf norm
@@ -60,6 +61,9 @@ public:
     //Remove the last four characters of a string:
     static string remove_ext(string input_string){return input_string.substr(0,input_string.length());}
     
+    //Combine a edge and centered flux vectors into one:
+    static vector<double> combine_Phi(const vector<double> &edges, const vector<double> &centers);
+                                      
     //Split up a phi vector into cell + edge fluxes
     static void split_Phi(const vector<double> &phi_all, vector<double> &phi_edge, vector<double> &phi_cent);
     

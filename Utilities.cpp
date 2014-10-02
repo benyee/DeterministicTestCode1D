@@ -116,6 +116,16 @@ double Utilities::inf_norm(vector<double> &v1, vector<double> &v2){
     }
     return inf_norm;
 }
+double Utilities::p_norm(vector<double> v1, unsigned int p){
+    double p_norm = 0;
+    unsigned int N = v1.size();
+    for(unsigned int i = 0; i<N; i++){
+        p_norm += pow(v1[i],p);
+    }
+    p_norm = p_norm/N;
+    p_norm = pow(p_norm,1./p);
+    return p_norm;
+}
 double Utilities::p_norm(vector<double> v1, vector<double> v2, unsigned int p){
     double p_norm = 0;
     unsigned int N = min(v1.size(),v2.size());
@@ -258,6 +268,19 @@ vector<int> Utilities::blowUpChecker(vector<vector<double> > &test, double thres
 
 }
 
+vector<double> Utilities::combine_Phi(const vector<double> &edges, const vector<double> &centers){
+    vector<double> combined_vec(edges.size()+centers.size(),0);
+    if(edges.size() != centers.size() + 1){
+        cout << "WARNING: PROBLEM WITH VECTOR SIZES WHEN COMBINING PHI" << endl;
+        return combined_vec;
+    }
+    combined_vec[0] = edges[0];
+    for(unsigned int i = 0; i < centers.size(); i++){
+        combined_vec[2*i+1] = centers[i];
+        combined_vec[2*i+2] = edges[i+1];
+    }
+    return combined_vec;
+}
 
 void Utilities::split_Phi(const vector<double> &phi_all, vector<double> &phi_edge, vector<double> &phi_cent){
     if(phi_all.size()==0){
