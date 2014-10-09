@@ -176,6 +176,7 @@ int main ()
         for(unsigned int j = 0; j<dx.size();j++){
             for(unsigned int i = accel_start; i<accel_size;i++){
                 cout<<dx[j]<<'\t';
+                
                 if(i == 0){
                     cout<<"No Accel."<<'\t';
                 }else if(i == 1){
@@ -184,7 +185,7 @@ int main ()
                     cout<<"pCMFD"<<'\t';
                 }
                 for(unsigned int k = 0; k<eps.size();k++){
-                    cout<<it_num[k][j][m][i]<<'\t';
+                    cout<<it_num[k][j][m][i]<<'\t'<<"    ";
                 }
                 cout<<endl;
             }

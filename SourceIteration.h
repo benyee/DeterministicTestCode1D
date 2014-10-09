@@ -26,7 +26,7 @@ typedef std::map<string, double> Dict;
 
 class SourceIteration{
 public:
-    static const unsigned int MAX_IT = 10000;
+    static const unsigned int MAX_IT = 100000;
     static const unsigned int MAX_IT_accel = 5000;
     static const unsigned int EDGE_ACCEL_MODE = 1;
     static const bool intermedSoln = 0;
@@ -42,10 +42,16 @@ public:
     
     double get_error(){return old_error;}
     double get_it_num(){if(isConverged){return it_num;} return -it_num;}
+    double get_kappa(){return kappa;}
+    double get_Qhatnorm(){if(alpha_mode >= 40 && alpha_mode != 41 && alpha_mode < 40){return 0;} return Utilities::p_norm(Qhat_edge,2);}
+    vector<double> get_Qhat_edge(){return Qhat_edge;}
+    double get_rho(){return rho;}
     vector<vector<double> > get_psi_e(){return psi_e;}
     double get_spec_rad(){return spec_rad;}
     void set_diverge(double div){diverge = div;}
     void set_outputfilename(string filename){outfilename = filename;}
+    void set_rho(double rho_input){rho = rho_input;}
+    void set_kappa(double kappa_input){kappa = kappa_input;}
     
     
 private:
@@ -69,7 +75,7 @@ private:
     vector<double> edgePhi0;
     vector<double> edgePhi1;
     vector<double> phi_0; //Cell-averaged scalar flux
-    vector<double> old_phi_0;
+    vector<double> old_phi_0; //ZZZZ does this do anything..?
     vector<double> phi_1; //Cell-averaged net current in x direction
     vector<vector<double> > psi_e; //Edge angular flux
     vector<vector<double> > psi_c; //Cell-averaged angular flux

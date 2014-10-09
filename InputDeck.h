@@ -134,8 +134,9 @@ private:
      31 = alt. 1 to new method (5.3)
      32 = alt. 2 to new method (5.4)
      33 = alt. 3 to new method (5.5)
-     40 = MB-3 (9/30/2014)
+     40 = MB-3 (10/7/2014)
      41 = modified MB using Qhats, not the latest version
+     42 = MB-3 with rho = 0
      */
     double tol; //tolerance for convergence
     bool hasLinearTerms;
