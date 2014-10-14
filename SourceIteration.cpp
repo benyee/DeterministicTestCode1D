@@ -250,6 +250,9 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             }
             outfile<<setw(20)<<checkNegativeFlux()<<'\n';
         }
+        if(checkNegativeAngularFlux()){
+            cout<<"WARNING: "<<checkNegativeAngularFlux()<<" negative angular flux values in iteration "<<it_num<<endl;
+        }
         if(checkNegativeFlux()){
             cout<<"WARNING: "<<checkNegativeFlux()<<" negative flux values in iteration "<<it_num<<endl;
         }
@@ -486,6 +489,7 @@ vector<double> SourceIteration::calcEdgePhi(int num){
 //-------------------CALCULATE EDGE PHI------------------------------------//
 //-------------------CALCULATE EDGE PHI------------------------------------//
 
+//0CCCCC
 //------------------------------------------------------------------------//
 
 //-------------------CHECK FOR NEGATIVE FLUX-------------------------------//
@@ -505,6 +509,37 @@ unsigned int SourceIteration::checkNegativeFlux(){
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
 //-------------------CHECK FOR NEGATIVE FLUX-------------------------------//
 //-------------------CHECK FOR NEGATIVE FLUX-------------------------------//
+
+//0CCCCC
+//------------------------------------------------------------------------//
+
+//-------------------CHECK FOR NEGATIVE ANGULAR FLUX-------------------------------//
+//-------------------CHECK FOR NEGATIVE ANGULAR FLUX-------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+unsigned int SourceIteration::checkNegativeAngularFlux(){
+    unsigned int temp = 0;
+    for(unsigned int j = 0; j<J;j++){
+        for(unsigned int m = 0; m < N; m++){
+            if(psi_e[j][m] < 0){
+                temp++;
+            }
+            if(psi_c[j][m] < 0){
+                temp++;
+            }
+        }
+    }
+    for(unsigned int m = 0; m < N; m++){
+        if(psi_e[J][m] < 0){
+            temp++;
+        }
+    }
+    return temp;
+}
+
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-------------------CHECK FOR NEGATIVE ANGULAR FLUX-------------------------------//
+//-------------------CHECK FOR NEGATIVE ANGULAR FLUX-------------------------------//
 
 //1CCCCCC
 //------------------------------------------------------------------------//

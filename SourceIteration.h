@@ -40,6 +40,9 @@ public:
     void printOutput( bool isPrintingToWindow = false,unsigned int tabwidth=20, bool newFile = false);
     void printDictionary();
     
+    unsigned int checkNegativeFlux(); //Returns the number of negative values in phi_0
+    unsigned int checkNegativeAngularFlux(); //Returns the number of negative values in psi_c and psi_e
+    
     double get_error(){return old_error;}
     double get_it_num(){if(isConverged){return it_num;} return -it_num;}
     double get_kappa(){return kappa;}
@@ -122,7 +125,6 @@ private:
     double spec_rad; //stores the latest estimate for the spectral radius (average of all the previous spectral radii)
     
     vector<double> calcEdgePhi(int num); //Integrate the edge fluxes to get scalar edge fluxes and edge currents.  This is not necessary for the source iteration procedure and can be performed at the end.  num = 0 for scalar edge flux, num = 1 for edge current
-    unsigned int checkNegativeFlux(); //Returns the number of negative values in phi_0
     void cmfd(); //Perform cmfd acceleration
         void pcmfd(); //Perform pcmfd acceleration
     void finiteDifference(); //Calculate cell-averaged angular fluxes
