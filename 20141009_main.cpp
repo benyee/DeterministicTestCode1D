@@ -21,9 +21,11 @@ int main ()
 {
     cout << "Hello world!"<<endl;
     
-    static const double c[] = {0.99,0.95,0.9,0.8};
-    static const double dx[] = {0.01,0.05,0.1,0.5,1.0,2.0,3.0};
-    static const unsigned int methods[] = {30,40,42};
+    static const double c[] = {0.99,0.9,0.8};//{0.99,0.95,0.9,0.8};
+//    static const double dx[] = {1.0,3.0,5.0,10.0,15.0};
+//    static const double dx[] = {0.01,0.1,1.0};
+    static const double dx[] = {0.01,0.05,0.1,0.5,1.0,2.0,3.0,5.0};
+    static const unsigned int methods[] = {30,35,40,42};
     
     static const unsigned int c_size = sizeof(c)/sizeof(c[0]);
     static const unsigned int dx_size = sizeof(dx)/sizeof(dx[0]);
@@ -32,7 +34,7 @@ int main ()
     static const double sigma_t = 1.0;
     static const double X = 30;
     
-    static const double ref_dx = 1e-4;
+    static const double ref_dx = 1e-3;
     static const unsigned int ref_method = 30;
     
     InputDeck *input = new InputDeck();
@@ -44,14 +46,18 @@ int main ()
         return 1;
     }
     
-    double last_phi_ref[c_size]; //Reference solution for each c value
-    double last_phi[c_size][dx_size][methods_size];
+    double last_Jpl_ref[c_size]; //Reference solution for each c value
+    double last_Jpl[c_size][dx_size][methods_size];
     double error[c_size][dx_size][methods_size];
     double Qhat_norm[c_size][dx_size][methods_size];
     double Qhat_left[c_size][dx_size][methods_size];
     double Qhat_right[c_size][dx_size][methods_size];
     double rho[c_size][dx_size][methods_size];
     double kappa[c_size][dx_size][methods_size];
+    double neg_ang_flux[c_size][dx_size][methods_size];
+    double scal_flux[c_size][dx_size][methods_size];
+    
+    vector<double> w_n;
     
     for(unsigned int i = 0; i < c_size; i++){
         
@@ -89,7 +95,7 @@ int main ()
         input_run0->printOutput(false,20);
         
         vector<vector<double> > ref_soln = input_run0 -> get_solution();
-        last_phi_ref[i] = ref_soln[1][ref_soln[1].size()-1];
+        last_Jpl_ref[i] = input_run0 -> get_exitcurr();
         
         input->setaccel_mode(0);
     
@@ -114,7 +120,7 @@ int main ()
             for(unsigned int k = 0; k < methods_size; k++){
                 input->setalpha_mode(methods[k]);
                 if(methods[k] == 30){
-                    input->setaccel_mode(1);
+                    input->setaccel_mode(0);
                 }else{
                     input->setaccel_mode(0);
                 }
@@ -133,13 +139,17 @@ int main ()
                 vector<vector<double> > soln = input_run -> get_solution();
                 vector<double> Qhat_edge = input_run -> get_Qhat_edge();
                 
-                last_phi[i][j][k] = soln[1][soln[1].size()-1];
-                error[i][j][k] = fabs( (last_phi[i][j][k] - last_phi_ref[i]) / last_phi_ref[i] );
+                last_Jpl[i][j][k] = input_run -> get_exitcurr();
+                
+                error[i][j][k] = fabs( (last_Jpl[i][j][k] - last_Jpl_ref[i]) / last_Jpl_ref[i] );
+                
                 Qhat_norm[i][j][k] = input_run -> get_Qhatnorm();
                 Qhat_left[i][j][k] = Qhat_edge[0];
                 Qhat_right[i][j][k] = Qhat_edge[Qhat_edge.size()-1];
-                rho[i][j][k] = input_run -> get_rho();
+                rho[i][j][k] = input_run -> get_rho()[0];
                 kappa[i][j][k] = input_run -> get_kappa();
+                neg_ang_flux[i][j][k] = input_run -> checkNegativeAngularFlux();
+                scal_flux[i][j][k] = input_run -> checkNegativeFlux();
             }
             
         }
@@ -160,13 +170,13 @@ int main ()
     cout << "======================================="<<endl;
     
     cout << "======================================="<<endl;
-    cout << "====== last_phi ==========" << endl;
+    cout << "====== last_Jpl ==========" << endl;
     for(unsigned int i = 0; i < c_size; i++){
-        cout << " c = " << c[i] << ", last_phi_ref[i] = " << last_phi_ref[i] << endl;
+        cout << " c = " << c[i] << ", last_Jpl_ref[i] = " << last_Jpl_ref[i] << endl;
         for(unsigned int j = 0; j < dx_size; j++){
             cout << "[ ";
             for(unsigned int k = 0; k < methods_size; k++){
-                cout << " " << last_phi[i][j][k] << " ";
+                cout << " " << last_Jpl[i][j][k] << " ";
             }
             cout << " ]"<<endl;
         }
@@ -176,7 +186,7 @@ int main ()
     cout << "======================================="<<endl;
     cout << "========= Qhat_norm ==========" << endl;
     for(unsigned int i = 0; i < c_size; i++){
-        cout << " c = " << c[i] << ", last_phi_ref[i] = " << last_phi_ref[i] << endl;
+        cout << " c = " << c[i] << ", last_Jpl_ref[i] = " << last_Jpl_ref[i] << endl;
         for(unsigned int j = 0; j < dx_size; j++){
             cout << "[ ";
             for(unsigned int k = 0; k < methods_size; k++){
@@ -189,7 +199,7 @@ int main ()
     cout << "======================================="<<endl;
     cout << "========= Qhat_L ==========" << endl;
     for(unsigned int i = 0; i < c_size; i++){
-        cout << " c = " << c[i] << ", last_phi_ref[i] = " << last_phi_ref[i] << endl;
+        cout << " c = " << c[i] << ", last_Jpl_ref[i] = " << last_Jpl_ref[i] << endl;
         for(unsigned int j = 0; j < dx_size; j++){
             cout << "[ ";
             for(unsigned int k = 0; k < methods_size; k++){
@@ -202,7 +212,7 @@ int main ()
     cout << "======================================="<<endl;
     cout << "========= Qhat_R ==========" << endl;
     for(unsigned int i = 0; i < c_size; i++){
-        cout << " c = " << c[i] << ", last_phi_ref[i] = " << last_phi_ref[i] << endl;
+        cout << " c = " << c[i] << ", last_Jpl_ref[i] = " << last_Jpl_ref[i] << endl;
         for(unsigned int j = 0; j < dx_size; j++){
             cout << "[ ";
             for(unsigned int k = 0; k < methods_size; k++){
@@ -215,7 +225,7 @@ int main ()
     cout << "======================================="<<endl;
     cout << "========= rho ==========" << endl;
     for(unsigned int i = 0; i < c_size; i++){
-        cout << " c = " << c[i] << ", last_phi_ref[i] = " << last_phi_ref[i] << endl;
+        cout << " c = " << c[i] << ", last_Jpl_ref[i] = " << last_Jpl_ref[i] << endl;
         for(unsigned int j = 0; j < dx_size; j++){
             cout << "[ ";
             for(unsigned int k = 0; k < methods_size; k++){
@@ -228,7 +238,7 @@ int main ()
     cout << "======================================="<<endl;
     cout << "========= kappa ==========" << endl;
     for(unsigned int i = 0; i < c_size; i++){
-        cout << " c = " << c[i] << ", last_phi_ref[i] = " << last_phi_ref[i] << endl;
+        cout << " c = " << c[i] << ", last_Jpl_ref[i] = " << last_Jpl_ref[i] << endl;
         for(unsigned int j = 0; j < dx_size; j++){
             cout << "[ ";
             for(unsigned int k = 0; k < methods_size; k++){
@@ -237,36 +247,32 @@ int main ()
             cout << " ]"<<endl;
         }
     }
-
     
-    /*
-     //Testing tridiagonal matrix function:
-     vector<vector<double> > A(5, vector<double>(3,0));
-     vector<double> b(5,0);
-     A[0][1] = -1; A[0][2] = 2.;
-     A[1][0] = 3; A[1][1] = 4.; A[1][2] = -5;
-     A[2][0] = 6; A[2][1] = 7; A[2][2] = 8;
-     A[3][0] = -9; A[3][1] = 10.; A[3][2] = 11.;
-     A[4][0] = 12; A[4][1] = -13.;
-     b[0] = 5;
-     b[1] = -4;
-     b[2] = 3;
-     b[3] = -2;
-     b[4] = 1;
-     b = Utilities::solve_tridiag(A,b);
-     Utilities::print_dvector(b);
-     
-     
-    //Read in input:
-    InputDeck *input = new InputDeck();
-    int debug =input->loadInputDeck();
+    cout << "======================================="<<endl;
+    cout << "========= # of negative angular fluxes ==========" << endl;
+    for(unsigned int i = 0; i < c_size; i++){
+        cout << " c = " << c[i] << ", last_Jpl_ref[i] = " << last_Jpl_ref[i] << endl;
+        for(unsigned int j = 0; j < dx_size; j++){
+            cout << "[ ";
+            for(unsigned int k = 0; k < methods_size; k++){
+                cout << " " << neg_ang_flux[i][j][k] << " ";
+            }
+            cout << " ]"<<endl;
+        }
+    }
     
-    //Test Gaussian quadrature functions:
-    vector<double> mu_n = Utilities::calc_mu_n(5);
-    Utilities::print_dvector(mu_n);
-    Utilities::print_dvector(Utilities::calc_w_n(5));
-    Utilities::print_dvector(Utilities::calc_w_n(mu_n));
-    */
+    cout << "======================================="<<endl;
+    cout << "========= # of negative scalar fluxes ==========" << endl;
+    for(unsigned int i = 0; i < c_size; i++){
+        cout << " c = " << c[i] << ", last_Jpl_ref[i] = " << last_Jpl_ref[i] << endl;
+        for(unsigned int j = 0; j < dx_size; j++){
+            cout << "[ ";
+            for(unsigned int k = 0; k < methods_size; k++){
+                cout << " " << scal_flux[i][j][k] << " ";
+            }
+            cout << " ]"<<endl;
+        }
+    }
     
     cout << "Goodbye world!"<<endl;
     return 0;
