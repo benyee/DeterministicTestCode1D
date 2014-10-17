@@ -1714,40 +1714,30 @@ void SourceIteration::updateQhat_edge(){
             int_mu_0_to_1 += mu_n[m]*w_n[m];
             int_mu_sq_0_to_1 += mu_n2[m]*w_n[m];
         }
-//        cout << "int_mu_0_to_1 = " << int_mu_0_to_1  << endl;
-//        cout << "int_mu_sq_0_to_1 = " << 3*int_mu_sq_0_to_1  << endl;
-        
         
         vector<double> Q = data->getQ();
         Qhat_edge[0] = 0;
         for(unsigned int m = 0; m < N/2; m ++){
             Qhat_edge[0] += mu_n[m]*psi_e[0][m]*w_n[m];
         }
-        Qhat_edge[0] *= -6.*sigma_t[0]; //ZZZZ THIS ONLY WORKS FOR ONE ZONE UNIFORM MESH RIGHT NOW
+        Qhat_edge[0] *= -6.*sigma_t[0];
         Qhat_edge[0] += 3*int_mu_0_to_1*(sigma_s0[0]*edgePhi0[0]+Q[0]);
-        Qhat_edge[0] -= 12./rho/h[0]*(phi2_plus[0]-phi2e_plus[0]); // ZZZZ
+        Qhat_edge[0] -= 12./rho/h[0]*(phi2_plus[0]-phi2e_plus[0]);
         for(unsigned int j = 1; j < lastind; j++){
-            Qhat_edge[j] = phi2_minus[j] - 2.*phi2e_minus[j] + phi2_minus[j-1];
-            Qhat_edge[j] -= (phi2_plus[j] - 2.*phi2e_plus[j] + phi2_plus[j-1]);
-            Qhat_edge[j] *= 3. / rho / h[0]; //ZZZZ THIS ONLY WORKS FOR ONE ZONE UNIFORM MESH RIGHT NOW
-//            double temp =  Qhat_edge[j];
-//            Qhat_edge[j] = 2 * ( phi2e_plus[j] - phi2_plus[j-1] ) / h[j-1];
-//            Qhat_edge[j] -= ( phi2_plus[j] - phi2_plus[j-1] + phi2_minus[j] - phi2_minus[j-1] ) / h_avg[j-1];
-//            Qhat_edge[j] += 2 * ( phi2_minus[j] - phi2e_minus[j] ) / h[j];
-//            Qhat_edge[j] *= 3 / rho;
-//            if( (temp - Qhat_edge[j])/temp > 1e-6 ){
-//                cout << "temp = " << temp << endl;
-//                cout << "Qhat_edge_new["<<j<<"] = " << Qhat_edge[j] << endl;
-//            }
+            Qhat_edge[j] = 2 * ( phi2e_plus[j] - phi2_plus[j-1] ) / h[j-1];
+            Qhat_edge[j] -= ( phi2_plus[j] - phi2_plus[j-1] + phi2_minus[j] - phi2_minus[j-1] ) / h_avg[j-1];
+            Qhat_edge[j] += 2 * ( phi2_minus[j] - phi2e_minus[j] ) / h[j];
+            Qhat_edge[j] *= 3 / rho;
         }
+        
+        unsigned int last_region = sigma_t.size()-1;
         Qhat_edge[lastind] = 0;
         for(unsigned int m = N/2; m < N ; m++){
             Qhat_edge[lastind] += mu_n[m]*psi_e[lastind][m]*w_n[m];
         }
-        Qhat_edge[lastind] *= -6.*sigma_t[0];
-        Qhat_edge[lastind] -= 3*int_mu_0_to_1*(sigma_s0[0]*edgePhi0[lastind]+Q[0]);
-        Qhat_edge[lastind] -= 12./rho/h[0]*(phi2e_minus[lastind]-phi2_minus[lastind-1]);
-//        Qhat_edge[lastind] *= 3 * int_mu_sq_0_to_1;//ZZZZ
+        Qhat_edge[lastind] *= -6.*sigma_t[last_region];
+        Qhat_edge[lastind] -= 3*int_mu_0_to_1*(sigma_s0[last_region]*edgePhi0[lastind]+Q[last_region]);
+        Qhat_edge[lastind] -= 12./rho/h[J-1]*(phi2e_minus[lastind]-phi2_minus[lastind-1]);
         
     }else{
         //ZZZZ THIS ONLY WORKS FOR ONE ZONE UNIFORM MESH RIGHT NOW
