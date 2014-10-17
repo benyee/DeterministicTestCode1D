@@ -136,6 +136,14 @@ double Utilities::p_norm(vector<double> v1, vector<double> v2, unsigned int p){
     p_norm = pow(p_norm,1./p);
     return p_norm;
 }
+double Utilities::p_norm_of_rel_error(vector<double> v_old, vector<double> v_new, unsigned int p){
+    unsigned int N = min(v_old.size(),v_new.size());
+    vector<double> rel_error(N,0);
+    for(unsigned int i = 0; i < N ; i++ ){
+        rel_error[i] = fabs((v_old[i] - v_new[i])/v_new[i]);
+    }
+    return Utilities::p_norm(rel_error,p);
+}
 
 double Utilities::phi_error(vector<vector<double> > &ref_soln, vector<vector<double> > &soln, int norm){
     unsigned int ref_soln_size = ref_soln[0].size();

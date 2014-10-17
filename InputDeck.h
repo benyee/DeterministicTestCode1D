@@ -130,10 +130,11 @@ private:
      10 = linear characteristic (3.1 of notes)
      11 = alternative linear characteristic (3.2 of notes)
      20 = linear discontinuous (4.1 of notes)
-     30 = new method (5.1)
+     30 = new method (5.1) (MB-1)
      31 = alt. 1 to new method (5.3)
      32 = alt. 2 to new method (5.4)
      33 = alt. 3 to new method (5.5)
+     35 = MB-2
      40 = MB-3 (10/7/2014)
      41 = modified MB using Qhats, not the latest version
      42 = MB-3 with rho = 0

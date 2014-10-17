@@ -44,6 +44,7 @@ public:
     unsigned int checkNegativeAngularFlux(); //Returns the number of negative values in psi_c and psi_e
     
     double get_error(){return old_error;}
+    double get_exitcurr(bool isExitOnRight=true);
     double get_it_num(){if(isConverged){return it_num;} return -it_num;}
     double get_kappa(){return kappa;}
     double get_Qhatnorm(){if(alpha_mode >= 40 && alpha_mode != 41 && alpha_mode < 40){return 0;} return Utilities::p_norm(Qhat_edge,2);}
@@ -66,6 +67,7 @@ private:
     //Fine Grid:
     vector<double> x; //List of x-values at cell centers
     vector<double> h; //List of widths (dx's)
+    vector<double> h_avg; //List of h_{j+1/2} values.  h_{j+1/2} is the average of h_j and h_{j+1}
     vector<unsigned int> discret; //Number of spatial cells for each region
     vector<double> x_e; //List of x-values at cell edges
     //Coarse Grid:
@@ -77,6 +79,8 @@ private:
     //Neutron info:
     vector<double> edgePhi0;
     vector<double> edgePhi1;
+    vector<double> edgePhi0_MB2_R;
+    vector<double> edgePhi0_MB2_L;
     vector<double> phi_0; //Cell-averaged scalar flux
     vector<double> old_phi_0; //ZZZZ does this do anything..?
     vector<double> phi_1; //Cell-averaged net current in x direction
@@ -112,6 +116,7 @@ private:
     vector<double> mu_n; //mu values for S_N approximation
     //Convention: mu_n[0] > mu_n[1] > ... mu_n[N-1]
     vector<double> w_n; //weights for S_N approximation
+    vector< vector<double> > w_n_MB2; //special weights for MB-2 mehtod
     
     unsigned int J,N; //number of spatial cells, order of S_N approximation
     int* bc; //boundary conditions
@@ -131,9 +136,11 @@ private:
     void initializeAlpha(); //Calculate alpha values
     void initializeDictionary(); //Initialize dictionary.
     void initializeGrid(); //Calculate values associated with grid locations
+    void initializew_n_MB2(); //Initialize w_n_MB2
     void rightIteration(); //Sweep left to right
         void leftIteration(); //Sweep right to left
     void setEdgePhi_toAvgPhi(); //Used to make a crude improvement of the initial edge flux guess
+    void updateEdgePhi0_MB2(); //Updates the special edge fluxes in the MB-3 case
     double updatePhi_calcSource(bool usePsi = true); //Update fluxes and currents, calculate new source, calculate difference between new and old scalar flux
     void updateQhat_edge(); //For MB-3 (modified MB method)
 };

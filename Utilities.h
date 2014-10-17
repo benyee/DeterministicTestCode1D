@@ -39,6 +39,7 @@ public:
     static double inf_norm(vector<double> &v1, vector<double> &v2);
     static double p_norm(vector<double> v1, unsigned int p); //v2 = zero vector
     static double p_norm(vector<double> v1, vector<double> v2, unsigned int p);
+    static double p_norm_of_rel_error(vector<double> v_old, vector<double> v_new, unsigned int p);
     
     //phi_error computes the relative error between two solutions.  norm = p > 0 for p_norm, norm = -1 for inf norm
     //the solution vectors should be 2xN and 2xM vectors respectively where N and M are the number of spatial points.  The first component should be the x-coordinates while the 2nd component should be the scalar flux values at those coordinates.
@@ -69,6 +70,8 @@ public:
     
     //Solve for kappa where kappa is the constant in the solution psi_n(x) = a_n e^{-\Sigma_t \kappa x}
     static double find_kappa(double c, const vector<double> &mu_n, const vector<double> &w_n, double tol = 1e-6);
+    
+    static vector<double> zeros( unsigned int N , double value = 0 ){ vector<double> temp(N,value);  return temp;}
     
 private:
     static double kappa_fun(double c, const vector<double> &mu_n, const vector<double> &w_n, double kappa); //Helper function for find_kappa()

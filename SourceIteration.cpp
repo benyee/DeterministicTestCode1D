@@ -24,6 +24,10 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     J = phi_0.size();
     bc = data->getbc();
     alpha_mode = data->getalpha_mode();
+    if(alpha_mode == 35){
+        edgePhi0_MB2_L = data->getedgePhi0_0();
+        edgePhi0_MB2_R = data->getedgePhi0_0();
+    }
     accel_mode = data->getaccel_mode();
     
     sigma_s0 = data->getsigma_s0();
@@ -81,6 +85,8 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
         Qhat_edge.push_back(0);
     }
     initializeGrid();
+    if( alpha_mode == 35 )
+        initializew_n_MB2();
     initializeAlpha();
     
     //Find the maximum value of c:
@@ -165,7 +171,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
     }
 //    double tol = fabs(data->gettol());
     double tol = (1-c*falseConvCorrection)*fabs(data->gettol());
-    double error = 0;;
+    double error = 0;
     
     //Iterate until tolerance is achieved:
     it_num = 0;
@@ -182,7 +188,6 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             leftIteration();
         }
         
-//        Utilities::print_dvector(calcEdgePhi(0));
         //Special case:
         if(alpha_mode < 10){
             finiteDifference();
@@ -228,8 +233,8 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         }
         
         it_num += 0.5;
-        
-        error = Utilities::p_norm(old_phi_0,phi_0,2) / (Utilities::p_norm(phi_0,2) + tol*tol);
+        error = Utilities::p_norm_of_rel_error(old_phi_0,phi_0,2);
+//        error = Utilities::p_norm(old_phi_0,phi_0,2) / (Utilities::p_norm(phi_0,2) + tol*tol);
         // If we're using MB3, make sure the Qhats are converged too:
         if( alpha_mode >= 40 && alpha_mode < 50 && alpha_mode != 41 ){
             double Qhat_error = Utilities::p_norm( old_Qhat_edge, Qhat_edge , 2) / (Utilities::p_norm( Qhat_edge , 2) + tol*tol);
@@ -313,7 +318,6 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
     return 0;
 }
 
-
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
 //-------------------MAIN LOOP--------------------------------------------//
 //-------------------MAIN LOOP--------------------------------------------//
@@ -324,6 +328,20 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
 //-------------------GET SOLUTION-----------------------------------------//
 //-------------------GET SOLUTION-----------------------------------------//
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+double SourceIteration::get_exitcurr(bool isExitOnRight){
+    double exitcurr = 0;
+    if(isExitOnRight){
+        for(unsigned int m = 0 ; m < N/2 ; m++){
+            exitcurr = psi_e[J][m]*w_n[m]*mu_n[m];
+        }
+    }else{
+        for(unsigned int m = 0 ; m < N/2 ; m++){
+            exitcurr = psi_e[J][m]*w_n[m]*mu_n[m];
+        }
+    }
+    return exitcurr;
+}
+
 vector<vector<double> > SourceIteration::get_solution(){
     vector<vector<double> > out;
     
@@ -484,7 +502,6 @@ vector<double> SourceIteration::calcEdgePhi(int num){
     return edgePhi;
     
 }
-
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
 //-------------------CALCULATE EDGE PHI------------------------------------//
 //-------------------CALCULATE EDGE PHI------------------------------------//
@@ -831,6 +848,8 @@ void SourceIteration::cmfd(){
     }
     
     variable_status["edgePhi0"] += 0.5;
+    if(alpha_mode==35)
+        variable_status["edgePhi0_MB2"] += 0.5;
     variable_status["edgePhi1"] += 0.5;
     variable_status["phi_0"] += 0.5;
     variable_status["phi_1"] += 0.5;
@@ -1013,6 +1032,8 @@ void SourceIteration::pcmfd(){
     }
     
     variable_status["edgePhi0"] += 0.5;
+    if(alpha_mode==35)
+        variable_status["edgePhi0_MB2"] += 0.5;
     variable_status["edgePhi1"] += 0.5;
     variable_status["phi_0"] += 0.5;
     variable_status["phi_1"] += 0.5;
@@ -1098,6 +1119,8 @@ void SourceIteration::initializeAlpha(){
 //1IIIIII
 void SourceIteration::initializeDictionary(){
     variable_status["edgePhi0"] = 0;
+    if(alpha_mode == 35)
+        variable_status["edgePhi0_MB2"] = 0;
     variable_status["edgePhi1"] = 0;
     variable_status["phi_0"] = 0;
     variable_status["phi_1"] = 0;
@@ -1143,6 +1166,11 @@ void SourceIteration::initializeGrid(){
     }
     x_e.push_back(X[X.size()-1]);
     
+    //Initialize h_avg:
+    for(unsigned int i = 0; i < h.size()-1; i++){
+        h_avg.push_back( ( h[i] + h[i+1] ) / 2 );
+    }
+    
     if(accel_mode){
         discret_CM = data->getdiscret_CM();
         if(x_CM.size()){return;}
@@ -1185,6 +1213,35 @@ void SourceIteration::initializeGrid(){
              }
        }
        opt_CM_a.push_back(sigma_a[sigma_a.size()-1]*h_CM[h_CM.size()-1]);
+    }
+}
+
+//IIII
+void SourceIteration::initializew_n_MB2(){
+    
+    unsigned int region = 0;
+    unsigned int counter = 0;
+    
+    double denom = 0;
+    for(unsigned int j = 0; j < J; j++){
+        if(counter == discret[region]){
+            region++;
+            counter = 0;
+        }
+        if( counter == 0 ){
+            denom = 0;
+            for(unsigned int m = 0; m < N; m++){
+                denom += fabs(mu_n[m]) * w_n[m] / ( fabs(mu_n[m]) + sigma_t[region]* h[j] / 2);
+            }
+        }
+        
+        vector<double> temp(N,0);
+        for(unsigned int m = 0; m < N; m++){
+            temp[m] = 2*fabs(mu_n[m]) * w_n[m] / ( fabs(mu_n[m]) + sigma_t[region]*h[j] / 2) / denom;
+        }
+        w_n_MB2.push_back(temp);
+        
+        counter++;
     }
 }
 
@@ -1246,22 +1303,15 @@ void SourceIteration::leftIteration(){
                 psi_e[j][m] = numerator/denominator;
                 psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
                 psi_c_lin[j][m] = 2*(psi_c[j][m]-psi_e[j][m])/h[j];
-            }else if(alpha_mode ==30){
+            }else if(alpha_mode ==30 || alpha_mode ==35){
                 double tau = -sigma_t[region]*h[j]/mu_n[m];
                 double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 - source_edge[j][m]*h[j]*tau/4/mu_n[m];
                 double denominator = 1 + tau + tau*tau/2;
                 psi_e[j][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-                /*
-                 double twomu_h = mu_n[m]/halfhj;
-                 double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
-                 psi_e[j][m] = (twomu_h*mu_hsigt*psi_e[j+1][m]-mu_hsigt*source[j][m]+source_edge[j][m]/2)/(twomu_h*(mu_hsigt-1)+sigma_t[region]);
-                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-                 */
             }else if(alpha_mode==31){
                 double tau = -sigma_t[region]*h[j]/mu_n[m];
                 double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 - source_edge[j][m]*h[j]/mu_n[m]*tau*(0.25+tau/12);
-                //double numerator = psi_e[j+1][m] - source[j][m]*h[j]/mu_n[m]/2 + source_edge[j][m]/sigma_t[region]*(tau*tau/4+tau*tau*tau/12);
                 double denominator = 1 + tau + tau*tau/2 + tau*tau*tau/6;
                 psi_e[j][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
@@ -1352,17 +1402,12 @@ void SourceIteration::rightIteration(){
                 psi_e[j+1][m] = numerator/denominator;
                 psi_c[j][m] = source[j][m]/2/sigma_t[region] - (psi_e[j+1][m] - psi_e[j][m])/2/tau;
                 psi_c_lin[j][m] = 2*(psi_e[j+1][m] - psi_c[j][m])/h[j];
-            }else if(alpha_mode ==30){
+            }else if(alpha_mode ==30 || alpha_mode ==35){
                 double tau = sigma_t[region]*h[j]/mu_n[m];
                 double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]*h[j]/mu_n[m]*tau/4;
                 double denominator = 1 + tau + tau*tau/2;
                 psi_e[j+1][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
-                /*
-                 double twomu_h = mu_n[m]/halfhj;
-                 double mu_hsigt = mu_n[m]/h[j]*sigma_t[region];
-                 psi_e[j+1][m] = (twomu_h*mu_hsigt*psi_e[j][m]+mu_hsigt*source[j][m]+source_edge[j+1][m]/2)/(twomu_h*(mu_hsigt+1)+sigma_t[region]);
-                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];*/
             }else if(alpha_mode==31){
                 double tau = sigma_t[region]*h[j]/mu_n[m];
                 double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2 + source_edge[j+1][m]*h[j]/mu_n[m]*tau*(0.25+tau/12);
@@ -1447,6 +1492,42 @@ void SourceIteration::setEdgePhi_toAvgPhi(){
 //---------------UPDATE PHI, CALC SOURCE------------------------------------//
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 
+
+void SourceIteration::updateEdgePhi0_MB2(){
+    for(unsigned int j = 0; j < J+1; j++){
+        if( j == 0 ){
+            edgePhi0_MB2_R[j] = 0;
+            for( unsigned int m = 0; m < N; m++ ){
+                edgePhi0_MB2_R[j] += psi_e[j][m] * w_n_MB2[j][m];
+            }
+        } else{
+            edgePhi0_MB2_R[j] = 0;
+            for( unsigned int m = 0; m < N; m++ ){
+                edgePhi0_MB2_R[j] += psi_e[j][m] * w_n_MB2[j-1][m];
+            }
+        }
+        
+        if(j == 0){
+            edgePhi0_MB2_L[0] = edgePhi0_MB2_R[0];
+        }else if( j < J ){
+            edgePhi0_MB2_L[j] = 0;
+            for( unsigned int m = 0; m < N; m++ ){
+                edgePhi0_MB2_L[j] += psi_e[j][m] * w_n_MB2[j][m];
+            }
+        }else{
+            edgePhi0_MB2_L[J] = edgePhi0_MB2_R[J];
+        }
+        
+    }
+//    cout << "Left:";
+//    Utilities::print_dvector(edgePhi0_MB2_L);
+//    cout << "Right:";
+//    Utilities::print_dvector(edgePhi0_MB2_R);
+//    Utilities::print_dvector(edgePhi0);
+    variable_status["edgePhi0_MB2"] = variable_status["psi_e"];
+}
+
+
 //Update phi, calculate source:
 double SourceIteration::updatePhi_calcSource(bool usePsi){
     vector<double> old_phi_0(phi_0);
@@ -1460,6 +1541,8 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
     if(usePsi){
        edgePhi0 = calcEdgePhi(0);
        edgePhi1 = calcEdgePhi(1);
+       if(alpha_mode == 35)
+           updateEdgePhi0_MB2();
     }
     for(unsigned int j = 0; j<J;j++){
         if(usePsi){ //If updating phi's with psi:
@@ -1480,11 +1563,20 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
         }
         //Need to calculate edge sources.  We are evaluating Q at the edge in order to preserve the linearity of the method.
         if(alpha_mode >=30){
-            for(unsigned int m = 0; m < N/2;m++){
-                source_edge[j+1][m] = sigma_s0[region]*edgePhi0[j+1]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j+1] + Q[region] + Q_lin[region]*(x_e[j+1]);
-            }
-            for(unsigned int m = N/2; m<N;m++){
-                source_edge[j][m] = sigma_s0[region]*edgePhi0[j]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j] + Q[region] + Q_lin[region]*(x_e[j]);
+            if(alpha_mode == 35){
+                for(unsigned int m = 0; m < N/2;m++){
+                    source_edge[j+1][m] = sigma_s0[region]*edgePhi0_MB2_R[j+1]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j+1] + Q[region] + Q_lin[region]*(x_e[j+1]);
+                }
+                for(unsigned int m = N/2; m<N;m++){
+                    source_edge[j][m] = sigma_s0[region]*edgePhi0_MB2_L[j]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j] + Q[region] + Q_lin[region]*(x_e[j]);
+                }
+            }else{
+                for(unsigned int m = 0; m < N/2;m++){
+                    source_edge[j+1][m] = sigma_s0[region]*edgePhi0[j+1]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j+1] + Q[region] + Q_lin[region]*(x_e[j+1]);
+                }
+                for(unsigned int m = N/2; m<N;m++){
+                    source_edge[j][m] = sigma_s0[region]*edgePhi0[j]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j] + Q[region] + Q_lin[region]*(x_e[j]);
+                }
             }
         }
         within_region_counter++;
@@ -1540,11 +1632,13 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
             within_region_counter = 0;
             edgePhi0 = calcEdgePhi(0);
             edgePhi1 = calcEdgePhi(1);
+            if( alpha_mode==35 )
+                updateEdgePhi0_MB2();
             for(unsigned int j = 0; j<J;j++){
                 if(edgePhi0[j+1]+edgePhi0[j] == 0){
                     phi_0_lin[j] = 0;
                 }else{
-                    phi_0_lin[j] = 2*phi_0[j]/h[j]*(edgePhi0[j+1]-edgePhi0[j])/(edgePhi0[j+1]+edgePhi0[j]);
+                    phi_0_lin[j] = 2*phi_0[j]/h[j]*(edgePhi0[j+1]-edgePhi0[j])/(edgePhi0[j+1]+edgePhi0[j]); //ZZZZ need to fix for MB-2?
                 }
                 
                 if(edgePhi1[j+1]+edgePhi1[j] == 0){
@@ -1586,7 +1680,7 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
 void SourceIteration::updateQhat_edge(){
     
     unsigned int lastind = Qhat_edge.size()-1;
-    if(alpha_mode == 40 || alpha_mode == 42){
+    if(alpha_mode != 45){
         vector<double> phi2_plus(lastind,0.);
         vector<double> phi2_minus(lastind,0.);
         vector<double> phi2e_plus(lastind+1,0.);
@@ -1630,18 +1724,21 @@ void SourceIteration::updateQhat_edge(){
             Qhat_edge[0] += mu_n[m]*psi_e[0][m]*w_n[m];
         }
         Qhat_edge[0] *= -6.*sigma_t[0]; //ZZZZ THIS ONLY WORKS FOR ONE ZONE UNIFORM MESH RIGHT NOW
-//        cout << "term 1 = "<<Qhat_edge[0] << endl;
         Qhat_edge[0] += 3*int_mu_0_to_1*(sigma_s0[0]*edgePhi0[0]+Q[0]);
-//        cout << "term 2  = " <<3*int_mu_0_to_1*(sigma_s0[0]*edgePhi0[0]+Q[0])<<endl;
-        Qhat_edge[0] -= 12./rho/h[0]*(phi2_plus[0]-phi2e_plus[0]);
-//        cout << "term 3 = " <<12./rho/h[0]*(phi2_plus[0]-phi2e_plus[0]) << endl;
-//        cout << "phi2_plus = " << phi2_plus[0] << endl;
-//        Qhat_edge[0] *= 3 * int_mu_sq_0_to_1; //ZZZZ
+        Qhat_edge[0] -= 12./rho/h[0]*(phi2_plus[0]-phi2e_plus[0]); // ZZZZ
         for(unsigned int j = 1; j < lastind; j++){
             Qhat_edge[j] = phi2_minus[j] - 2.*phi2e_minus[j] + phi2_minus[j-1];
             Qhat_edge[j] -= (phi2_plus[j] - 2.*phi2e_plus[j] + phi2_plus[j-1]);
             Qhat_edge[j] *= 3. / rho / h[0]; //ZZZZ THIS ONLY WORKS FOR ONE ZONE UNIFORM MESH RIGHT NOW
-//            Qhat_edge[j] *= 3 * int_mu_sq_0_to_1;//ZZZZ
+//            double temp =  Qhat_edge[j];
+//            Qhat_edge[j] = 2 * ( phi2e_plus[j] - phi2_plus[j-1] ) / h[j-1];
+//            Qhat_edge[j] -= ( phi2_plus[j] - phi2_plus[j-1] + phi2_minus[j] - phi2_minus[j-1] ) / h_avg[j-1];
+//            Qhat_edge[j] += 2 * ( phi2_minus[j] - phi2e_minus[j] ) / h[j];
+//            Qhat_edge[j] *= 3 / rho;
+//            if( (temp - Qhat_edge[j])/temp > 1e-6 ){
+//                cout << "temp = " << temp << endl;
+//                cout << "Qhat_edge_new["<<j<<"] = " << Qhat_edge[j] << endl;
+//            }
         }
         Qhat_edge[lastind] = 0;
         for(unsigned int m = N/2; m < N ; m++){
@@ -1651,26 +1748,6 @@ void SourceIteration::updateQhat_edge(){
         Qhat_edge[lastind] -= 3*int_mu_0_to_1*(sigma_s0[0]*edgePhi0[lastind]+Q[0]);
         Qhat_edge[lastind] -= 12./rho/h[0]*(phi2e_minus[lastind]-phi2_minus[lastind-1]);
 //        Qhat_edge[lastind] *= 3 * int_mu_sq_0_to_1;//ZZZZ
-//        Qhat_edge[0] = 0;
-//        Qhat_edge[lastind] = 0;
-//        Qhat_edge[0] = -3*(phi2e_minus[1]-2*phi2_minus[0]+phi2e_minus[0])/rho/h[0];
-//        Qhat_edge[lastind] = 3*(phi2e_plus[lastind]-2*phi2_plus[lastind-1]+phi2e_plus[lastind-1])/rho/h[0];
-//        int j = (lastind+1)/10;
-//        cout << "(phi2_minus["<<j<<"] - 2*phi2e_minus[j] + phi2_minus[j-1] )/h[0]= " << (phi2_minus[j] - 2*phi2e_minus[j] + phi2_minus[j-1])/h[0] << endl;
-//        cout << "x" << endl;
-//        Utilities::print_dvector(x);
-//        cout << "x_e" << endl;
-//        Utilities::print_dvector(x_e);
-//        cout << "phi2_plus" << endl;
-//        Utilities::print_dvector(phi2_plus);
-//        cout << "phi2e_plus" << endl;
-//        Utilities::print_dvector(phi2e_plus);
-//        cout << "phi2_minus" << endl;
-//        Utilities::print_dvector(phi2_minus);
-//        cout << "phi2e_minus" << endl;
-//        Utilities::print_dvector(phi2e_minus);
-//        cout << "phi2" << endl;
-        //        Utilities::print_dvector(Utilities::combine_Phi( Utilities::vector_add(phi2e_plus,phi2e_minus) , Utilities::vector_add(phi2_plus,phi2_minus) ));
         
     }else{
         //ZZZZ THIS ONLY WORKS FOR ONE ZONE UNIFORM MESH RIGHT NOW
