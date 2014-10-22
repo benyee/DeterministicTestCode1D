@@ -49,12 +49,12 @@ public:
     double get_kappa(){return kappa;}
     double get_Qhatnorm(){if(alpha_mode >= 40 && alpha_mode != 41 && alpha_mode < 40){return 0;} return Utilities::p_norm(Qhat_edge,2);}
     vector<double> get_Qhat_edge(){return Qhat_edge;}
-    double get_rho(){return rho;}
+    vector<double> get_rho(){return rho;}
     vector<vector<double> > get_psi_e(){return psi_e;}
     double get_spec_rad(){return spec_rad;}
     void set_diverge(double div){diverge = div;}
     void set_outputfilename(string filename){outfilename = filename;}
-    void set_rho(double rho_input){rho = rho_input;}
+    void set_rho(vector<double> rho_input){rho = rho_input;}
     void set_kappa(double kappa_input){kappa = kappa_input;}
     
     
@@ -109,7 +109,7 @@ private:
     //In that case, c = max( sigma_s0/(sigma_t+DB^2) ))
     
     double kappa; //Constant in psi_n(x) = a_n e^{-\Sigma_t \kappa x}
-    double rho; //dx becomes rho*dx in the multiple balance aux. equations
+    vector<double> rho; //dx becomes rho*dx in the multiple balance aux. equations
     
     vector< vector<double> > alpha; //Finite difference coefficients
     
@@ -135,6 +135,7 @@ private:
     void finiteDifference(); //Calculate cell-averaged angular fluxes
     void initializeAlpha(); //Calculate alpha values
     void initializeDictionary(); //Initialize dictionary.
+    void initializerho(); //Initialize rho for MB-3
     void initializeGrid(); //Calculate values associated with grid locations
     void initializew_n_MB2(); //Initialize w_n_MB2
     void rightIteration(); //Sweep left to right
