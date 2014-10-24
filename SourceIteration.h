@@ -132,6 +132,7 @@ private:
     vector<double> calcEdgePhi(int num); //Integrate the edge fluxes to get scalar edge fluxes and edge currents.  This is not necessary for the source iteration procedure and can be performed at the end.  num = 0 for scalar edge flux, num = 1 for edge current
     void accelerate_edgePhi0(vector<double> preaccel_phi_0); //accelerate edge fluxes
     void accelerate_edgePhi0_MB2(vector<double> preaccel_phi_0); //accelerate edge fluxes for the MB2 case
+    void accelerate_MB3(); //Diffusion based acceleration scheme for MB3
     void cmfd(); //Perform cmfd acceleration
         void pcmfd(); //Perform pcmfd acceleration
     void finiteDifference(); //Calculate cell-averaged angular fluxes

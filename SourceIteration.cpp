@@ -189,13 +189,20 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         variable_status["psi_e"] += 1;
         variable_status["psi_c"] += 1;
         
+        if((alpha_mode >= 40 && alpha_mode < 50) /*&& (error < tol*10 || Qhat_edge[0] != 0) */){
+            updateQhat_edge();
+        }
+        
         
         error=updatePhi_calcSource();
         it_num += 0.5;
         
         //CMFD acceleration:
         if(accel_mode == 1){
-            cmfd();
+            if(alpha_mode >= 40)
+                accelerate_MB3();
+            else
+                cmfd();
             updatePhi_calcSource(false);
         }else if(accel_mode == 2 || accel_mode == 3){
             pcmfd();
@@ -217,18 +224,12 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             variable_status["source_lin"] += 0.5;
         }
         
-        
-        if((alpha_mode >= 40 && alpha_mode < 50) /*&& (error < tol*10 || Qhat_edge[0] != 0) */){
-            updateQhat_edge();
-            variable_status["Qhat_edge"] += 1;
-        }
-        
         it_num += 0.5;
         error = Utilities::p_norm_of_rel_error(old_phi_0,phi_0,2);
 //        error = Utilities::p_norm(old_phi_0,phi_0,2) / (Utilities::p_norm(phi_0,2) + tol*tol);
         // If we're using MB3, make sure the Qhats are converged too:
-        if( alpha_mode >= 40 && alpha_mode < 50 && alpha_mode != 41 ){
-            double Qhat_error = Utilities::p_norm( old_Qhat_edge, Qhat_edge , 2) / (Utilities::p_norm( Qhat_edge , 2) + tol*tol);
+        if( alpha_mode >= 40 && alpha_mode < 50 && alpha_mode != 41 && accel_mode == 0){
+            double Qhat_error = Utilities::p_norm_of_rel_error(old_Qhat_edge,Qhat_edge,2);
             error = max( error , Qhat_error );
         }
         
@@ -570,17 +571,21 @@ void SourceIteration::accelerate_edgePhi0(vector<double> preaccel_phi_0){
     
     double Sth_L;
     double Sth_R = sigma_t[region_R]*h[0];
+    double Q_left_edge = h[0]*Q[region_R];
     for(unsigned int m = 0; m< N/2; m++){
         left_coeff += psi_e[0][m] * w_n[m];
         right_coeff += 2 * fabs(mu_n[N-m-1]) * psi_c[0][N-m-1] * \
-        w_n[N-m-1] / ( Sth_R + 2 * fabs(mu_n[N-m-1]) );
+            w_n[N-m-1] / ( Sth_R + 2 * fabs(mu_n[N-m-1]) );
         
-        Q_addition += w_n[N-m-1] / ( Sth_R + 2 * fabs(mu_n[N-m-1]) )/2;
+        if(alpha_mode >= 40 && alpha_mode < 50 && bc[0] != 1){
+            Q_addition += (Q_left_edge + h[0]*Qhat_edge[0]*mu_n[N-m-1])* w_n[N-m-1] / ( Sth_R + 2 * fabs(mu_n[N-m-1]) )/2;
+        }else{
+            Q_addition += Q_left_edge * w_n[N-m-1] / ( Sth_R + 2 * fabs(mu_n[N-m-1]) )/2;
+        }
         phi_addition += h[0]*sigma_s0[region_R] * w_n[N-m-1]/ 2 / \
         ( Sth_R + 2 * fabs(mu_n[N-m-1]) );
     }
     right_coeff /= preaccel_phi_0[0];
-    Q_addition *= h[0]*Q[region_R];
     
     if(bc[0] != 1){
         edgePhi0[0] = left_coeff+right_coeff*phi_0[0] + Q_addition;
@@ -619,10 +624,17 @@ void SourceIteration::accelerate_edgePhi0(vector<double> preaccel_phi_0){
             right_coeff += 2 * fabs(mu_n[N-m-1]) * psi_c[i][N-m-1] * \
             w_n[N-m-1] / ( Sth_R + 2 * fabs(mu_n[N-m-1]) );
             
-            Q_addition += Q_L * w_n[m] / \
-            ( Sth_L + 2 * fabs(mu_n[m]) )/2;
-            Q_addition += Q_R * w_n[N-m-1] / \
-            ( Sth_R + 2 * fabs(mu_n[N-m-1]) )/2;
+            if(alpha_mode >=40 && alpha_mode < 50){
+                Q_addition += (Q_L + h[i-1]*Qhat_edge[i] * mu_n[m])* w_n[m] / \
+                ( Sth_L + 2 * fabs(mu_n[m]) )/2;
+                Q_addition += (Q_R + h[i]*Qhat_edge[i] * mu_n[N-m-1])* w_n[N-m-1] / \
+                ( Sth_R + 2 * fabs(mu_n[N-m-1]) )/2;
+            }else{
+                Q_addition += Q_L * w_n[m] / \
+                    ( Sth_L + 2 * fabs(mu_n[m]) )/2;
+                Q_addition += Q_R * w_n[N-m-1] / \
+                    ( Sth_R + 2 * fabs(mu_n[N-m-1]) )/2;
+            }
             
             phi_addition += h[i-1]*sigma_s0[region_L] * w_n[m]/ 2 / \
             ( Sth_L + 2 * mu_n[m] );
@@ -632,8 +644,7 @@ void SourceIteration::accelerate_edgePhi0(vector<double> preaccel_phi_0){
         left_coeff /= preaccel_phi_0[i-1];
         right_coeff /= preaccel_phi_0[i];
         
-        edgePhi0[i] = left_coeff*phi_0[i-1]+right_coeff*phi_0[i] + \
-        Q_addition;
+        edgePhi0[i] = left_coeff*phi_0[i-1]+right_coeff*phi_0[i] + Q_addition;
         edgePhi0[i] /= 1 - phi_addition;
         
         within_region_counter_L++;
@@ -657,19 +668,24 @@ void SourceIteration::accelerate_edgePhi0(vector<double> preaccel_phi_0){
     unsigned int i = h.size();
     
     Sth_L = sigma_t[region_L]*h[i-1];
-    
+    double Q_right_edge = h[i-1]*Q[region_L];
     for(unsigned int m = 0; m< N/2; m++){
         left_coeff += 2 * mu_n[m] * psi_c[i-1][m] * w_n[m] / \
         ( Sth_L + 2 * mu_n[m] ) ;
         right_coeff += psi_e[i][N-m-1];
         
-        Q_addition += w_n[m] / ( Sth_L + 2 * fabs(mu_n[m]) ) / 2;
+        if(alpha_mode >= 30 && alpha_mode < 50 && bc[1] != 1){
+            Q_addition += (Q_right_edge + h[i-1]*Qhat_edge[J]*mu_n[m]) * w_n[m] /\
+            ( Sth_L + 2 * fabs(mu_n[m]) ) / 2;
+        }else{
+            Q_addition += Q_right_edge * w_n[m] /\
+            ( Sth_L + 2 * fabs(mu_n[m]) ) / 2;
+        }
         phi_addition += h[i-1]*sigma_s0[region_L] * w_n[m]/ 2 / \
         ( Sth_L + 2 * mu_n[m] );
     }
     
     left_coeff /= preaccel_phi_0[i-1];
-    Q_addition *= h[i-1]*Q[region_L];
     
     if(bc[1]!=1){
         edgePhi0[i] = left_coeff*phi_0[i-1]+right_coeff + Q_addition;
@@ -690,7 +706,7 @@ void SourceIteration::accelerate_edgePhi0(vector<double> preaccel_phi_0){
 
 //-------------------ACCELERATE EDGE SCALAR FLUX FOR MB2----------------------//
 //-------------------ACCELERATE EDGE SCALAR FLUX FOR MB2----------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 void SourceIteration::accelerate_edgePhi0_MB2(vector<double> preaccel_phi_0){
     //NOTE THAT accelerate_edgePhi0 needs to be run IN ADDITION to this
     //  function for the MB2 case
@@ -872,6 +888,149 @@ void SourceIteration::accelerate_edgePhi0_MB2(vector<double> preaccel_phi_0){
 //-------------------ACCELERATE EDGE SCALAR FLUX FOR MB2----------------------//
 //-------------------ACCELERATE EDGE SCALAR FLUX FOR MB2----------------------//
 
+
+//1AAAAA
+//-------------------ACCELERATION FOR MB3-------------------------------------//
+//-------------------ACCELERATION FOR MB3-------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+void SourceIteration::accelerate_MB3(){
+    
+    vector<double> mu_n2(mu_n);
+    for(unsigned int m = 0; m < N; m++)
+        mu_n2[m] *= mu_n2[m];
+    
+    vector<double> phi_2(J,0);
+    for(unsigned int j = 0; j < J; j++)
+        for(unsigned int m = 0; m < N; m++)
+            phi_2[j] += mu_n2[m]*psi_c[j][m]*w_n[m];
+    
+    vector<double> eddington(phi_0);
+    for(unsigned int j = 0; j < J ; j++)
+        eddington[j] = phi_2[j]/phi_0[j];
+    
+    vector< vector<double> > A( J , vector<double>( 3 , 0 ) );
+    vector<double> b( J , 0 );
+    
+    unsigned int region = 0;
+    unsigned int within_region_counter = 1;
+    vector<double> Q = data->getQ();
+    
+    
+    //Deal with the left edge:
+    double Sth2 = sigma_t[0] * h[0] * h[0]; //ZZZZ only works for homogeneous right now
+    
+    //Calculate a bunch of parameters needed to eliminate phi_{0,1/2} in terms of phi_{0,1}
+    double phi_2e_L= 0;
+    for(unsigned int m = 0; m < N ; m++ )
+        phi_2e_L += mu_n2[m]*psi_e[0][m]*w_n[m];
+    
+    double A01temp = 0;
+    double denom = 0;
+    double Sth = sigma_t[0] * h[0];
+    for(unsigned int m = N/2; m < N; m++)
+        denom -= w_n[m] / ( Sth - 2 * mu_n[m] );
+    denom *= sigma_s0[0] * h[0];
+    denom /= 2;
+    denom += 1;
+    for( unsigned int m = N/2 ; m < N ; m++ )
+        A01temp -= mu_n[m] * w_n[m] * psi_c[0][m] / ( Sth - 2 * mu_n[m] );
+    A01temp *= 2;
+    A01temp /= denom * phi_0[0];
+    
+    double in_flux = 0;
+    for(unsigned int m = 0; m < N/2 ; m++ )
+        in_flux += w_n[m] * psi_e[0][m];
+    double Q_addition = 0;
+    for(unsigned int m = N/2 ; m < N ; m++ ){
+        Q_addition += ( Q[0] + mu_n[m] * Qhat_edge[0] ) * w_n[m] / \
+            (Sth - 2 * mu_n[m]);
+    }
+    Q_addition *= h[0] / 2;
+    
+    if(bc[0] == 1)
+        A[0][1] = (sigma_t[0]-sigma_s0[0]) * Sth2 + eddington[0];
+    else
+        A[0][1] = (sigma_t[0]-sigma_s0[0]) * Sth2 + 3 * eddington[0] - 2 * phi_2e_L/edgePhi0[0] * A01temp;
+    A[0][2] = - eddington[1];
+    b[0] = Q[0] * Sth2;
+    if(bc[0] != 1 )
+        b[0] += 2 * phi_2e_L / edgePhi0[0] * (in_flux + Q_addition) / denom;
+    
+    
+    //Deal with the center of problem:
+    for(unsigned int j = 1; j < J-1 ; j++){
+        if( within_region_counter == discret[region] ){
+            region++;
+            within_region_counter = 0;
+            Sth2 = sigma_t[region] * h[j] * h[j];
+        }
+        
+        A[j][0] = -eddington[j-1];
+        A[j][1] = (sigma_t[region] - sigma_s0[region]) * Sth2 + 2 * eddington[j];
+        A[j][2] = -eddington[j+1];
+        
+        b[j] = Q[region] * Sth2;
+        
+        within_region_counter++;
+    }
+    
+    //Deal with the right edge:
+    region = sigma_t.size()-1;
+    unsigned int j = J-1;
+    Sth2 = sigma_t[region] * h[j] * h[j];
+    Sth = sigma_t[region] * h[j];
+    
+    double phi_2e_R= 0;
+    for(unsigned int m = 0; m < N ; m++ )
+        phi_2e_R += mu_n2[m]*psi_e[J][m]*w_n[m];
+    
+    double AJ1temp = 0;
+    denom = 0;
+    for(unsigned int m = 0; m < N/2; m++)
+        denom -= w_n[m] / ( Sth + 2 * mu_n[m] );
+    denom *= sigma_s0[region] * h[j];
+    denom /= 2;
+    denom += 1;
+    for( unsigned int m = 0 ; m < N/2 ; m++ )
+        AJ1temp += mu_n[m] * w_n[m] * psi_c[j][m] / ( Sth + 2 * mu_n[m] );
+    AJ1temp *= 2;
+    AJ1temp /= denom * phi_0[j];
+    
+    double out_flux = 0;
+    for(unsigned int m = N/2 ; m < N ; m++ )
+        out_flux += w_n[m] * psi_e[J][m];
+    Q_addition = 0;
+    for(unsigned int m = 0; m < N/2 ; m++ ){
+        Q_addition += ( Q[region] + mu_n[m] * Qhat_edge[J] ) * w_n[m] / \
+            (Sth + 2 * mu_n[m]);
+    }
+    Q_addition *= h[j] / 2;
+    
+    A[j][0] = -eddington[j-1];
+    if( bc[1] == 1 )
+       A[j][1] = (sigma_t[region] - sigma_s0[region]) * Sth2 + eddington[j];
+    else
+        A[j][1] = (sigma_t[region] - sigma_s0[region]) * Sth2 + 3 * eddington[j] - 2 * phi_2e_R / edgePhi0[J] * AJ1temp;
+    b[j] = Q[region] * Sth2;
+    if( bc[1] != 1 )
+           b[j] += 2 * phi_2e_R / edgePhi0[J] * (out_flux + Q_addition) / denom;
+    
+    vector<double> preaccel_phi_0(phi_0);
+    phi_0 = Utilities::solve_tridiag(A,b);
+    
+    if( EDGE_ACCEL_MODE == 1 )
+        accelerate_edgePhi0( preaccel_phi_0 );
+    
+    variable_status["edgePhi0"] += 0.5;
+    variable_status["edgePhi1"] += 0.5;
+    variable_status["phi_0"] += 0.5;
+    variable_status["phi_1"] += 0.5;
+    
+}
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-------------------ACCELERATION FOR MB3-------------------------------------//
+//-------------------ACCELERATION FOR MB3-------------------------------------//
+
 //1CCCCCC
 //------------------------------------------------------------------------//
 
@@ -1018,7 +1177,7 @@ void SourceIteration::cmfd(){
     
     unsigned int psize = phi_0.size();
     
-    if(alpha_mode >=30 || alpha_mode==11){
+    if( (alpha_mode >=30 && alpha_mode < 50) || alpha_mode==11){
         if(EDGE_ACCEL_MODE==1){
             accelerate_edgePhi0(preaccel_phi_0);
             if(alpha_mode == 35)
@@ -1306,7 +1465,7 @@ void SourceIteration::initializeDictionary(){
     variable_status["psi_e"] = -0.5;
     variable_status["psi_c"] = -0.5;
     variable_status["source"] = 0;
-    if(alpha_mode >=30){
+    if(alpha_mode >=30 && alpha_mode < 50){
         variable_status["source_edge"] = 0;
     }else{
         variable_status["source_edge"] = -1;
@@ -1771,7 +1930,7 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
             }
         }
         //Need to calculate edge sources.  We are evaluating Q at the edge in order to preserve the linearity of the method.
-        if(alpha_mode >=30){
+        if(alpha_mode >=30 && alpha_mode < 50){
             if(alpha_mode == 35){
                 for(unsigned int m = 0; m < N/2;m++){
                     source_edge[j+1][m] = sigma_s0[region]*edgePhi0_MB2_R[j+1]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j+1] + Q[region] + Q_lin[region]*(x_e[j+1]);
@@ -1801,7 +1960,7 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
             variable_status["phi_1"] = variable_status["psi_c"];
         }
     }
-    if(alpha_mode >=30){
+    if(alpha_mode >=30 && alpha_mode < 50){
         variable_status["source_edge"] += 0.5;
     }
     
@@ -1981,6 +2140,7 @@ void SourceIteration::updateQhat_edge(){
         Qhat_edge[lastind] = 0;//term * ( edgePhi1[lastind] - phi_1[lastind-1] ) - 3 * sigma_t[0] * (J_inc_R + J_out_R)/2 + 3./4 * sigma_s0[0] * phi_0[lastind-1];
     }
     
+    variable_status["Qhat_edge"] = variable_status["psi_e"];
 //    cout << "|Qhat_edge| = " << Utilities::p_norm(Qhat_edge,2) << endl;
 //    cout << "Qhat_edge[0] = " << Qhat_edge[0] << endl;
 //    Utilities::print_dvector(Qhat_edge);
