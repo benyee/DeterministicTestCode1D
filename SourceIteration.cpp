@@ -1611,7 +1611,7 @@ void SourceIteration::initializeGrid(){
     for(unsigned int i = 0; i < h.size()-1; i++){
         h_avg.push_back( ( h[i] + h[i+1] ) / 2 );
         
-        sigma_t_avg.push_back( (sigma_t[region_L] + sigma_t[region_R]) );
+        Sth_avg.push_back( ( sigma_t[region_L]*h[i] + sigma_t[region_R]*h[i+1] )/2 );
         
         within_region_counter_L++;
         within_region_counter_R++;
