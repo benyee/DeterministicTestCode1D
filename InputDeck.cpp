@@ -446,8 +446,8 @@ void InputDeck::diffusionSolve(){
         A[0][1] = 1;
         A[0][2] = -1;
     }else{
-        A[0][1] = (1 - 4*D/dx);
-        A[0][2] = 4*D/dx;
+        A[0][1] = (1 + 4*D/dx);
+        A[0][2] = -4*D/dx;
         if(bc[0] == 2){
             for(unsigned int m = 0; m < psi_bl.size();m++){
                 b[0] += mu_n[m]*w_n[m]*psi_bl[m];
@@ -468,8 +468,8 @@ void InputDeck::diffusionSolve(){
         A[bsizem1][0] = -1;
         A[bsizem1][1] = 1;
     }else{
-        A[bsizem1][0] = 4*D/dx;
-        A[bsizem1][1] = (1 - 4*D/dx);
+        A[bsizem1][0] = -4*D/dx;
+        A[bsizem1][1] = (1 + 4*D/dx);
         if(bc[1]==2){
             for(unsigned int m = N/2; m < N;m++){
                 b[bsizem1] -= mu_n[m]*w_n[m]*psi_br[m-N/2];
@@ -481,6 +481,15 @@ void InputDeck::diffusionSolve(){
 //    Utilities::print_dvector(b);
     
     vector<double> temp_phi = Utilities::solve_tridiag(A,b);
+//    Utilities::print_dvector(temp_phi); //ZZZZ
+    
+    //Make sure nothing is negative:
+    for(unsigned int i = 0; i<temp_phi.size();i++){
+        if(temp_phi[i] < 0){
+            cout << "temp_phi["<<i<<"] = " << temp_phi[i] << endl;
+            temp_phi[i] == 0;
+        }
+    }
 //    Utilities::print_dvector(temp_phi);
     Utilities::split_Phi(temp_phi,edgePhi0_0,phi_0_0);
     vector<double> temp_phi_1(temp_phi);
@@ -493,12 +502,6 @@ void InputDeck::diffusionSolve(){
     temp_phi_1[temp_phi.size()-1] = 2*(temp_phi[temp_phi.size()-2] - temp_phi[temp_phi.size()-1])*D/dx;
     Utilities::split_Phi(temp_phi_1,edgePhi1_0,phi_1_0);
     
-    //Make sure nothing is negative:
-    for(unsigned int i = 0; i<phi_0_0.size();i++){
-        if(phi_0_0[i] < 0){
-            phi_0_0[i] == 0;
-        }
-    }
     cout<<"End of diffusion solve!"<<endl;
 //    Utilities::print_dvector(temp_phi);
 //    Utilities::print_dvector(phi_0_0);
