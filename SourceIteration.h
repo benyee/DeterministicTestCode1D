@@ -26,7 +26,7 @@ typedef std::map<string, double> Dict;
 
 class SourceIteration{
 public:
-    static const unsigned int MAX_IT = 100000;
+    static const unsigned int MAX_IT = 10000;
     static const unsigned int MAX_IT_accel = 5000;
     static const unsigned int EDGE_ACCEL_MODE = 1;
     static const bool intermedSoln = 0;
@@ -40,8 +40,8 @@ public:
     void printOutput( bool isPrintingToWindow = false,unsigned int tabwidth=20, bool newFile = false);
     void printDictionary();
     
-    unsigned int checkNegativeFlux(); //Returns the number of negative values in phi_0
-    unsigned int checkNegativeAngularFlux(); //Returns the number of negative values in psi_c and psi_e
+    unsigned int checkNegativeFlux(bool checkEdgeFluxes = false , bool printFluxes = false); //Returns the number of negative values in phi_0
+    unsigned int checkNegativeAngularFlux(bool printFluxes = false); //Returns the number of negative values in psi_c and psi_e
     
     double get_error(){return old_error;}
     double get_exitcurr(bool isExitOnRight=true);
@@ -105,6 +105,7 @@ private:
     vector<double> sigma_s0; //isotropic scattering cross sections in cm^{-1}
     vector<double> sigma_s1; //anisotropic scattering cross sections in cm^{-1}
     vector<double> sigma_t; //absorption cross section in cm^{-1}
+    vector<double> sigma_t_avg; //sigma_t_avg[j] = avg of sigma_t in cells j and j+1 weighted by h_j.  This is equal to the length of h minus one.  Only internal edges are considered.  
     double c;  //This is max(sigma_s0/sigma_t) unless this gives c >= 1.
     //In that case, c = max( sigma_s0/(sigma_t+DB^2) ))
     

@@ -161,7 +161,10 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         cout<<"WARNING: printOutput function will append instead of overwrite unless otherwise told"<<endl;
     }
 //    double tol = fabs(data->gettol());
-    double tol = (1-c*falseConvCorrection)*fabs(data->gettol());
+    double tol = fabs(data->gettol());
+    if(!accel_mode){
+        tol *= (1-c*falseConvCorrection);
+    }
     double error = 0;
     
     //Iterate until tolerance is achieved:
@@ -504,11 +507,22 @@ vector<double> SourceIteration::calcEdgePhi(int num){
 //-------------------CHECK FOR NEGATIVE FLUX-------------------------------//
 //-------------------CHECK FOR NEGATIVE FLUX-------------------------------//
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
-unsigned int SourceIteration::checkNegativeFlux(){
+unsigned int SourceIteration::checkNegativeFlux(bool checkEdgeFluxes, bool printFluxes){
     unsigned int temp = 0;
     for(unsigned int j = 0; j<J;j++){
         if(phi_0[j] < 0){
             temp++;
+            if(printFluxes)
+                cout << "phi_0["<<j<<"] = " << phi_0[j] << endl;
+        }
+    }
+    if(checkEdgeFluxes){
+        for(unsigned int j = 0; j <= J; j++){
+            if(edgePhi0[j] < 0){
+                temp++;
+                if(printFluxes)
+                    cout << "edgePhi0[" << j << "] = " << edgePhi0[j] << endl;
+            }
         }
     }
     return temp;
@@ -525,21 +539,27 @@ unsigned int SourceIteration::checkNegativeFlux(){
 //-------------------CHECK FOR NEGATIVE ANGULAR FLUX-------------------------------//
 //-------------------CHECK FOR NEGATIVE ANGULAR FLUX-------------------------------//
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
-unsigned int SourceIteration::checkNegativeAngularFlux(){
+unsigned int SourceIteration::checkNegativeAngularFlux(bool printFluxes){
     unsigned int temp = 0;
     for(unsigned int j = 0; j<J;j++){
         for(unsigned int m = 0; m < N; m++){
             if(psi_e[j][m] < 0){
                 temp++;
+                if(printFluxes)
+                    cout << "psi_e[" << j << "]["<<m<<"] = " << psi_e[j][m] << endl;
             }
             if(psi_c[j][m] < 0){
                 temp++;
+                if(printFluxes)
+                    cout << "psi_c[" << j << "]["<<m<<"] = " << psi_c[j][m] << endl;
             }
         }
     }
     for(unsigned int m = 0; m < N; m++){
         if(psi_e[J][m] < 0){
             temp++;
+            if(printFluxes)
+                cout << "psi_e[" << J << "]["<<m<<"] = " << psi_e[J][m] << endl;
         }
     }
     return temp;
@@ -557,7 +577,6 @@ unsigned int SourceIteration::checkNegativeAngularFlux(){
 //-------------------ACCELERATE EDGE SCALAR FLUX------------------------------//
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 void SourceIteration::accelerate_edgePhi0(vector<double> preaccel_phi_0){
-    
     vector<double> Q = data->getQ();
     
     unsigned int region_L = 0;
@@ -694,6 +713,7 @@ void SourceIteration::accelerate_edgePhi0(vector<double> preaccel_phi_0){
         edgePhi0[i] = 2*(left_coeff*phi_0[i-1] + Q_addition);
         edgePhi0[i] /= 1 - 2*phi_addition;
     }
+    
 
 }
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
@@ -802,6 +822,18 @@ void SourceIteration::accelerate_edgePhi0_MB2(vector<double> preaccel_phi_0){
             region_R++;
         }
         
+    }
+    within_region_counter_L = 0;
+    within_region_counter_R = 1;
+    region_L = 0;
+    region_R = 0;
+    if(within_region_counter_L == discret[region_L]){
+        within_region_counter_L=0;
+        region_L++;
+    }
+    if(within_region_counter_R == discret[region_R]){
+        within_region_counter_R=0;
+        region_R++;
     }
     
     //edgePhi0_MB2_R:
@@ -918,43 +950,53 @@ void SourceIteration::accelerate_MB3(){
     
     //Deal with the left edge:
     double Sth2 = sigma_t[0] * h[0] * h[0]; //ZZZZ only works for homogeneous right now
+    double Sth = sigma_t[0] * h[0];
     
     //Calculate a bunch of parameters needed to eliminate phi_{0,1/2} in terms of phi_{0,1}
     double phi_2e_L= 0;
     for(unsigned int m = 0; m < N ; m++ )
         phi_2e_L += mu_n2[m]*psi_e[0][m]*w_n[m];
     
-    double A01temp = 0;
-    double denom = 0;
-    double Sth = sigma_t[0] * h[0];
-    for(unsigned int m = N/2; m < N; m++)
-        denom -= w_n[m] / ( Sth - 2 * mu_n[m] );
-    denom *= sigma_s0[0] * h[0];
-    denom /= 2;
-    denom += 1;
-    for( unsigned int m = N/2 ; m < N ; m++ )
-        A01temp -= mu_n[m] * w_n[m] * psi_c[0][m] / ( Sth - 2 * mu_n[m] );
-    A01temp *= 2;
-    A01temp /= denom * phi_0[0];
-    
-    double in_flux = 0;
-    for(unsigned int m = 0; m < N/2 ; m++ )
-        in_flux += w_n[m] * psi_e[0][m];
-    double Q_addition = 0;
-    for(unsigned int m = N/2 ; m < N ; m++ ){
-        Q_addition += ( Q[0] + mu_n[m] * Qhat_edge[0] ) * w_n[m] / \
-            (Sth - 2 * mu_n[m]);
+    if(EDGE_ACCEL_MODE == 2){
+        double A01temp = 0;
+        double denom = 0;
+        for(unsigned int m = N/2; m < N; m++)
+            denom -= w_n[m] / ( Sth - 2 * mu_n[m] );
+        denom *= sigma_s0[0] * h[0];
+        denom /= 2;
+        denom += 1;
+        for( unsigned int m = N/2 ; m < N ; m++ )
+            A01temp -= mu_n[m] * w_n[m] * psi_c[0][m] / ( Sth - 2 * mu_n[m] );
+        A01temp *= 2;
+        A01temp /= denom * phi_0[0];
+        
+        double in_flux = 0;
+        for(unsigned int m = 0; m < N/2 ; m++ )
+            in_flux += w_n[m] * psi_e[0][m];
+        double Q_addition = 0;
+        for(unsigned int m = N/2 ; m < N ; m++ ){
+            Q_addition += ( Q[0] + mu_n[m] * Qhat_edge[0] ) * w_n[m] / \
+                (Sth - 2 * mu_n[m]);
+        }
+        Q_addition *= h[0] / 2;
+        
+        if(bc[0] == 1)
+            A[0][1] = (sigma_t[0]-sigma_s0[0]) * Sth2 + eddington[0];
+        else
+            A[0][1] = (sigma_t[0]-sigma_s0[0]) * Sth2 + 3 * eddington[0] - 2 * phi_2e_L/edgePhi0[0] * A01temp;
+        A[0][2] = - eddington[1];
+        b[0] = Q[0] * Sth2;
+        if(bc[0] != 1 )
+            b[0] += 2 * phi_2e_L / edgePhi0[0] * (in_flux + Q_addition) / denom;
+    }else if (EDGE_ACCEL_MODE == 1){
+        A[0][1] = (sigma_t[0]-sigma_s0[0]) * Sth2 + 3 * eddington[0] - 2 * phi_2e_L/phi_0[0];
+        A[0][2] = - eddington[1];
+        b[0] = Q[0] * Sth2;
+    }else if (EDGE_ACCEL_MODE == 3){
+        A[0][1] = (sigma_t[0]-sigma_s0[0]) * Sth2 + 3 * eddington[0] - 2 * phi_2e_L/edgePhi0[0];
+        A[0][2] = - eddington[1];
+        b[0] = Q[0] * Sth2 +  2 * phi_2e_L/edgePhi0[0] * (edgePhi0[0] - phi_0[0]);
     }
-    Q_addition *= h[0] / 2;
-    
-    if(bc[0] == 1)
-        A[0][1] = (sigma_t[0]-sigma_s0[0]) * Sth2 + eddington[0];
-    else
-        A[0][1] = (sigma_t[0]-sigma_s0[0]) * Sth2 + 3 * eddington[0] - 2 * phi_2e_L/edgePhi0[0] * A01temp;
-    A[0][2] = - eddington[1];
-    b[0] = Q[0] * Sth2;
-    if(bc[0] != 1 )
-        b[0] += 2 * phi_2e_L / edgePhi0[0] * (in_flux + Q_addition) / denom;
     
     
     //Deal with the center of problem:
@@ -984,42 +1026,65 @@ void SourceIteration::accelerate_MB3(){
     for(unsigned int m = 0; m < N ; m++ )
         phi_2e_R += mu_n2[m]*psi_e[J][m]*w_n[m];
     
-    double AJ1temp = 0;
-    denom = 0;
-    for(unsigned int m = 0; m < N/2; m++)
-        denom -= w_n[m] / ( Sth + 2 * mu_n[m] );
-    denom *= sigma_s0[region] * h[j];
-    denom /= 2;
-    denom += 1;
-    for( unsigned int m = 0 ; m < N/2 ; m++ )
-        AJ1temp += mu_n[m] * w_n[m] * psi_c[j][m] / ( Sth + 2 * mu_n[m] );
-    AJ1temp *= 2;
-    AJ1temp /= denom * phi_0[j];
-    
-    double out_flux = 0;
-    for(unsigned int m = N/2 ; m < N ; m++ )
-        out_flux += w_n[m] * psi_e[J][m];
-    Q_addition = 0;
-    for(unsigned int m = 0; m < N/2 ; m++ ){
-        Q_addition += ( Q[region] + mu_n[m] * Qhat_edge[J] ) * w_n[m] / \
-            (Sth + 2 * mu_n[m]);
+    if( EDGE_ACCEL_MODE == 2 ){
+        double AJ1temp = 0;
+        double denom = 0;
+        for(unsigned int m = 0; m < N/2; m++)
+            denom -= w_n[m] / ( Sth + 2 * mu_n[m] );
+        denom *= sigma_s0[region] * h[j];
+        denom /= 2;
+        denom += 1;
+        for( unsigned int m = 0 ; m < N/2 ; m++ )
+            AJ1temp += mu_n[m] * w_n[m] * psi_c[j][m] / ( Sth + 2 * mu_n[m] );
+        AJ1temp *= 2;
+        AJ1temp /= denom * phi_0[j];
+        
+        double out_flux = 0;
+        for(unsigned int m = N/2 ; m < N ; m++ )
+            out_flux += w_n[m] * psi_e[J][m];
+        double Q_addition = 0;
+        for(unsigned int m = 0; m < N/2 ; m++ ){
+            Q_addition += ( Q[region] + mu_n[m] * Qhat_edge[J] ) * w_n[m] / \
+                (Sth + 2 * mu_n[m]);
+        }
+        Q_addition *= h[j] / 2;
+        
+        A[j][0] = -eddington[j-1];
+        if( bc[1] == 1 )
+           A[j][1] = (sigma_t[region] - sigma_s0[region]) * Sth2 + eddington[j];
+        else
+            A[j][1] = (sigma_t[region] - sigma_s0[region]) * Sth2 + 3 * eddington[j] - 2 * phi_2e_R / edgePhi0[J] * AJ1temp;
+        b[j] = Q[region] * Sth2;
+        if( bc[1] != 1 )
+               b[j] += 2 * phi_2e_R / edgePhi0[J] * (out_flux + Q_addition) / denom;
+    }else if( EDGE_ACCEL_MODE == 1 ){
+        A[j][0] = -eddington[j-1];
+        A[j][1] = (sigma_t[region] - sigma_s0[region]) * Sth2 + 3 * eddington[j] - 2 * phi_2e_R / phi_0[j];
+        b[j] = Q[region] * Sth2;
+    }else if( EDGE_ACCEL_MODE == 3 ){
+        A[j][0] = -eddington[j-1];
+        A[j][1] = (sigma_t[region] - sigma_s0[region]) * Sth2 + 3 * eddington[j] - 2 * phi_2e_R / edgePhi0[J];
+        b[j] = Q[region] * Sth2 + 2 * phi_2e_R / edgePhi0[J] * ( edgePhi0[J] - phi_0[j] );
     }
-    Q_addition *= h[j] / 2;
-    
-    A[j][0] = -eddington[j-1];
-    if( bc[1] == 1 )
-       A[j][1] = (sigma_t[region] - sigma_s0[region]) * Sth2 + eddington[j];
-    else
-        A[j][1] = (sigma_t[region] - sigma_s0[region]) * Sth2 + 3 * eddington[j] - 2 * phi_2e_R / edgePhi0[J] * AJ1temp;
-    b[j] = Q[region] * Sth2;
-    if( bc[1] != 1 )
-           b[j] += 2 * phi_2e_R / edgePhi0[J] * (out_flux + Q_addition) / denom;
     
     vector<double> preaccel_phi_0(phi_0);
     phi_0 = Utilities::solve_tridiag(A,b);
     
-    if( EDGE_ACCEL_MODE == 1 )
+    if( EDGE_ACCEL_MODE == 2 )
         accelerate_edgePhi0( preaccel_phi_0 );
+    else if (EDGE_ACCEL_MODE == 1 ){
+        edgePhi0[0] *= phi_0[0]/preaccel_phi_0[0];
+        for(unsigned int j = 1; j < J; j++){
+            edgePhi0[j] *= (phi_0[j-1] + phi_0[j])/(preaccel_phi_0[j-1] + preaccel_phi_0[j]);
+        }
+        edgePhi0[J] *= phi_0[J-1]/preaccel_phi_0[J-1];
+    }else if (EDGE_ACCEL_MODE == 3){
+        edgePhi0[0] += phi_0[0]-preaccel_phi_0[0];
+        for(unsigned int j = 1; j < J; j++){
+            edgePhi0[j] += (phi_0[j-1] + phi_0[j])/2-(preaccel_phi_0[j-1] + preaccel_phi_0[j])/2;
+        }
+        edgePhi0[J] += phi_0[J-1]-preaccel_phi_0[J-1];
+    }
     
     variable_status["edgePhi0"] += 0.5;
     variable_status["edgePhi1"] += 0.5;
@@ -1534,9 +1599,30 @@ void SourceIteration::initializeGrid(){
     }
     x_e.push_back(X[X.size()-1]);
     
+    unsigned int within_region_counter_L = 0;
+    unsigned int within_region_counter_R = 1;
+    unsigned int region_L = 0;
+    unsigned int region_R = 0;
+    if(within_region_counter_R == discret[region_R]){
+        region_R++;
+        within_region_counter_R = 0;
+    }
     //Initialize h_avg:
     for(unsigned int i = 0; i < h.size()-1; i++){
         h_avg.push_back( ( h[i] + h[i+1] ) / 2 );
+        
+        sigma_t_avg.push_back( (sigma_t[region_L] + sigma_t[region_R]) );
+        
+        within_region_counter_L++;
+        within_region_counter_R++;
+        if(within_region_counter_L == discret[region_L]){
+            region_L++;
+            within_region_counter_L = 0;
+        }
+        if(within_region_counter_R == discret[region_R]){
+            region_R++;
+            within_region_counter_R = 0;
+        }
     }
     
     if(accel_mode){
@@ -1837,12 +1923,12 @@ void SourceIteration::rightIteration(){
 
 void SourceIteration::setEdgePhi_toAvgPhi(){
     unsigned int phisize = phi_0.size();
-    edgePhi0[0] = max(0.0, \
+    edgePhi0[0] = max((double)0.0, \
         phi_0[0] - (phi_0[1] - phi_0[0])/(x[1]-x[0])*(x[0]-x_e[0]));
     for(unsigned int i = 1; i < phisize;i++){
         edgePhi0[i] = (phi_0[i-1] + phi_0[i])/2;
     }
-    edgePhi0[phisize] = max(0.0,phi_0[phisize-1] + (phi_0[phisize-1]-\
+    edgePhi0[phisize] = max((double)0.0,phi_0[phisize-1] + (phi_0[phisize-1]-\
         phi_0[phisize-2]) / (x[phisize-1]-x[phisize-2]) * \
         (x_e[phisize]-x[phisize-1]));
 }
