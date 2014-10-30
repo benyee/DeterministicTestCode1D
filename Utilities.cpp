@@ -317,6 +317,64 @@ double Utilities::find_kappa(double c, const vector<double> &mu_n, const vector<
 }
 
 
+vector<double> Utilities::diffusion_solve(double sig_tr, double sig_a, double Q, double X, double dx, double A[2][2], double b[2]){
+    
+    unsigned int J = (unsigned int)(X/dx) + 1; //length of solution vector
+    double D = 3 * sig_tr;
+    D = 1/D; //Diffusion coefficient
+    
+    double k = sqrt( sig_a / D );
+    
+    double C = Q / sig_a; //Useful constant that we're going to use repeatedly
+    
+    double A11 = A[0][0] - D*A[0][1];
+    double A12 = A[0][0] + D*A[0][1];
+    double A21 = ( A[1][0] + D*A[1][1] ) * exp( k * X );
+    double A22 = ( A[1][0] - D*A[1][1] ) * exp( -k * X );
+    
+    b[0] -= A[0][0] * C;
+    b[1] -= A[1][0] * C;
+    
+    double c_1,c_2;
+    if( A12 != 0 ){
+        double temp = A22 / A12 ;
+        c_1 = b[1] - b[0]  * temp;
+        double denom = A21 - A11 * temp;
+        if(denom == 0){
+            cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+            cout << "Your boundary conditions are linearly depedent." << endl;
+            cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+            c_1 = 0;
+            c_2 = 0;
+        }else{
+            c_1 /= A21 - A11 * temp;
+            c_2 = b[0] - A11 * c_1;
+            c_2 /= A12;
+        }
+    }else if( A11 != 0 && A22 != 0 ){
+        c_1 = b[0] / A11;
+        c_2 = b[1] - A21 * c_1;
+        c_2 /= A22;
+    }else{
+        cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+        cout << "Your boundary conditions are linearly depedent." << endl;
+        cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+        c_1 = 0;
+        c_2 = 0;
+    }
+    
+    vector<double> output(J);
+    double x = 0;
+    for(unsigned int j = 0; j < J ; j++ ){
+        output[j] = c_1 * exp( k * x ) + c_2 * exp( -k * x ) + C;
+        x += dx;
+    }
+    
+    
+    return output;
+}
+
+
 double Utilities::kappa_fun(double c, const vector<double> &mu_n, const vector<double> &w_n, double kappa){
     double sum = 2./c;
     for(unsigned int i = 0; i < mu_n.size(); i++){

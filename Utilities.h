@@ -30,12 +30,13 @@ public:
     static double lege_eval_diff(int N,double x){return N*(x*lege_eval(N,x)-lege_eval(N-1,x))/(x*x-1);}
     static double lege_eval(vector<double> coeff,double x);
     
-    //Miscellaneous:
+    //Print stuff:
     static void print_uivector(vector<unsigned int> input_vector,char space = ' ');
     static void print_ivector(vector<int> input_vector,char space = ' ');
     static void print_dvector(vector<double> input_vector,char space = ' ');
     static void print_dmatrix(vector<vector<double> > A,char space = ' ');
 
+    //Norms:
     static double inf_norm(vector<double> &v1, vector<double> &v2);
     static double p_norm(vector<double> v1, unsigned int p); //v2 = zero vector
     static double p_norm(vector<double> v1, vector<double> v2, unsigned int p);
@@ -71,6 +72,16 @@ public:
     //Solve for kappa where kappa is the constant in the solution psi_n(x) = a_n e^{-\Sigma_t \kappa x}
     static double find_kappa(double c, const vector<double> &mu_n, const vector<double> &w_n, double tol = 1e-6);
     
+    //Solve diffusion equation -1/(3 * \Sigma_{tr}) * \phi'' + \sigma_a * phi = Q
+    //  on the domain 0 < x < X
+    //  with boundary conditions A[0][0]*phi(0) + A[0][1]*phi'(0) = b[0] and
+    //      A[1][0]*phi(X) + A[1][1]*phi'(X) = b[1]
+    //  Solution will be given on 0, dx, 2*dx, .... , X
+    static vector<double> diffusion_solve(double sig_tr, double sig_a, double Q, double X, double dx, double A[2][2], double b[2]);
+    
+    //Misc:
+    //---
+    //Returns a vector [temp temp temp temp ...].  Default is temp = 0
     static vector<double> zeros( unsigned int N , double value = 0 ){ vector<double> temp(N,value);  return temp;}
     
 private:
