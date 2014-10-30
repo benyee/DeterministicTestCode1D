@@ -1050,7 +1050,10 @@ void SourceIteration::accelerate_MB3(){
     }
     
     vector<double> preaccel_phi_0(phi_0);
+    vector<double> preaccel_edgePhi0(edgePhi0);
     phi_0 = Utilities::solve_tridiag(A,b);
+    variable_status["phi_0"] += 0.5;
+    variable_status["phi_1"] += 0.5;
     
     /* //ZZZZ
     if( EDGE_ACCEL_MODE == 2 )
@@ -1068,6 +1071,38 @@ void SourceIteration::accelerate_MB3(){
         }
         edgePhi0[J] += phi_0[J-1]-preaccel_phi_0[J-1];
     }
+    variable_status["edgePhi0"] += 0.5;
+    variable_status["edgePhi1"] += 0.5;
+    
+    /*
+    //Accelerate phi_2:
+    Utilities::print_dvector(phi2_plus); // ZZZZ
+    for(unsigned int j = 0; j < J ; j++){
+        double ratio = phi_0[j] / preaccel_phi_0[j];
+        phi2_plus[j] *= ratio;
+        phi2_minus[j] *= ratio;
+        ratio = edgePhi0[j] / preaccel_edgePhi0[j];
+        phi2e_minus[j] *= ratio;
+        if(bc[0] == 1 && j == 0)
+            phi2e_plus[j] = phi2e_minus[j];
+        else if( j != 0 )
+            phi2e_plus[j] *= ratio;
+    }
+    phi2e_plus[J] *= edgePhi0[J] / preaccel_edgePhi0[J];
+    if(bc[1] == 1)
+        phi2e_minus[J] = phi2e_plus[J];
+    Utilities::print_dvector(phi2_plus); // ZZZZ
+    cout << "===" <<endl;
+    
+    variable_status["phi2_plus"] += 0.5;
+    variable_status["phi2e_minus"] += 0.5;
+    variable_status["phi2_plus"] += 0.5;
+    variable_status["phi2e_minus"] += 0.5;
+
+//    Utilities::print_dvector(Qhat_edge); //ZZZZ
+    updateQhat_edge();
+//    Utilities::print_dvector(Qhat_edge); //ZZZZ
+//    cout << "===" << endl;*/
     
     /*
     Utilities::print_dvector(Qhat_edge);
@@ -1078,11 +1113,6 @@ void SourceIteration::accelerate_MB3(){
     Qhat_edge[J] *= phi_0[J-1]/preaccel_phi_0[J-1];
     Utilities::print_dvector(Qhat_edge);
     cout << "+===" << endl;*/ //ZZZZ
-    
-    variable_status["edgePhi0"] += 0.5;
-    variable_status["edgePhi1"] += 0.5;
-    variable_status["phi_0"] += 0.5;
-    variable_status["phi_1"] += 0.5;
     
 }
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
@@ -2206,7 +2236,6 @@ void SourceIteration::updatePhi2(){
 void SourceIteration::updateQhat_edge(){
     unsigned int lastind = Qhat_edge.size()-1;
     if(alpha_mode != 45){
-        
         double int_mu_0_to_1 = 0; //Integral of mu_n from 0 to 1 via quadrature
         double int_mu_sq_0_to_1 = 0; //Integral of mu_n^2 from 0 to 1 via quadrature
         for(unsigned int m = 0; m < N/2; m ++){
@@ -2271,7 +2300,7 @@ void SourceIteration::updateQhat_edge(){
         Qhat_edge[lastind] = 0;//term * ( edgePhi1[lastind] - phi_1[lastind-1] ) - 3 * sigma_t[0] * (J_inc_R + J_out_R)/2 + 3./4 * sigma_s0[0] * phi_0[lastind-1];
     }
     
-    variable_status["Qhat_edge"] = variable_status["psi_e"];
+    variable_status["Qhat_edge"] = variable_status["phi2_plus"];
 //    cout << "|Qhat_edge| = " << Utilities::p_norm(Qhat_edge,2) << endl;
 //    cout << "Qhat_edge[0] = " << Qhat_edge[0] << endl;
 //    Utilities::print_dvector(Qhat_edge);
