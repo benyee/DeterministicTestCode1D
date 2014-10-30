@@ -21,6 +21,11 @@ SourceIteration::SourceIteration(InputDeck *input,string outputfilename){
     phi_1 = data->getphi_1_0();
     edgePhi0 = data->getedgePhi0_0();
     edgePhi1 = data->getedgePhi1_0();
+    phi2_plus = phi_0 ;
+    phi2_minus = phi_0;
+    phi2e_plus = edgePhi0;
+    phi2e_minus = edgePhi0;
+    
     J = phi_0.size();
     bc = data->getbc();
     alpha_mode = data->getalpha_mode();
@@ -192,6 +197,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         variable_status["psi_e"] += 1;
         variable_status["psi_c"] += 1;
         
+        updatePhi2();
         if((alpha_mode >= 40 && alpha_mode < 50) /*&& (error < tol*10 || Qhat_edge[0] != 0) */){
             updateQhat_edge();
         }
@@ -214,6 +220,10 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
 //            variable_status["phi_0"] += 0.5;
 //            variable_status["phi_1"] += 0.5;
 //            variable_status["edgePhi0"] += 0.5;
+//            variable_status["phi2_plus"] += 0.5;
+//            variable_status["phi2_minus"] += 0.5;
+//            variable_status["phi2e_plus"] += 0.5;
+//            variable_status["phi2e_minus"] += 0.5;
 //            variable_status["edgePhi1"] += 0.5;
 //            variable_status["source"] += 0.5;
 //            variable_status["source_edge"] += 0.5;
@@ -467,39 +477,8 @@ void SourceIteration::printDictionary(){
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
 //-------------------PRINT STUFF------------------------------------------//
 //-------------------PRINT STUFF------------------------------------------//
+//0PPPPP
 
-//1111111
-//1CCCCCC
-//------------------------------------------------------------------------//
-
-//-------------------CALCULATE EDGE PHI------------------------------------//
-//-------------------CALCULATE EDGE PHI------------------------------------//
-//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
-vector<double> SourceIteration::calcEdgePhi(int num){
-    vector<double> edgePhi;
-    if(!num){
-        for(unsigned int j = 0; j<J+1;j++){
-            edgePhi.push_back(0);
-            for(unsigned int m = 0; m<N;m++){
-                edgePhi[j]+= w_n[m]*psi_e[j][m];
-            }
-        }
-        variable_status["edgePhi0"] = variable_status["psi_e"];
-    }else{
-        for(unsigned int j = 0; j<J+1;j++){
-            edgePhi.push_back(0);
-            for( unsigned int m = 0; m < N ; m++ ){
-                edgePhi[j]+= mu_n[m]*w_n[m]*psi_e[j][m];
-            }
-        }
-        variable_status["edgePhi1"] = variable_status["psi_e"];
-    }
-    return edgePhi;
-    
-}
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//-------------------CALCULATE EDGE PHI------------------------------------//
-//-------------------CALCULATE EDGE PHI------------------------------------//
 
 //0CCCCC
 //------------------------------------------------------------------------//
@@ -935,8 +914,7 @@ void SourceIteration::accelerate_MB3(){
     
     vector<double> phi_2(J,0);
     for(unsigned int j = 0; j < J; j++)
-        for(unsigned int m = 0; m < N; m++)
-            phi_2[j] += mu_n2[m]*psi_c[j][m]*w_n[m];
+        phi_2[j] = phi2_plus[j] + phi2_minus[j];
     
     vector<double> eddington(phi_0);
     for(unsigned int j = 0; j < J ; j++)
@@ -1090,6 +1068,7 @@ void SourceIteration::accelerate_MB3(){
         }
         edgePhi0[J] += phi_0[J-1]-preaccel_phi_0[J-1];
     }
+    
     /*
     Utilities::print_dvector(Qhat_edge);
     Qhat_edge[0] *= phi_0[0]/preaccel_phi_0[0];
@@ -1109,6 +1088,39 @@ void SourceIteration::accelerate_MB3(){
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
 //-------------------ACCELERATION FOR MB3-------------------------------------//
 //-------------------ACCELERATION FOR MB3-------------------------------------//
+
+//1BBBBBB
+//1CCCCCC
+//------------------------------------------------------------------------//
+
+//-------------------CALCULATE EDGE PHI------------------------------------//
+//-------------------CALCULATE EDGE PHI------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+vector<double> SourceIteration::calcEdgePhi(int num){
+    vector<double> edgePhi;
+    if(!num){
+        for(unsigned int j = 0; j<J+1;j++){
+            edgePhi.push_back(0);
+            for(unsigned int m = 0; m<N;m++){
+                edgePhi[j]+= w_n[m]*psi_e[j][m];
+            }
+        }
+        variable_status["edgePhi0"] = variable_status["psi_e"];
+    }else{
+        for(unsigned int j = 0; j<J+1;j++){
+            edgePhi.push_back(0);
+            for( unsigned int m = 0; m < N ; m++ ){
+                edgePhi[j]+= mu_n[m]*w_n[m]*psi_e[j][m];
+            }
+        }
+        variable_status["edgePhi1"] = variable_status["psi_e"];
+    }
+    return edgePhi;
+    
+}
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//-------------------CALCULATE EDGE PHI------------------------------------//
+//-------------------CALCULATE EDGE PHI------------------------------------//
 
 //1CCCCCC
 //------------------------------------------------------------------------//
@@ -1540,6 +1552,10 @@ void SourceIteration::initializeDictionary(){
         variable_status["edgePhi0_MB2"] = 0;
     variable_status["edgePhi1"] = 0;
     variable_status["phi_0"] = 0;
+    variable_status["phi2_plus"] = 0;
+    variable_status["phi2_minus"] = 0;
+    variable_status["phi2e_plus"] = 0;
+    variable_status["phi2e_minus"] = 0;
     variable_status["phi_1"] = 0;
     variable_status["psi_e"] = -0.5;
     variable_status["psi_c"] = -0.5;
@@ -2137,6 +2153,48 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
 //---------------UPDATE PHI, CALC SOURCE------------------------------------//
 //---------------UPDATE PHI, CALC SOURCE------------------------------------//
 
+//1UUUUUUU
+//------------------------------------------------------------------------//
+
+//---------------UPDATE QHAT_EDGE-----------------------------------------//
+//---------------UPDATE QHAT_EDGE-----------------------------------------//
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
+void SourceIteration::updatePhi2(){
+    unsigned int lastind = phi2_plus.size();
+    vector<double> mu_n2(mu_n.size(),0);
+    for(unsigned int m = 0; m < N ; m++){
+        mu_n2[m] = mu_n[m]*mu_n[m];
+    }
+    
+    for(unsigned int j = 0; j < lastind; j++ ){
+        phi2_plus[j] = 0;
+        phi2_minus[j] = 0;
+        phi2e_plus[j] = 0;
+        phi2e_minus[j] = 0;
+        for(unsigned int m = 0; m < N/2 ; m++){
+            phi2_plus[j] += mu_n2[m]*w_n[m]*psi_c[j][m];
+            phi2e_plus[j] += mu_n2[m]*w_n[m]*psi_e[j][m];
+        }
+        for(unsigned int m = N/2; m < N ; m++){
+            phi2_minus[j] += mu_n2[m]*w_n[m]*psi_c[j][m];
+            phi2e_minus[j] += mu_n2[m]*w_n[m]*psi_e[j][m];
+        }
+    }
+    for(unsigned int m = 0; m < N/2 ; m++){
+        phi2e_plus[lastind] += mu_n2[m]*w_n[m]*psi_e[lastind][m];
+    }
+    for(unsigned int m = N/2; m < N ; m++){
+        phi2e_minus[lastind] += mu_n2[m]*w_n[m]*psi_e[lastind][m];
+    }
+    variable_status["phi2_plus"] = variable_status["psi_c"];
+    variable_status["phi2_minus"] = variable_status["psi_c"];
+    variable_status["phi2e_plus"] = variable_status["psi_e"];
+    variable_status["phi2e_minus"] = variable_status["psi_e"];
+
+}
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//---------------UPDATE PHI, CALC SOURCE------------------------------------//
+//---------------UPDATE PHI, CALC SOURCE------------------------------------//
 
 //1UUUUUUU
 //------------------------------------------------------------------------//
@@ -2146,41 +2204,14 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 
 void SourceIteration::updateQhat_edge(){
-    
     unsigned int lastind = Qhat_edge.size()-1;
     if(alpha_mode != 45){
-        vector<double> phi2_plus(lastind,0.);
-        vector<double> phi2_minus(lastind,0.);
-        vector<double> phi2e_plus(lastind+1,0.);
-        vector<double> phi2e_minus(lastind+1,0.);
-        
-        vector<double> mu_n2(mu_n.size(),0);
-        for(unsigned int m = 0; m < N ; m++){
-            mu_n2[m] = mu_n[m]*mu_n[m];
-        }
-        
-        for(unsigned int j = 0; j < lastind; j++ ){
-            for(unsigned int m = 0; m < N/2 ; m++){
-                phi2_plus[j] += mu_n2[m]*w_n[m]*psi_c[j][m];
-                phi2e_plus[j] += mu_n2[m]*w_n[m]*psi_e[j][m];
-            }
-            for(unsigned int m = N/2; m < N ; m++){
-                phi2_minus[j] += mu_n2[m]*w_n[m]*psi_c[j][m];
-                phi2e_minus[j] += mu_n2[m]*w_n[m]*psi_e[j][m];
-            }
-        }
-        for(unsigned int m = 0; m < N/2 ; m++){
-            phi2e_plus[lastind] += mu_n2[m]*w_n[m]*psi_e[lastind][m];
-        }
-        for(unsigned int m = N/2; m < N ; m++){
-            phi2e_minus[lastind] += mu_n2[m]*w_n[m]*psi_e[lastind][m];
-        }
         
         double int_mu_0_to_1 = 0; //Integral of mu_n from 0 to 1 via quadrature
         double int_mu_sq_0_to_1 = 0; //Integral of mu_n^2 from 0 to 1 via quadrature
         for(unsigned int m = 0; m < N/2; m ++){
             int_mu_0_to_1 += mu_n[m]*w_n[m];
-            int_mu_sq_0_to_1 += mu_n2[m]*w_n[m];
+            int_mu_sq_0_to_1 += mu_n[m]*mu_n[m]*w_n[m];
         }
         
         vector<double> Q = data->getQ();

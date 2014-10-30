@@ -90,6 +90,10 @@ private:
     vector< vector<double> > source_edge;  //Source term for source iteration
     vector<double> Qhat_edge; //Correction to multiple balance method that helps enforce Fick's Law
     //mu_n*Qhat_edge is subtracted from the source_edge terms in the multiple balance auxiliary equations
+    vector<double> phi2_plus;
+    vector<double> phi2_minus;
+    vector<double> phi2e_plus;
+    vector<double> phi2e_minus;
     
     //Linear neutron info for higher order approximations:
     bool hasLinearTerms;
@@ -130,10 +134,10 @@ private:
     double old_error; //stores ||phi_{i}-phi_{i-1}|| from the previous iteration
     double spec_rad; //stores the latest estimate for the spectral radius (average of all the previous spectral radii)
     
-    vector<double> calcEdgePhi(int num); //Integrate the edge fluxes to get scalar edge fluxes and edge currents.  This is not necessary for the source iteration procedure and can be performed at the end.  num = 0 for scalar edge flux, num = 1 for edge current
     void accelerate_edgePhi0(vector<double> preaccel_phi_0); //accelerate edge fluxes
     void accelerate_edgePhi0_MB2(vector<double> preaccel_phi_0); //accelerate edge fluxes for the MB2 case
     void accelerate_MB3(); //Diffusion based acceleration scheme for MB3
+    vector<double> calcEdgePhi(int num); //Integrate the edge fluxes to get scalar edge fluxes and edge currents.  This is not necessary for the source iteration procedure and can be performed at the end.  num = 0 for scalar edge flux, num = 1 for edge current
     void cmfd(); //Perform cmfd acceleration
         void pcmfd(); //Perform pcmfd acceleration
     void finiteDifference(); //Calculate cell-averaged angular fluxes
@@ -147,6 +151,7 @@ private:
     void setEdgePhi_toAvgPhi(); //Used to make a crude improvement of the initial edge flux guess
     void updateEdgePhi0_MB2(); //Updates the special edge fluxes in the MB-3 case
     double updatePhi_calcSource(bool usePsi = true); //Update fluxes and currents, calculate new source, calculate difference between new and old scalar flux
+    void updatePhi2(); //
     void updateQhat_edge(); //For MB-3 (modified MB method)
 };
 
