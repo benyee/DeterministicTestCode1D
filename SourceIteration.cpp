@@ -246,10 +246,14 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             error = max( error , Qhat_error );
         }
         
-        if(it_num ==1){
+        if(it_num == 1){
             spec_rad = 0;
         }else{
-            spec_rad = (spec_rad*(it_num-2)+error/old_error)/(it_num-1);
+//            cout << "spec_rad = " << spec_rad << endl;
+//            cout << "error/old_error = " error/old_error << endl; //ZZZZ
+            double temp_spec_rad = pow( error/init_error, 1.0 / it_num );
+            if (temp_spec_rad != 0)
+                spec_rad = temp_spec_rad;//(spec_rad*(it_num-2)+error/old_error)/(it_num-1); //ZZZZ
         }
         if(isPrintingToFile){
             outfile<<setw(5)<<it_num<<setw(20)<<error<<setw(20);
@@ -1074,8 +1078,8 @@ void SourceIteration::accelerate_MB3(){
     variable_status["edgePhi0"] += 0.5;
     variable_status["edgePhi1"] += 0.5;
     
-    /*
-    //Accelerate phi_2:
+    
+    /*//Accelerate phi_2:
     Utilities::print_dvector(phi2_plus); // ZZZZ
     for(unsigned int j = 0; j < J ; j++){
         double ratio = phi_0[j] / preaccel_phi_0[j];
@@ -2186,8 +2190,8 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
 //1UUUUUUU
 //------------------------------------------------------------------------//
 
-//---------------UPDATE QHAT_EDGE-----------------------------------------//
-//---------------UPDATE QHAT_EDGE-----------------------------------------//
+//---------------UPDATE PHI2----------------------------------------------//
+//---------------UPDATE PHI2----------------------------------------------//
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 void SourceIteration::updatePhi2(){
     unsigned int lastind = phi2_plus.size();
@@ -2210,6 +2214,8 @@ void SourceIteration::updatePhi2(){
             phi2e_minus[j] += mu_n2[m]*w_n[m]*psi_e[j][m];
         }
     }
+    phi2e_plus[lastind] = 0;
+    phi2e_minus[lastind] = 0;
     for(unsigned int m = 0; m < N/2 ; m++){
         phi2e_plus[lastind] += mu_n2[m]*w_n[m]*psi_e[lastind][m];
     }
@@ -2222,9 +2228,9 @@ void SourceIteration::updatePhi2(){
     variable_status["phi2e_minus"] = variable_status["psi_e"];
 
 }
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
-//---------------UPDATE PHI, CALC SOURCE------------------------------------//
-//---------------UPDATE PHI, CALC SOURCE------------------------------------//
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
+//---------------UPDATE PHI2----------------------------------------------//
+//---------------UPDATE PHI2----------------------------------------------//
 
 //1UUUUUUU
 //------------------------------------------------------------------------//
