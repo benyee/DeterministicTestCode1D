@@ -36,7 +36,7 @@ public:
     SourceIteration(InputDeck *input,string outputfilename="output.txt");
     ~SourceIteration();
     int iterate(bool isPrintingToWindow = true, bool isPrintingToFile = true, bool falseConvCorrection = true);
-    vector<vector<double> > get_solution(); //Returns the phi and x values from the solution.
+    vector<vector<double> > get_solution(bool oldSolution = 0); //Returns the phi and x values from the solution.
     void printOutput( bool isPrintingToWindow = false,unsigned int tabwidth=20, bool newFile = false);
     void printDictionary();
     
@@ -82,7 +82,8 @@ private:
     vector<double> edgePhi0_MB2_R;
     vector<double> edgePhi0_MB2_L;
     vector<double> phi_0; //Cell-averaged scalar flux
-    vector<double> old_phi_0; //ZZZZ does this do anything..?
+    vector<double> old_phi_0;
+    vector<double> old_edgePhi0;
     vector<double> phi_1; //Cell-averaged net current in x direction
     vector<vector<double> > psi_e; //Edge angular flux
     vector<vector<double> > psi_c; //Cell-averaged angular flux

@@ -175,7 +175,8 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
     //Iterate until tolerance is achieved:
     it_num = 0;
     do{
-        vector<double> old_phi_0 = phi_0;
+        old_phi_0 = phi_0;
+        old_edgePhi0 = edgePhi0;
         vector<double> old_Qhat_edge(Qhat_edge);
         
         //Go either right then left or left then right:
@@ -351,7 +352,7 @@ double SourceIteration::get_exitcurr(bool isExitOnRight){
     return exitcurr;
 }
 
-vector<vector<double> > SourceIteration::get_solution(){
+vector<vector<double> > SourceIteration::get_solution( bool oldSolution ){
     vector<vector<double> > out;
     
     //Compute the x coordinates of the phi vector:
@@ -364,19 +365,27 @@ vector<vector<double> > SourceIteration::get_solution(){
     
     out.push_back(x_total);
     
-    //Compute the phi vector (combining both edge and cell averaged)
     vector<double> phi_total;
-    vector<double> phi_edge;
-    if(accel_mode != 1 || EDGE_ACCEL_MODE == 0){
-        phi_edge = calcEdgePhi(0);
+    if( oldSolution ){ // ZZZZ not sure if this makes sense if accel mode is on
+        for(unsigned int i = 0; i<phi_0.size();i++){
+            phi_total.push_back(old_edgePhi0[i]);
+            phi_total.push_back(old_phi_0[i]);
+        }
+        phi_total.push_back(old_edgePhi0[phi_0.size()]);
     }else{
-        phi_edge = edgePhi0;
+        vector<double> phi_edge;
+        //Compute the phi vector (combining both edge and cell averaged)
+        if(accel_mode != 1 || EDGE_ACCEL_MODE == 0){
+            phi_edge = calcEdgePhi(0);
+        }else{
+            phi_edge = edgePhi0;
+        }
+        for(unsigned int i = 0; i<phi_0.size();i++){
+            phi_total.push_back(phi_edge[i]);
+            phi_total.push_back(phi_0[i]);
+        }
+        phi_total.push_back(phi_edge[phi_0.size()]);
     }
-    for(unsigned int i = 0; i<phi_0.size();i++){
-        phi_total.push_back(phi_edge[i]);
-        phi_total.push_back(phi_0[i]);
-    }
-    phi_total.push_back(phi_edge[phi_0.size()]);
     
     out.push_back(phi_total);
     
@@ -2048,7 +2057,9 @@ void SourceIteration::updateEdgePhi0_MB2(){
 
 //Update phi, calculate source:
 double SourceIteration::updatePhi_calcSource(bool usePsi){
-    vector<double> old_phi_0(phi_0);
+    //Make copies:
+    vector<double> loc_old_phi_0(phi_0);
+    
     vector<double> X = data->getX();
     X.insert(X.begin(),0);
     vector<double> Q = data->getQ();
@@ -2180,7 +2191,7 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
             variable_status["source_lin"] += 0.5;
         }
     }
-    return (Utilities::p_norm(old_phi_0,phi_0,2));
+    return (Utilities::p_norm(loc_old_phi_0,phi_0,2));
     
 }
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
