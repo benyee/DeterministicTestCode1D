@@ -52,6 +52,9 @@ int InputDeck::loadInputDeck(){
         }
         sigma_s0.push_back(atof(line.c_str()));
     }
+    //If only one entry is given, assume the value is constant for the entire domain
+    while( sigma_s0.size() < discret.size() )
+        sigma_s0.push_back(sigma_s0[0]);
     //-------------------------------------------
     if(!searchForInput(inputFile,"sigma_s1")){
         return 1;
@@ -62,6 +65,9 @@ int InputDeck::loadInputDeck(){
         }
         sigma_s1.push_back(atof(line.c_str()));
     }
+    //If only one entry is given, assume the value is constant for the entire domain
+    while( sigma_s1.size() < discret.size() )
+        sigma_s1.push_back(sigma_s1[0]);
     //-------------------------------------------
     if(!searchForInput(inputFile,"sigma_a")){
         return 1;
@@ -72,6 +78,9 @@ int InputDeck::loadInputDeck(){
         }
         sigma_a.push_back(atof(line.c_str()));
     }
+    //If only one entry is given, assume the value is constant for the entire domain
+    while( sigma_a.size() < discret.size() )
+        sigma_a.push_back(sigma_a[0]);
     //-------------------------------------------
     if(!searchForInput(inputFile,"Q")){
         return 1;
@@ -82,6 +91,9 @@ int InputDeck::loadInputDeck(){
         }
         Q.push_back(atof(line.c_str()));
     }
+    //If only one entry is given, assume the value is constant for the entire domain
+    while( Q.size() < discret.size() )
+        Q.push_back(Q[0]);
     //-------------------------------------------
     if(!searchForInput(inputFile,"Q_lin")){
         return 1;
@@ -92,6 +104,9 @@ int InputDeck::loadInputDeck(){
         }
         Q_lin.push_back(atof(line.c_str()));
     }
+    //If only one entry is given, assume the value is constant for the entire domain
+    while( Q_lin.size() < discret.size() )
+        Q_lin.push_back(Q_lin[0]);
     //--------------------------------------------
     if(!searchForInput(inputFile,"N")){
         return 1;
@@ -424,7 +439,7 @@ bool InputDeck::searchForInput(ifstream &file, string inp, bool hasErrorOutput){
 
 void InputDeck::diffusionSolve(){
     if(discret.size() > 1){
-        cout<<"This doesn't work for multi-region problems yet."<<endl;
+        cout<<"InputDeck::diffusionSolve() doesn't work for multi-region problems yet."<<endl;
         return;
     }
     
