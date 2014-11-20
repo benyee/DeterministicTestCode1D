@@ -239,12 +239,14 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         }
         
         it_num += 0.5;
-        error = Utilities::p_norm_of_rel_error(old_phi_0,phi_0,2);
+        error = Utilities::p_norm_of_rel_error(old_phi_0,phi_0,2 , tol * tol);
 //        error = Utilities::p_norm(old_phi_0,phi_0,2) / (Utilities::p_norm(phi_0,2) + tol*tol);
         // If we're using MB3, make sure the Qhats are converged too:
         if( alpha_mode >= 40 && alpha_mode < 50 && alpha_mode != 41 && accel_mode == 0){
-            double Qhat_error = Utilities::p_norm_of_rel_error(old_Qhat_edge,Qhat_edge,2);
-            error = max( error , Qhat_error );
+            double Qhat_error = Utilities::p_norm_of_rel_error(old_Qhat_edge,Qhat_edge, 2 , tol);
+//            Utilities::print_dvector(Qhat_edge);
+            if( Utilities::p_norm(Qhat_edge,2) / (Utilities::p_norm(phi_0,2) + tol*tol) > tol*10)
+                error = max( error , Qhat_error );
         }
         
         if(it_num == 1){
@@ -265,12 +267,6 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             }
             outfile<<setw(20)<<checkNegativeFlux()<<'\n';
         }
-        if(checkNegativeAngularFlux()){
-            cout<<"WARNING: "<<checkNegativeAngularFlux()<<" negative angular flux values in iteration "<<it_num<<endl;
-        }
-        if(checkNegativeFlux()){
-            cout<<"WARNING: "<<checkNegativeFlux()<<" negative flux values in iteration "<<it_num<<endl;
-        }
         
         if(interSoln){
             for(unsigned int i = 0; i<x.size();i++){
@@ -282,6 +278,12 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         
         if(isPrintingToWindow){
             cout<<"For iteration number "<<it_num<<", the error is "<<error<<endl;
+            if(checkNegativeAngularFlux()){
+                cout<<"WARNING: "<<checkNegativeAngularFlux()<<" negative angular flux values in iteration "<<it_num<<endl;
+            }
+            if(checkNegativeFlux()){
+                cout<<"WARNING: "<<checkNegativeFlux()<<" negative flux values in iteration "<<it_num<<endl;
+            }
         }
         old_error = error;
         if(it_num == 1){
@@ -297,7 +299,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             break;
         }else if(error <= tol){ //if converged
             if(checkNegativeFlux()){ //Convergence to unphysical solution
-                cout<<"Source iteration converged to a negative solution in "<<it_num<<" iterations"<<endl;
+                cout<<"Source iteration converged to a negative solution with " << checkNegativeFlux() << " negative scalar fluxes in "<<it_num<<" iterations"<<endl;
                 it_num += 0.25;
             }else{  //Convergence to real solution
                 cout<<"Source iteration converged in "<<it_num<<" iterations"<<endl;
@@ -2262,12 +2264,14 @@ void SourceIteration::updateQhat_edge(){
         
         vector<double> Q = data->getQ();
         Qhat_edge[0] = 0;
-        for(unsigned int m = 0; m < N/2; m ++){
-            Qhat_edge[0] += mu_n[m]*psi_e[0][m]*w_n[m];
+        if( bc[0] != 1 ){
+            for(unsigned int m = 0; m < N/2; m ++){
+                Qhat_edge[0] += mu_n[m]*psi_e[0][m]*w_n[m];
+            }
+            Qhat_edge[0] *= -6.*sigma_t[0];
+            Qhat_edge[0] += 3*int_mu_0_to_1*(sigma_s0[0]*edgePhi0[0]+Q[0]);
+            Qhat_edge[0] -= 12./rho[0]/h[0]*(phi2_plus[0]-phi2e_plus[0]);
         }
-        Qhat_edge[0] *= -6.*sigma_t[0];
-        Qhat_edge[0] += 3*int_mu_0_to_1*(sigma_s0[0]*edgePhi0[0]+Q[0]);
-        Qhat_edge[0] -= 12./rho[0]/h[0]*(phi2_plus[0]-phi2e_plus[0]);
         for(unsigned int j = 1; j < lastind; j++){
             Qhat_edge[j] = 2 * ( phi2e_plus[j] - phi2_plus[j-1] ) / h[j-1];
             Qhat_edge[j] -= ( phi2_plus[j] - phi2_plus[j-1] + phi2_minus[j] - phi2_minus[j-1] ) / h_avg[j-1];
@@ -2277,12 +2281,14 @@ void SourceIteration::updateQhat_edge(){
         
         unsigned int last_region = sigma_t.size()-1;
         Qhat_edge[lastind] = 0;
-        for(unsigned int m = N/2; m < N ; m++){
-            Qhat_edge[lastind] += mu_n[m]*psi_e[lastind][m]*w_n[m];
+        if( bc[1] != 1 ){
+            for(unsigned int m = N/2; m < N ; m++){
+                Qhat_edge[lastind] += mu_n[m]*psi_e[lastind][m]*w_n[m];
+            }
+            Qhat_edge[lastind] *= -6.*sigma_t[last_region];
+            Qhat_edge[lastind] -= 3*int_mu_0_to_1*(sigma_s0[last_region]*edgePhi0[lastind]+Q[last_region]);
+            Qhat_edge[lastind] -= 12./rho[J-1]/h[J-1]*(phi2e_minus[lastind]-phi2_minus[lastind-1]);
         }
-        Qhat_edge[lastind] *= -6.*sigma_t[last_region];
-        Qhat_edge[lastind] -= 3*int_mu_0_to_1*(sigma_s0[last_region]*edgePhi0[lastind]+Q[last_region]);
-        Qhat_edge[lastind] -= 12./rho[J-1]/h[J-1]*(phi2e_minus[lastind]-phi2_minus[lastind-1]);
         
     }else{
         //ZZZZ THIS ONLY WORKS FOR ONE ZONE UNIFORM MESH RIGHT NOW
@@ -2318,8 +2324,10 @@ void SourceIteration::updateQhat_edge(){
     }
     
     variable_status["Qhat_edge"] = variable_status["phi2_plus"];
-//    cout << "|Qhat_edge| = " << Utilities::p_norm(Qhat_edge,2) << endl;
+//    cout << "|Qhat_edge| = " << Utilities::p_norm(Qhat_edge,2) << endl; //ZZZZ
 //    cout << "Qhat_edge[0] = " << Qhat_edge[0] << endl;
+//    cout << "Qhat_edge[phi_0.size()] = " << Qhat_edge[phi_0.size()] << endl;
+//    cout << "Qhat_edge[phi_0.size()/2] = " << Qhat_edge[phi_0.size()/2] << endl;
 //    Utilities::print_dvector(Qhat_edge);
     
 }
