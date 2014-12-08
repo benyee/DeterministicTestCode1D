@@ -29,6 +29,7 @@ public:
     static const unsigned int MAX_IT = 10000;
     static const unsigned int MAX_IT_accel = 5000;
     static const unsigned int EDGE_ACCEL_MODE = 1;
+    static const unsigned int ERROR_HISTORY_LENGTH = 100;
     static const bool intermedSoln = 0;
     
     bool isConverged;
@@ -134,6 +135,7 @@ private:
     double diverge; //Divergence criterion.  Algorithm diverges if error/init_error > diverge.
     double old_error; //stores ||phi_{i}-phi_{i-1}|| from the previous iteration
     double spec_rad; //stores the latest estimate for the spectral radius (average of all the previous spectral radii)
+    vector<double> error_history;
     
     void accelerate_edgePhi0(vector<double> preaccel_phi_0); //accelerate edge fluxes
     void accelerate_edgePhi0_MB2(vector<double> preaccel_phi_0); //accelerate edge fluxes for the MB2 case

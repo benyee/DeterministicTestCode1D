@@ -243,18 +243,26 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
 //        error = Utilities::p_norm(old_phi_0,phi_0,2) / (Utilities::p_norm(phi_0,2) + tol*tol);
         // If we're using MB3, make sure the Qhats are converged too:
         if( alpha_mode >= 40 && alpha_mode < 50 && alpha_mode != 41 && accel_mode == 0){
-            double Qhat_error = Utilities::p_norm_of_rel_error(old_Qhat_edge,Qhat_edge, 2 , tol);
-//            Utilities::print_dvector(Qhat_edge);
+            double Qhat_error = Utilities::p_norm_of_rel_error(old_Qhat_edge,Qhat_edge, edgePhi0, 2 , tol * tol );
             if( Utilities::p_norm(Qhat_edge,2) / (Utilities::p_norm(phi_0,2) + tol*tol) > tol*10)
                 error = max( error , Qhat_error );
         }
         
         if(it_num == 1){
             spec_rad = 0;
+            error_history = Utilities::zeros( ERROR_HISTORY_LENGTH );
+            error_history[0] = init_error;
+            error_history[1] = error;
         }else{
 //            cout << "spec_rad = " << spec_rad << endl;
 //            cout << "error/old_error = " error/old_error << endl; //ZZZZ
-            double temp_spec_rad = pow( error/init_error, 1.0 / it_num );
+            unsigned int current_error_place = ((int)it_num) % ERROR_HISTORY_LENGTH;
+            error_history[current_error_place] = error;
+            double temp_spec_rad;
+            if (it_num <= ERROR_HISTORY_LENGTH)
+                temp_spec_rad = pow( error/init_error, 1.0 / it_num );
+            else
+                temp_spec_rad = pow( error/error_history[current_error_place+1], 1.0 / ERROR_HISTORY_LENGTH  );
             if (temp_spec_rad != 0)
                 spec_rad = temp_spec_rad;//(spec_rad*(it_num-2)+error/old_error)/(it_num-1); //ZZZZ
         }
@@ -2327,7 +2335,7 @@ void SourceIteration::updateQhat_edge(){
 //    cout << "|Qhat_edge| = " << Utilities::p_norm(Qhat_edge,2) << endl; //ZZZZ
 //    cout << "Qhat_edge[0] = " << Qhat_edge[0] << endl;
 //    cout << "Qhat_edge[phi_0.size()] = " << Qhat_edge[phi_0.size()] << endl;
-//    cout << "Qhat_edge[phi_0.size()/2] = " << Qhat_edge[phi_0.size()/2] << endl;
+//    cout << "Qhat_edge[phi_0.size()/4] = " << Qhat_edge[phi_0.size()/4] << endl;
 //    Utilities::print_dvector(Qhat_edge);
     
 }

@@ -41,6 +41,7 @@ public:
     static double p_norm(vector<double> v1, unsigned int p); //v2 = zero vector
     static double p_norm(vector<double> v1, vector<double> v2, unsigned int p);
     static double p_norm_of_rel_error(vector<double> v_old, vector<double> v_new, unsigned int p, double eps = 1.e-16);
+    static double p_norm_of_rel_error(vector<double> v_old, vector<double> v_new, vector<double> v_norm, unsigned int p, double eps = 1.e-16);
     
     //phi_error computes the relative error between two solutions.  norm = p > 0 for p_norm, norm = -1 for inf norm
     //the solution vectors should be 2xN and 2xM vectors respectively where N and M are the number of spatial points.  The first component should be the x-coordinates while the 2nd component should be the scalar flux values at those coordinates.

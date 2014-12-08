@@ -137,10 +137,15 @@ double Utilities::p_norm(vector<double> v1, vector<double> v2, unsigned int p){
     return p_norm;
 }
 double Utilities::p_norm_of_rel_error(vector<double> v_old, vector<double> v_new, unsigned int p, double eps){
+    return Utilities::p_norm_of_rel_error(v_old, v_new, v_new, p, eps);
+}
+//Difference in v_old and v_new is examined relative to v_norm
+double Utilities::p_norm_of_rel_error(vector<double> v_old, vector<double> v_new, vector<double> v_norm, unsigned int p, double eps){
     unsigned int N = min(v_old.size(),v_new.size());
+    N = min( (long unsigned int)N , v_norm.size() );
     vector<double> rel_error(N,0);
     for(unsigned int i = 0; i < N ; i++ ){
-        rel_error[i] = fabs((v_old[i] - v_new[i])/(v_new[i] + eps));
+        rel_error[i] = fabs(v_old[i] - v_new[i])/(fabs(v_norm[i]) + eps);
     }
     return Utilities::p_norm(rel_error,p);
 }
