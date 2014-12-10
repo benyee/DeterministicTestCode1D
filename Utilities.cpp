@@ -255,6 +255,68 @@ vector<double> Utilities::solve_tridiag(vector<vector<double> > A, const vector<
     return x;
 }
 
+
+vector<double> Utilities::solve_ndiag(vector<vector<double> > A, const vector<double> &b, unsigned int n){
+    vector<double> x(b);
+    
+    if( n % 2 == 0 ){
+        cout << "WARNING: YOU CANNOT HAVE AN EVEN VALUE FOR " << n << " IN THE NDIAG SOLVER." << endl;
+        n = n - 1;
+        cout << "N CHANGED FROM "<< n << " TO " << n-1 << endl;
+    }
+    
+    unsigned int half_n = n/2;
+    unsigned int m = A.size();
+    
+    
+    //Make the matrix upper triangular:
+    for(unsigned int i = 0; i < m - half_n - 1; i++){
+        //Make the first nonzero entry in the i-th row unitary.
+        for(unsigned int j = half_n+1; j < n ; j++)
+            A[i][j] /= A[i][half_n];
+        x[i] /= A[i][half_n];
+//        A[i][half_n] = 1; //Not really necessary
+        
+        for(unsigned int j = 1; j <= half_n ; j++){
+            for(unsigned int k = 1; k <= half_n ; k++)
+                A[i+j][half_n-j+k] -= A[i+j][half_n-j] * A[i][half_n+k];
+            x[i+j] -= A[i+j][half_n-j] * x[i];
+//            A[i+j][half_n-j] = 0; //Not really necessary
+        }
+    }
+    for(unsigned int i = m - half_n - 1; i < m ; i++ ){
+        //Make the first nonzero entry in the i-th row unitary.
+        for(unsigned int j = half_n+1; j < half_n + (m - i) ; j++)
+            A[i][j] /= A[i][half_n];
+        x[i] /= A[i][half_n];
+//        A[i][half_n] = 1; //Not really necessary
+        
+        for(unsigned int j = 1; j <= m-i-1 ; j++){
+            for(unsigned int k = 1; k <= m-i-1 ; k++)
+                A[i+j][half_n-j+k] -= A[i+j][half_n-j] * A[i][half_n+k];
+            x[i+j] -= A[i+j][half_n-j] * x[i];
+//            A[i+j][half_n-j] = 0;  //Not really necessary
+        }
+    }
+    
+    //Solve upper triangular matrix:
+    for(int i = m - 2; i > m - 2 - half_n ; i-- ){
+        for(unsigned int j = 1; j < m - i ; j ++ )
+            x[i] -= A[i][half_n+j] * x[i+j];
+    }
+    for(int i = m - 2 - half_n; i >= 0; i -- ){
+        for(unsigned int j = 1; j <= half_n ; j ++ )
+            x[i] -= A[i][half_n+j] * x[i+j];
+    }
+    
+    
+    
+    return x;
+
+}
+
+//---------------------------------------------------------------
+
 int Utilities::blowUpChecker(vector<double> &test, double thres){
     for(unsigned int i = 0; i<test.size(); i++){
         if(abs(test[i]) > thres){

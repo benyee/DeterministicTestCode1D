@@ -60,6 +60,7 @@ public:
     
     //Linear algebra functions:
     static vector<double> solve_tridiag(vector<vector<double> > A, const vector<double> &b);
+    static vector<double> solve_ndiag(vector<vector<double> > A, const vector<double> &b, unsigned int n);
     
     //Remove the last four characters of a string:
     static string remove_ext(string input_string){return input_string.substr(0,input_string.length());}
