@@ -111,9 +111,12 @@ private:
     vector<double> sigma_s0; //isotropic scattering cross sections in cm^{-1}
     vector<double> sigma_s1; //anisotropic scattering cross sections in cm^{-1}
     vector<double> sigma_t; //absorption cross section in cm^{-1}
-    vector<double> Sth_avg; //Sth_avg[j] = avg of sigma_t in cells j and j+1 weighted by h_j, times h_avg[j].  This is equal to the length of h minus one.  Only internal edges are considered.
+    vector<double> Sah_avg; //Sah_avg_{j-1/2} = avg of sigma_t in cells j and j+1 weighted by h_j, times h_avg[j].
+    vector<double> Sth_avg; //Sth_avg_{j-1/2} = avg of sigma_t in cells j and j+1 weighted by h_j, times h_avg[j].
     double c;  //This is max(sigma_s0/sigma_t) unless this gives c >= 1.
     //In that case, c = max( sigma_s0/(sigma_t+DB^2) ))
+    
+    vector<double> Q_avg; //Q_avg_{j-1/2} = Q_avg[j] = avg of sigma_t in cells j and j+1
     
     double kappa; //Constant in psi_n(x) = a_n e^{-\Sigma_t \kappa x}
     vector<double> rho; //dx becomes rho*dx in the multiple balance aux. equations

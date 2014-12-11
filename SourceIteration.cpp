@@ -203,7 +203,6 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             updateQhat_edge();
         }
         
-        
         error=updatePhi_calcSource();
         it_num += 0.5;
         
@@ -929,214 +928,299 @@ void SourceIteration::accelerate_edgePhi0_MB2(vector<double> preaccel_phi_0){
 //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv//
 void SourceIteration::accelerate_MB3(){
     
-    vector<double> sigma_a = data->getsigma_a();
-    
     vector<double> mu_n2(mu_n);
-    for(unsigned int m = 0; m < N; m++)
+    double zeta_1;
+    double zeta_3;
+    for(unsigned int m = 0; m < N/2; m++){
         mu_n2[m] *= mu_n2[m];
+        zeta_1 += mu_n[m] * w_n[m];
+        zeta_3 += mu_n[m] * mu_n2[m] * w_n[m];
+    }
+    zeta_3 *= 3;
+    for(unsigned int m = N/2; m < N; m++){
+        mu_n2[m] *= mu_n2[m];
+    }
     
+    //Form the phi2's from the phi2^{+/-}
     vector<double> phi_2(J,0);
-    for(unsigned int j = 0; j < J; j++)
+    vector<double> phi_2e(J+1,0);
+    for(unsigned int j = 0; j < J; j++){
         phi_2[j] = phi2_plus[j] + phi2_minus[j];
+        phi_2e[j] = phi2e_plus[j] + phi2e_minus[j];
+    }
+    phi_2e[J] = phi2e_plus[J] + phi2e_minus[J];
     
+    //Generate Eddington factors:
     vector<double> eddington(phi_0);
-    for(unsigned int j = 0; j < J ; j++)
+    vector<double> eddington_edge(edgePhi0);
+    for(unsigned int j = 0; j < J ; j++){
         eddington[j] = phi_2[j]/phi_0[j];
+        eddington_edge[j] = phi_2e[j]/edgePhi0[j];
+    }
+    eddington_edge[J] = phi_2e[J]/edgePhi0[J];
     
-    vector< vector<double> > A( J , vector<double>( 3 , 0 ) );
-    vector<double> b( J , 0 );
+    
+    //Generate partial currents:
+    vector<double> j_plus(J,0);
+    vector<double> j_minus(J,0);
+    vector<double> je_plus(J+1,0);
+    vector<double> je_minus(J+1,0);
+    for(unsigned int j = 0; j < J; j++){
+        for(unsigned int m = 0; m < N/2; m++){
+            je_plus[j] += mu_n[m] * w_n[m] * psi_e[j][m];
+            j_plus[j] += mu_n[m] * w_n[m] * psi_c[j][m];
+        }
+        for(unsigned int m = N/2; m < N; m++){
+            je_minus[j] += mu_n[m] * w_n[m] * psi_e[j][m];
+            j_minus[j] += mu_n[m] * w_n[m] * psi_c[j][m];
+        }
+    }
+    for(unsigned int m = 0; m < N/2; m++)
+        je_plus[J] += mu_n[m] * w_n[m] * psi_e[J][m];
+    for(unsigned int m = N/2; m < N; m++)
+        je_minus[J] += mu_n[m] * w_n[m] * psi_e[J][m];
+    
+    //
+    //======== Generate \tilde{L}: =========
+    //
+    //L_tilde[1/2]:
+    vector<double> L_tilde(edgePhi0);
+    L_tilde[0] = 0;
+    for( unsigned int m = 0; m < N/2 ; m++ )
+        L_tilde[0] += w_n[m] * psi_e[0][m];
+    L_tilde[0] *= - h[0] * sigma_t[0] / 2;
+    L_tilde[0] -= 2 * ( j_plus[0] - je_plus[0] );
+    
+    // 3/2, 5/2, .... , J-1/2:
+    for(unsigned int j = 1; j < J; j++){
+        //L_tilde = Q_tilde:
+        L_tilde[j] = ( je_plus[j] - j_plus[j-1] ) / h[j-1] + \
+            ( j_minus[j] - je_minus[j] ) / h[j];
+        L_tilde[j] *= 2 * h_avg[j];
+        L_tilde[j] += phi_1[j] - phi_1[j-1];
+        
+        //L_tilde = Q_tilde - temp
+        double temp = ( edgePhi0[j] - phi_0[j-1] ) / h[j-1] - \
+            ( phi_0[j] - edgePhi0[j] ) / h[j];
+        temp *= 2 * zeta_1 * h_avg[j];
+        L_tilde[j] -= temp;
+    }
+    
+    // L_tilde[J+1/2]:
+    L_tilde[J] = 0;
+    for( unsigned int m = N/2; m < N ; m++ )
+        L_tilde[J] += w_n[m] * psi_e[J][m];
+    L_tilde[J] *= - h[J-1] * sigma_t[sigma_t.size()-1] / 2;
+    L_tilde[J] -= 2 * ( je_minus[J] - j_minus[J-1] );
+    
+    //========Set up acceleration matrix.======================================
+    //=========================================================================
+    
+    //Allocate matrix:
+    unsigned int J_total = 2 * J + 1;
+    vector< vector<double> > A( J_total , vector<double>( 5 , 0 ) );
+    vector<double> b( J_total , 0 );
+    
+    //Pull in some extra info from input file:
+    vector<double> sigma_a = data->getsigma_a();
+    vector<double> Q = data->getQ();
     
     unsigned int region = 0;
     unsigned int within_region_counter = 1;
-    vector<double> Q = data->getQ();
     
+    //Keeps track of which row of the 5-diagonal matrix we're at:
+    unsigned int mat_row = 0;  //ZZZZ
+    double Sah, Sth, Sth_next, Qh;
     
-    //Deal with the left edge:
-    double Sth2 = sigma_t[0] * h[0] * h[0]; //ZZZZ only works for homogeneous right now
-    double Sth = sigma_t[0] * h[0];
+    //Initial material values:
+    Sah = sigma_a[0] * h[0];
+    Sth = sigma_t[0] * h[0];
+    Sth_next = Sth;
+    Qh = Q[0] * h[0];
     
-    //Calculate a bunch of parameters needed to eliminate phi_{0,1/2} in terms of phi_{0,1}
-    double phi_2e_L= 0;
-    for(unsigned int m = 0; m < N ; m++ )
-        phi_2e_L += mu_n2[m]*psi_e[0][m]*w_n[m];
+    //Assign values:
+    //j = 1/2:
+    A[0][2] = eddington_edge[0] * 2. / Sth \
+                + (sigma_t[0] - sigma_s0[0]/2) * h[0];
+    A[0][3] = - 4 * eddington[0] / Sth;
+    A[0][4] = 2 * eddington_edge[1] / Sth;
+    b[0] = ( Qh - zeta_1 * Qhat_edge[0] * h[0] ) / 2 - L_tilde[0];
     
-    /*if(EDGE_ACCEL_MODE == 2){
-        double A01temp = 0;
-        double denom = 0;
-        for(unsigned int m = N/2; m < N; m++)
-            denom -= w_n[m] / ( Sth - 2 * mu_n[m] );
-        denom *= sigma_s0[0] * h[0];
-        denom /= 2;
-        denom += 1;
-        for( unsigned int m = N/2 ; m < N ; m++ )
-            A01temp -= mu_n[m] * w_n[m] * psi_c[0][m] / ( Sth - 2 * mu_n[m] );
-        A01temp *= 2;
-        A01temp /= denom * phi_0[0];
-        
-        double in_flux = 0;
-        for(unsigned int m = 0; m < N/2 ; m++ )
-            in_flux += w_n[m] * psi_e[0][m];
-        double Q_addition = 0;
-        for(unsigned int m = N/2 ; m < N ; m++ ){
-            Q_addition += ( Q[0] + mu_n[m] * Qhat_edge[0] ) * w_n[m] / \
-                (Sth - 2 * mu_n[m]);
-        }
-        Q_addition *= h[0] / 2;
-        
-        if(bc[0] == 1)
-            A[0][1] = (sigma_t[0]-sigma_s0[0]) * Sth2 + eddington[0];
-        else
-            A[0][1] = (sigma_t[0]-sigma_s0[0]) * Sth2 + 3 * eddington[0] - 2 * phi_2e_L/edgePhi0[0] * A01temp;
-        A[0][2] = - eddington[1];
-        b[0] = Q[0] * Sth2;
-        if(bc[0] != 1 )
-            b[0] += 2 * phi_2e_L / edgePhi0[0] * (in_flux + Q_addition) / denom;
-    }else  //ZZZZ not functional at the moment */ if (EDGE_ACCEL_MODE == 1){
-        A[0][1] = sigma_a[0] * h[0] + eddington[0] / Sth_avg[0] + 2 * ( eddington[0]-  phi_2e_L/phi_0[0] ) / Sth;
-        A[0][2] = - eddington[1] / Sth_avg[0];
-        b[0] = Q[0] * h[0];
-    }else if (EDGE_ACCEL_MODE == 3){
-        double eddington_half =phi_2e_L/edgePhi0[0];
-        A[0][1] =  sigma_a[region] * h[0] + (2 * eddington[0] - eddington_half) / Sth + eddington[0]/Sth_avg[0];
-        A[0][2] = - eddington[1] / Sth_avg[0];
-        b[0] = Q[0] * h[0] +  (2 * phi_2e_L - eddington_half * phi_0[0])/Sth;
-    }
+    //j = 1:
+    A[1][1] = - 2 * eddington_edge[0] / Sth;
+    A[1][2] = ( 2. / Sth + 1./ Sth_avg[1] ) * eddington[0] + Sah;
+    A[1][4] = - eddington[1] / Sth_avg[1];
+    b[1] = Qh;
     
-    
-    //Deal with the center of problem:
+    mat_row = 2;
+    //j = 3/2 through J-1
     for(unsigned int j = 1; j < J-1 ; j++){
-        if( within_region_counter == discret[region] ){
+        if( Sth_next != Sth ){
+            Sah = sigma_a[region] * h[j];
+            Qh = Q[region] * h[j];
+            Sth = Sth_next;
+        }
+        if( within_region_counter >= discret[region] ){
             region++;
             within_region_counter = 0;
-            Sth2 = sigma_t[region] * h[j] * h[j];
+            Sth_next = sigma_t[region] * h[region];
         }
         
-        A[j][0] = -eddington[j-1] / Sth_avg[j-1] ;
-        A[j][1] = sigma_a[region] * h[j] + eddington[j] / Sth_avg[j-1] + eddington[j]/Sth_avg[j];
-        A[j][2] = -eddington[j+1] / Sth_avg[j];
+        //j = j + 1/2
+        A[mat_row][0] = - eddington_edge[j-1] / Sth;
+        A[mat_row][1] = - zeta_1 * h_avg[j] / h[j-1];
+        A[mat_row][2] = ( 1. / Sth_next + 1. / Sth ) * eddington_edge[j] \
+            + Sah_avg[j] + ( 1. / h[j-1] + 1. / h[j] ) * zeta_1 * h_avg[j];
+        A[mat_row][3] = - zeta_1 * h_avg[j] / h[j];
+        A[mat_row][4] = - eddington_edge[j+1] / Sth_next;
+        b[mat_row] = Q_avg[j] - L_tilde[j];
+        mat_row++;
         
-        b[j] = Q[region] * h[j];
+        
+        //j = j + 1
+        A[mat_row][0] = - eddington[j-1] / Sth_avg[j];
+        A[mat_row][2] = ( 1. / Sth_avg[j] + 1. / Sth_avg[j+1] ) \
+            * eddington[j] + Sah;
+        A[mat_row][4] = - eddington[j+1] / Sth_avg[j+1];
+        b[mat_row] = Qh;
+        
+        mat_row++;
+        within_region_counter++; // counter is at cell j+1
+        
+    }
+    
+    if( Sth_next != Sth ){
+        Sah = sigma_a[region] * h[J-2];
+        Qh = Q[region] * h[J-2];
+        Sth = Sth_next;
+    }
+    if( within_region_counter >= discret[region] ){
+        region++;
+        within_region_counter = 0;
+        Sth_next = sigma_t[region] * h[region];
+    }
+    
+    //j = J-1/2:
+    A[mat_row][0] = - eddington_edge[J-2] / Sth;
+    A[mat_row][1] = - zeta_1 * h_avg[J-1] / h[J-2];
+    A[mat_row][2] = ( 1. / Sth_next + 1. / Sth ) * eddington_edge[J-1] \
+        + Sah_avg[J-1] + ( 1. / h[J-2] + 1. / h[J-1] ) * zeta_1 * h_avg[J-1];
+    A[mat_row][3] = - zeta_1 * h_avg[J-1] / h[J-1];
+    A[mat_row][4] = - eddington_edge[J] / Sth_next;
+    b[mat_row] = Q_avg[J-1] - L_tilde[J-1];
+    mat_row++;
+    
+    
+    region = sigma_t.size()-1;
+    Sah = sigma_a[region] * h[J-1];
+    Qh = Q[region] * h[J-1];
+    Sth = sigma_t[region] * h[J-1];
+    
+    //j = J:
+    A[mat_row][0] = - eddington[J-2] / Sth_avg[J-1];
+    A[mat_row][2] = ( 1. / Sth_avg[J-1] + 2. / Sth ) * eddington[J-1] + Sah;
+    A[mat_row][3] = - 2 * eddington_edge[J] / Sth;
+    b[mat_row] = Qh;
+    
+    mat_row = 2 * J;
+    //j = J+1/2:
+    A[mat_row][0] = 2 * eddington_edge[J-1] / Sth;
+    A[mat_row][1] = - 4 * eddington[J-1] / Sth;
+    A[mat_row][2] = eddington_edge[J] * 2. / h[J-1] \
+        + (sigma_t[region] - sigma_s0[region]/2) * h[J-1];
+    b[mat_row] = ( Qh + zeta_1 * Qhat_edge[J]  * h[J-1] ) / 2 - L_tilde[J];
+    
+    //=========================================================================
+    //=========================================================================
+    
+    //Solve for accelerated fluxes: YYYY
+    vector<double> all_phi0 = Utilities::solve_ndiag( A , b , 5 );
+    vector<double> preaccel_phi_0( phi_0 );
+    vector<double> preaccel_edgePhi0( edgePhi0 );
+    Utilities::split_Phi( all_phi0 , edgePhi0 , phi_0 );
+    
+    
+    //======================Accelerating the Qhats =========================
+    //======================================================================
+    vector<double> preaccel_Qhat_edge(Qhat_edge); //YYYY
+    //Form the phi_{|2|}'s from the phi2^{+/-}
+    vector<double> phi_abs2(phi2_plus);
+    vector<double> phi_abs2e(phi2e_plus);
+    for(unsigned int j = 0; j < J; j++){
+        phi_abs2e[j] -= phi2e_minus[j];
+        phi_abs2[j] -= phi2_minus[j];
+    }
+    phi_abs2e[J] -= phi2e_minus[J];
+    
+    vector<double> preaccel_phi_abs2(phi_abs2); //YYYY
+    vector<double> preaccel_phi_abs2e(phi_abs2e);
+    
+    //Subtract the old phi_{|2|}'s from the Qhat_edges:
+    // j = 1/2:
+    Qhat_edge[0] += 3 * ( phi_abs2[0] - phi_abs2e[0] ) / h[0] ;
+    // j = 3/2,...,J-1/2
+    for(unsigned int j = 1; j < J-1; j++){
+        Qhat_edge[j] -= 3 * ( ( phi_abs2e[j] - phi_abs2[j-1] ) / h[j-1] \
+                             - ( phi_abs2[j] - phi_abs2e[j] ) / h[j] );
+    }
+    // j = J+1/2
+    Qhat_edge[J] -= 3 * ( phi_abs2e[J] - phi_abs2[J-1] ) / h[J-1] ;
+    
+    //Accelerate the phi_{|2|}'s:
+    region = 0;
+    within_region_counter = 1;
+    Sth = sigma_t[0] * h[0];
+    //j = 1/2:
+    phi_abs2e[0] -= zeta_3 * edgePhi1[0];
+    phi_abs2e[0] -= 2 * zeta_3 * ( eddington[0] * phi_0[0] \
+                                - eddington_edge[0] * edgePhi0[0] ) / Sth;
+    //j = 1, 3/2, 2 , ... , J-1 , J - 1/2:
+    for(unsigned int j = 0; j < J-1; j++){
+        if( within_region_counter >= discret[region] ){
+            region++;
+            within_region_counter = 0;
+            Sth = sigma_t[region] * h[j];
+        }
+        
+        phi_abs2[j] -= zeta_3 * phi_1[j];
+        phi_abs2[j] -= zeta_3 / Sth * ( eddington_edge[j+1] * edgePhi0[j+1] \
+               - eddington_edge[j] * edgePhi0[j] );
+        
+        phi_abs2e[j+1] -= zeta_3 * edgePhi1[j+1];
+        phi_abs2e[j+1] -= zeta_3 / Sth_avg[j] * ( eddington[j+1] * phi_0[j+1] \
+                                  - eddington[j] * phi_0[j] );
         
         within_region_counter++;
     }
-    
-    //Deal with the right edge:
-    region = sigma_t.size()-1;
-    unsigned int j = J-1;
-    Sth2 = sigma_t[region] * h[j] * h[j];
-    Sth = sigma_t[region] * h[j];
-    
-    double phi_2e_R= 0;
-    for(unsigned int m = 0; m < N ; m++ )
-        phi_2e_R += mu_n2[m]*psi_e[J][m]*w_n[m];
-    
-    /*if( EDGE_ACCEL_MODE == 2 ){
-        double AJ1temp = 0;
-        double denom = 0;
-        for(unsigned int m = 0; m < N/2; m++)
-            denom -= w_n[m] / ( Sth + 2 * mu_n[m] );
-        denom *= sigma_s0[region] * h[j];
-        denom /= 2;
-        denom += 1;
-        for( unsigned int m = 0 ; m < N/2 ; m++ )
-            AJ1temp += mu_n[m] * w_n[m] * psi_c[j][m] / ( Sth + 2 * mu_n[m] );
-        AJ1temp *= 2;
-        AJ1temp /= denom * phi_0[j];
-        
-        double out_flux = 0;
-        for(unsigned int m = N/2 ; m < N ; m++ )
-            out_flux += w_n[m] * psi_e[J][m];
-        double Q_addition = 0;
-        for(unsigned int m = 0; m < N/2 ; m++ ){
-            Q_addition += ( Q[region] + mu_n[m] * Qhat_edge[J] ) * w_n[m] / \
-                (Sth + 2 * mu_n[m]);
-        }
-        Q_addition *= h[j] / 2;
-        
-        A[j][0] = -eddington[j-1];
-        if( bc[1] == 1 )
-           A[j][1] = (sigma_t[region] - sigma_s0[region]) * Sth2 + eddington[j];
-        else
-            A[j][1] = (sigma_t[region] - sigma_s0[region]) * Sth2 + 3 * eddington[j] - 2 * phi_2e_R / edgePhi0[J] * AJ1temp;
-        b[j] = Q[region] * Sth2;
-        if( bc[1] != 1 )
-               b[j] += 2 * phi_2e_R / edgePhi0[J] * (out_flux + Q_addition) / denom;
-    }else  //ZZZZ */ if( EDGE_ACCEL_MODE == 1 ){
-        A[j][0] = -eddington[j-1] / Sth_avg[j-1];
-        A[j][1] = sigma_a[region] * h[j] + eddington[j] / Sth_avg[j-1] + 2 * (eddington[j] - phi_2e_R / phi_0[j] )/ Sth;
-        b[j] = Q[region] * h[j];
-    }else if( EDGE_ACCEL_MODE == 3 ){
-        double eddington_half =phi_2e_R/edgePhi0[J];
-        A[j][1] = - eddington[j-1] / Sth_avg[j-1];
-        A[j][2] =  sigma_a[region] * h[j] + (2 * eddington[j] - eddington_half) / Sth + eddington[j]/Sth_avg[j-1];
-        b[0] = Q[region] * h[j] +  (2 * phi_2e_R - eddington_half * phi_0[j])/Sth;
+    //j = J:
+    Sth = sigma_t[sigma_t.size()-1] / h[J-1] ;
+    phi_abs2[J-1] -= zeta_3 * phi_1[J-1];
+    phi_abs2[J-1] -= zeta_3 / Sth \
+        * ( eddington_edge[J-1] * edgePhi0[J-1] \
+           - eddington_edge[J-2] * edgePhi0[J-2] );
+    //j = J+1/2:
+    phi_abs2e[J] -= zeta_3 * edgePhi1[J];
+    phi_abs2e[J] -= 2 * zeta_3 / Sth * ( eddington_edge[J] * edgePhi0[J] -
+                                        eddington[J-1] * phi_0[J-1] );
+                                                       
+    //Add back the updated phi_{|2|}'s:
+    // j = 1/2:
+    Qhat_edge[0] -= 3 * ( phi_abs2[0] - phi_abs2e[0] ) / h[0] ;
+    // j = 3/2,...,J-1/2
+    for(unsigned int j = 1; j < J-1; j++){
+        Qhat_edge[j] += 3 * ( ( phi_abs2e[j] - phi_abs2[j-1] ) / h[j-1] \
+                             - ( phi_abs2[j] - phi_abs2e[j] ) / h[j] );
     }
+    // j = J+1/2
+    Qhat_edge[J] += 3 * ( phi_abs2e[J] - phi_abs2[J-1] ) / h[J-1] ;
     
-    vector<double> preaccel_phi_0(phi_0);
-    vector<double> preaccel_edgePhi0(edgePhi0);
-    phi_0 = Utilities::solve_tridiag(A,b);
-    variable_status["phi_0"] += 0.5;
-    variable_status["phi_1"] += 0.5;
-    
-    /* //ZZZZ
-    if( EDGE_ACCEL_MODE == 2 )
-        accelerate_edgePhi0( preaccel_phi_0 );
-    else*/ if (EDGE_ACCEL_MODE == 1 ){
-        edgePhi0[0] *= phi_0[0]/preaccel_phi_0[0];
-        for(unsigned int j = 1; j < J; j++){
-            edgePhi0[j] *= (phi_0[j-1] + phi_0[j])/(preaccel_phi_0[j-1] + preaccel_phi_0[j]);
-        }
-        edgePhi0[J] *= phi_0[J-1]/preaccel_phi_0[J-1];
-    }else if (EDGE_ACCEL_MODE == 3){
-        edgePhi0[0] += phi_0[0]-preaccel_phi_0[0];
-        for(unsigned int j = 1; j < J; j++){
-            edgePhi0[j] += (phi_0[j-1] + phi_0[j])/2-(preaccel_phi_0[j-1] + preaccel_phi_0[j])/2;
-        }
-        edgePhi0[J] += phi_0[J-1]-preaccel_phi_0[J-1];
-    }
-    variable_status["edgePhi0"] += 0.5;
-    variable_status["edgePhi1"] += 0.5;
-    
-    
-    /*//Accelerate phi_2:
-    Utilities::print_dvector(phi2_plus); // ZZZZ
-    for(unsigned int j = 0; j < J ; j++){
-        double ratio = phi_0[j] / preaccel_phi_0[j];
-        phi2_plus[j] *= ratio;
-        phi2_minus[j] *= ratio;
-        ratio = edgePhi0[j] / preaccel_edgePhi0[j];
-        phi2e_minus[j] *= ratio;
-        if(bc[0] == 1 && j == 0)
-            phi2e_plus[j] = phi2e_minus[j];
-        else if( j != 0 )
-            phi2e_plus[j] *= ratio;
-    }
-    phi2e_plus[J] *= edgePhi0[J] / preaccel_edgePhi0[J];
-    if(bc[1] == 1)
-        phi2e_minus[J] = phi2e_plus[J];
-    Utilities::print_dvector(phi2_plus); // ZZZZ
-    cout << "===" <<endl;
-    
-    variable_status["phi2_plus"] += 0.5;
-    variable_status["phi2e_minus"] += 0.5;
-    variable_status["phi2_plus"] += 0.5;
-    variable_status["phi2e_minus"] += 0.5;
-
-//    Utilities::print_dvector(Qhat_edge); //ZZZZ
-    updateQhat_edge();
-//    Utilities::print_dvector(Qhat_edge); //ZZZZ
-//    cout << "===" << endl;*/
-    
-    /*
-    Utilities::print_dvector(Qhat_edge);
-    Qhat_edge[0] *= phi_0[0]/preaccel_phi_0[0];
-    for(unsigned int j = 1; j < J; j++){
-        Qhat_edge[j] *= (phi_0[j-1] + phi_0[j])/(preaccel_phi_0[j-1] + preaccel_phi_0[j]);
-    }
-    Qhat_edge[J] *= phi_0[J-1]/preaccel_phi_0[J-1];
-    Utilities::print_dvector(Qhat_edge);
-    cout << "+===" << endl;*/ //ZZZZ
-    
+    cout << "---" << endl;
+    cout << "preaccel_Qhat = "; Utilities::print_dvector(preaccel_Qhat_edge); //YYYY
+    cout << "Qhat = "; Utilities::print_dvector(Qhat_edge); //YYYY
+    cout << "preaccelphi_abs2 = "; Utilities::print_dvector(preaccel_phi_abs2);
+    cout << "phi_abs2 = "; Utilities::print_dvector(phi_abs2);
+    cout << "preaccelphi_abs2e = "; Utilities::print_dvector(preaccel_phi_abs2e);
+    cout << "phi_abs2e = "; Utilities::print_dvector(phi_abs2e);
 }
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
 //-------------------ACCELERATION FOR MB3-------------------------------------//
@@ -1690,11 +1774,21 @@ void SourceIteration::initializeGrid(){
         region_R++;
         within_region_counter_R = 0;
     }
-    //Initialize h_avg:
-    for(unsigned int i = 0; i < h.size()-1; i++){
+    
+    //Initialize h_avg, Sth_avg: //ZZZZ
+    vector<double> Q = data->getQ();
+    h_avg.push_back(h[0]);
+    Sah_avg.push_back( (sigma_t[0]-sigma_s0[0]) * h[0] );
+    Sth_avg.push_back(sigma_t[0]*h[0]);
+    Q_avg.push_back(Q[0]*h[0]);
+    for(unsigned int i = 1; i < h.size()-1; i++){
         h_avg.push_back( ( h[i] + h[i+1] ) / 2 );
         
+        Sah_avg.push_back( ( (sigma_t[region_L]-sigma_s0[region_L]) *h[i] \
+                        + (sigma_t[region_R]-sigma_s0[region_R]) *h[i+1] )/2 );
         Sth_avg.push_back( ( sigma_t[region_L]*h[i] + sigma_t[region_R]*h[i+1] )/2 );
+        
+        Q_avg.push_back( ( Q[region_L]*h[i] + Q[region_R]*h[i+1] )/2 );
         
         within_region_counter_L++;
         within_region_counter_R++;
@@ -1707,6 +1801,10 @@ void SourceIteration::initializeGrid(){
             within_region_counter_R = 0;
         }
     }
+    h_avg.push_back(h[h.size()-1]);
+    Sah_avg.push_back( (sigma_t[sigma_t.size()-1]-sigma_s0[sigma_s0.size()-1]) * h[h.size()-1] );
+    Sth_avg.push_back(sigma_t[sigma_t.size()-1]*h[h.size()-1]);
+    Q_avg.push_back( Q[sigma_t.size()-1]*h[h.size()-1] );
     
     if(accel_mode){
         discret_CM = data->getdiscret_CM();
@@ -2282,7 +2380,7 @@ void SourceIteration::updateQhat_edge(){
         }
         for(unsigned int j = 1; j < lastind; j++){
             Qhat_edge[j] = 2 * ( phi2e_plus[j] - phi2_plus[j-1] ) / h[j-1];
-            Qhat_edge[j] -= ( phi2_plus[j] - phi2_plus[j-1] + phi2_minus[j] - phi2_minus[j-1] ) / h_avg[j-1];
+            Qhat_edge[j] -= ( phi2_plus[j] - phi2_plus[j-1] + phi2_minus[j] - phi2_minus[j-1] ) / h_avg[j];
             Qhat_edge[j] += 2 * ( phi2_minus[j] - phi2e_minus[j] ) / h[j];
             Qhat_edge[j] *= 3 / rho[j];
         }
