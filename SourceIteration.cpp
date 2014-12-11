@@ -202,12 +202,16 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         if((alpha_mode >= 40 && alpha_mode < 50) /*&& (error < tol*10 || Qhat_edge[0] != 0) */){
             updateQhat_edge();
         }
-        
         error=updatePhi_calcSource();
         it_num += 0.5;
         
+        cout << "Before acceleration..." << endl;
+        cout << "old_phi_0 = "; Utilities::print_dvector(old_phi_0);
+        cout << "phi_0 = "; Utilities::print_dvector(phi_0);
+        
         //CMFD acceleration:
         if(accel_mode == 1){
+//            old_phi_0 = phi_0; //YYYY
             if(alpha_mode >= 40)
                 accelerate_MB3();
             else
@@ -238,10 +242,15 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         }
         
         it_num += 0.5;
+        cout << "When calculating the error..." << endl;
+        cout << "old_phi_0 = "; Utilities::print_dvector(old_phi_0);
+        cout << "phi_0 = "; Utilities::print_dvector(phi_0);
+        
         error = Utilities::p_norm_of_rel_error(old_phi_0,phi_0,2 , tol * tol);
 //        error = Utilities::p_norm(old_phi_0,phi_0,2) / (Utilities::p_norm(phi_0,2) + tol*tol);
         // If we're using MB3, make sure the Qhats are converged too:
-        if( alpha_mode >= 40 && alpha_mode < 50 && alpha_mode != 41 && accel_mode == 0){
+        if( alpha_mode >= 40 && alpha_mode < 50 && alpha_mode != 41 ){
+            cout << "Qhat_edge = "; Utilities::print_dvector(Qhat_edge); //YYYY
             double Qhat_error = Utilities::p_norm_of_rel_error(old_Qhat_edge,Qhat_edge, edgePhi0, 2 , tol * tol );
             if( Utilities::p_norm(Qhat_edge,2) / (Utilities::p_norm(phi_0,2) + tol*tol) > tol*10)
                 error = max( error , Qhat_error );
@@ -929,8 +938,8 @@ void SourceIteration::accelerate_edgePhi0_MB2(vector<double> preaccel_phi_0){
 void SourceIteration::accelerate_MB3(){
     
     vector<double> mu_n2(mu_n);
-    double zeta_1;
-    double zeta_3;
+    double zeta_1 = 0;
+    double zeta_3 = 0;
     for(unsigned int m = 0; m < N/2; m++){
         mu_n2[m] *= mu_n2[m];
         zeta_1 += mu_n[m] * w_n[m];
@@ -988,7 +997,7 @@ void SourceIteration::accelerate_MB3(){
     L_tilde[0] = 0;
     for( unsigned int m = 0; m < N/2 ; m++ )
         L_tilde[0] += w_n[m] * psi_e[0][m];
-    L_tilde[0] *= - h[0] * sigma_t[0] / 2;
+    L_tilde[0] *= - h[0] * sigma_t[0] ;
     L_tilde[0] -= 2 * ( j_plus[0] - je_plus[0] );
     
     // 3/2, 5/2, .... , J-1/2:
@@ -1010,7 +1019,7 @@ void SourceIteration::accelerate_MB3(){
     L_tilde[J] = 0;
     for( unsigned int m = N/2; m < N ; m++ )
         L_tilde[J] += w_n[m] * psi_e[J][m];
-    L_tilde[J] *= - h[J-1] * sigma_t[sigma_t.size()-1] / 2;
+    L_tilde[J] *= - h[J-1] * sigma_t[sigma_t.size()-1] ;
     L_tilde[J] -= 2 * ( je_minus[J] - j_minus[J-1] );
     
     //========Set up acceleration matrix.======================================
@@ -1040,10 +1049,10 @@ void SourceIteration::accelerate_MB3(){
     
     //Assign values:
     //j = 1/2:
-    A[0][2] = eddington_edge[0] * 2. / Sth \
+    A[0][2] = - eddington_edge[0] * 2. / Sth \
                 + (sigma_t[0] - sigma_s0[0]/2) * h[0];
-    A[0][3] = - 4 * eddington[0] / Sth;
-    A[0][4] = 2 * eddington_edge[1] / Sth;
+    A[0][3] = 4 * eddington[0] / Sth;
+    A[0][4] = - 2 * eddington_edge[1] / Sth;
     b[0] = ( Qh - zeta_1 * Qhat_edge[0] * h[0] ) / 2 - L_tilde[0];
     
     //j = 1:
@@ -1124,9 +1133,9 @@ void SourceIteration::accelerate_MB3(){
     
     mat_row = 2 * J;
     //j = J+1/2:
-    A[mat_row][0] = 2 * eddington_edge[J-1] / Sth;
-    A[mat_row][1] = - 4 * eddington[J-1] / Sth;
-    A[mat_row][2] = eddington_edge[J] * 2. / h[J-1] \
+    A[mat_row][0] = - 2 * eddington_edge[J-1] / Sth;
+    A[mat_row][1] = 4 * eddington[J-1] / Sth;
+    A[mat_row][2] = - eddington_edge[J] * 2. / h[J-1] \
         + (sigma_t[region] - sigma_s0[region]/2) * h[J-1];
     b[mat_row] = ( Qh + zeta_1 * Qhat_edge[J]  * h[J-1] ) / 2 - L_tilde[J];
     
@@ -1210,20 +1219,23 @@ void SourceIteration::accelerate_MB3(){
     // j = J+1/2
     Qhat_edge[J] += 3 * ( phi_abs2e[J] - phi_abs2[J-1] ) / h[J-1] ;
     
+    Qhat_edge = preaccel_Qhat_edge;
     cout << "---" << endl;
+    cout << "L_tilde = "; Utilities::print_dvector(L_tilde);
     cout << "Sth_avg = "; Utilities::print_dvector(Sth_avg);
+    cout << "preaccel_phi_0 = "; Utilities::print_dvector(preaccel_phi_0);
     cout << "phi_0 = "; Utilities::print_dvector(phi_0);
     cout << "phi_1 = "; Utilities::print_dvector(phi_1);
+    cout << "preaccel_edgePhi0 = "; Utilities::print_dvector(preaccel_edgePhi0);
     cout << "edgePhi0 = "; Utilities::print_dvector(edgePhi0);
     cout << "edgePhi1 = "; Utilities::print_dvector(edgePhi1);
     cout << "eddington = "; Utilities::print_dvector(eddington);
     cout << "eddington_edge = "; Utilities::print_dvector(eddington_edge);
-    cout << "preaccel_Qhat = "; Utilities::print_dvector(preaccel_Qhat_edge); //YYYY
-    cout << "Qhat = "; Utilities::print_dvector(Qhat_edge); //YYYY
     cout << "preaccelphi_abs2 = "; Utilities::print_dvector(preaccel_phi_abs2);
     cout << "phi_abs2 = "; Utilities::print_dvector(phi_abs2);
     cout << "preaccelphi_abs2e = "; Utilities::print_dvector(preaccel_phi_abs2e);
     cout << "phi_abs2e = "; Utilities::print_dvector(phi_abs2e);
+    cout << "preaccel_Qhat = "; Utilities::print_dvector(preaccel_Qhat_edge); //YYYY
 }
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
 //-------------------ACCELERATION FOR MB3-------------------------------------//
