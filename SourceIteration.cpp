@@ -1139,7 +1139,6 @@ void SourceIteration::accelerate_MB3(){
     vector<double> preaccel_edgePhi0( edgePhi0 );
     Utilities::split_Phi( all_phi0 , edgePhi0 , phi_0 );
     
-    
     //======================Accelerating the Qhats =========================
     //======================================================================
     vector<double> preaccel_Qhat_edge(Qhat_edge); //YYYY
@@ -1159,7 +1158,7 @@ void SourceIteration::accelerate_MB3(){
     // j = 1/2:
     Qhat_edge[0] += 3 * ( phi_abs2[0] - phi_abs2e[0] ) / h[0] ;
     // j = 3/2,...,J-1/2
-    for(unsigned int j = 1; j < J-1; j++){
+    for(unsigned int j = 1; j < J; j++){
         Qhat_edge[j] -= 3 * ( ( phi_abs2e[j] - phi_abs2[j-1] ) / h[j-1] \
                              - ( phi_abs2[j] - phi_abs2e[j] ) / h[j] );
     }
@@ -1184,7 +1183,7 @@ void SourceIteration::accelerate_MB3(){
         
         phi_abs2[j] -= zeta_3 * phi_1[j];
         phi_abs2[j] -= zeta_3 / Sth * ( eddington_edge[j+1] * edgePhi0[j+1] \
-               - eddington_edge[j] * edgePhi0[j] );
+                                       - eddington_edge[j] * edgePhi0[j] );
         
         phi_abs2e[j+1] -= zeta_3 * edgePhi1[j+1];
         phi_abs2e[j+1] -= zeta_3 / Sth_avg[j] * ( eddington[j+1] * phi_0[j+1] \
@@ -1193,11 +1192,9 @@ void SourceIteration::accelerate_MB3(){
         within_region_counter++;
     }
     //j = J:
-    Sth = sigma_t[sigma_t.size()-1] / h[J-1] ;
+    Sth = sigma_t[sigma_t.size()-1] * h[J-1] ;
     phi_abs2[J-1] -= zeta_3 * phi_1[J-1];
-    phi_abs2[J-1] -= zeta_3 / Sth \
-        * ( eddington_edge[J-1] * edgePhi0[J-1] \
-           - eddington_edge[J-2] * edgePhi0[J-2] );
+    phi_abs2[J-1] -= zeta_3 / Sth * ( eddington_edge[J] * edgePhi0[J] - eddington_edge[J-1] * edgePhi0[J-1] );
     //j = J+1/2:
     phi_abs2e[J] -= zeta_3 * edgePhi1[J];
     phi_abs2e[J] -= 2 * zeta_3 / Sth * ( eddington_edge[J] * edgePhi0[J] -
@@ -1207,14 +1204,20 @@ void SourceIteration::accelerate_MB3(){
     // j = 1/2:
     Qhat_edge[0] -= 3 * ( phi_abs2[0] - phi_abs2e[0] ) / h[0] ;
     // j = 3/2,...,J-1/2
-    for(unsigned int j = 1; j < J-1; j++){
-        Qhat_edge[j] += 3 * ( ( phi_abs2e[j] - phi_abs2[j-1] ) / h[j-1] \
-                             - ( phi_abs2[j] - phi_abs2e[j] ) / h[j] );
+    for(unsigned int j = 1; j < J; j++){
+        Qhat_edge[j] += 3 * ( ( phi_abs2e[j] - phi_abs2[j-1] ) / h[j-1] - ( phi_abs2[j] - phi_abs2e[j] ) / h[j] );
     }
     // j = J+1/2
     Qhat_edge[J] += 3 * ( phi_abs2e[J] - phi_abs2[J-1] ) / h[J-1] ;
     
     cout << "---" << endl;
+    cout << "Sth_avg = "; Utilities::print_dvector(Sth_avg);
+    cout << "phi_0 = "; Utilities::print_dvector(phi_0);
+    cout << "phi_1 = "; Utilities::print_dvector(phi_1);
+    cout << "edgePhi0 = "; Utilities::print_dvector(edgePhi0);
+    cout << "edgePhi1 = "; Utilities::print_dvector(edgePhi1);
+    cout << "eddington = "; Utilities::print_dvector(eddington);
+    cout << "eddington_edge = "; Utilities::print_dvector(eddington_edge);
     cout << "preaccel_Qhat = "; Utilities::print_dvector(preaccel_Qhat_edge); //YYYY
     cout << "Qhat = "; Utilities::print_dvector(Qhat_edge); //YYYY
     cout << "preaccelphi_abs2 = "; Utilities::print_dvector(preaccel_phi_abs2);
