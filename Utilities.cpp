@@ -363,7 +363,7 @@ void Utilities::split_Phi(const vector<double> &phi_all, vector<double> &phi_edg
         return;
     }
     phi_edge[0] = phi_all[0];
-    for(unsigned int i = 0; i<phi_edge.size();i++){
+    for(unsigned int i = 0; i<phi_cent.size();i++){
         phi_cent[i] = phi_all[2*i+1];
         phi_edge[i+1] = phi_all[2*(i+1)];
     }
