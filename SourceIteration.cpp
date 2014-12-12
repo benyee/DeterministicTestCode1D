@@ -1007,7 +1007,7 @@ void SourceIteration::accelerate_MB3(){
         L_tilde[j] = ( je_plus[j] - j_plus[j-1] ) / h[j-1] + \
             ( j_minus[j] - je_minus[j] ) / h[j];
         L_tilde[j] *= 2 * h_avg[j];
-        L_tilde[j] += phi_1[j] - phi_1[j-1];
+        L_tilde[j] -= phi_1[j] - phi_1[j-1];
         
         //L_tilde = Q_tilde - temp
         double temp = ( edgePhi0[j] - phi_0[j-1] ) / h[j-1] - \
@@ -1029,7 +1029,7 @@ void SourceIteration::accelerate_MB3(){
     
     //Allocate matrix:
     unsigned int J_total = 2 * J + 1;
-    vector< vector<double> > A( J_total , vector<double>( 5 , 0 ) );
+    vector< vector<double> > A( J_total , vector<double>( 5 , 0.0 ) );
     vector<double> b( J_total , 0 );
     
     //Pull in some extra info from input file:
@@ -1051,11 +1051,14 @@ void SourceIteration::accelerate_MB3(){
     
     //Assign values:
     //j = 1/2:
-    A[0][2] = - eddington_edge[0] / Sth \
-                + (sigma_t[0] - sigma_s0[0]/2) * h[0] + zeta_1;
-    A[0][3] = 2 * eddington[0] / Sth - zeta_1;
-    A[0][4] = - eddington_edge[1] / Sth;
-    b[0] = ( Qh - zeta_1 * Qhat_edge[0] * h[0] ) / 2 - L_tilde[0];
+    A[0][2] = eddington_edge[0] * ( 3 * zeta_1 * zeta_3 - 1 ) / Sth \
+                + (sigma_t[0] + sigma_s0[0]* ( 1.5 * zeta_1 * zeta_1 - 1 ) / 2) \
+                    * h[0] + zeta_1;
+    A[0][3] = ( 2 - 6 * zeta_1 * zeta_3 ) * eddington[0] / Sth - zeta_1;
+    A[0][4] = ( 3 * zeta_1 * zeta_3 - 1 ) * eddington_edge[1] / Sth;
+    b[0] = ( Qh - zeta_1 * Qhat_edge[0] * h[0] ) / 2 - L_tilde[0] \
+            - 3 * zeta_1 * zeta_3 * ( phi_1[0] - edgePhi1[0] ) \
+            + 3 * zeta_1 * zeta_1 * h[0] * sigma_s0[0] * edgePhi0[0] / 4;
     
     //j = 1:
     A[1][1] = - 2 * eddington_edge[0] / Sth;
@@ -1100,17 +1103,6 @@ void SourceIteration::accelerate_MB3(){
         
     }
     
-    if( Sth_next != Sth ){
-        Sah = sigma_a[region] * h[J-2];
-        Qh = Q[region] * h[J-2];
-        Sth = Sth_next;
-    }
-    if( within_region_counter >= discret[region] ){
-        region++;
-        within_region_counter = 0;
-        Sth_next = sigma_t[region] * h[region];
-    }
-    
     //j = J-1/2:
     A[mat_row][0] = - eddington_edge[J-2] / Sth;
     A[mat_row][1] = - zeta_1 * h_avg[J-1] / h[J-2];
@@ -1135,11 +1127,44 @@ void SourceIteration::accelerate_MB3(){
     
     mat_row = 2 * J;
     //j = J+1/2:
-    A[mat_row][0] = -  eddington_edge[J-1] / Sth;
-    A[mat_row][1] = 2 * eddington[J-1] / Sth - zeta_1;
-    A[mat_row][2] = - eddington_edge[J] / h[J-1] \
-        + (sigma_t[region] - sigma_s0[region]/2) * h[J-1] + zeta_1;
-    b[mat_row] = ( Qh + zeta_1 * Qhat_edge[J]  * h[J-1] ) / 2 - L_tilde[J];
+    A[mat_row][0] = ( 3 * zeta_1 * zeta_3 - 1 ) * eddington_edge[J-1] / Sth;
+    A[mat_row][1] = ( 2 - 6 * zeta_1 * zeta_3 ) * eddington[J-1] / Sth - zeta_1;
+    A[mat_row][2] =  ( 3 * zeta_1 * zeta_3 - 1) * eddington_edge[J] / h[J-1] \
+        + (sigma_t[region] + sigma_s0[region] * ( 1.5 * zeta_1 * zeta_1 - 1 ) \
+           / 2) * h[J-1] + zeta_1;
+    b[mat_row] = ( Qh + zeta_1 * Qhat_edge[J]  * h[J-1] ) / 2 - L_tilde[J] \
+        - 3 * zeta_1 * zeta_3 * ( edgePhi1[J] - phi_1[J-1] ) \
+    + 3 * zeta_1 * zeta_1 * h[J-1] * sigma_s0[region] * edgePhi0[J] / 4 ;
+    
+    /*
+    //Overwrite complciated stuff with average acceleration for edge fluxes: YYYY
+    A[0][2] = 1;
+    A[0][3] = - edgePhi0[0] / phi_0[0];;
+    A[0][4] = 0;
+    b[0] = 0;
+    for(unsigned int j = 1; j < J ; j++){
+        A[2*j][0] = 0;
+        A[2*j][1] = -edgePhi0[j] / ( phi_0[j] + phi_0[j-1] ) ;
+        A[2*j][2] = 1;
+        A[2*j][3] = -edgePhi0[j] / ( phi_0[j] + phi_0[j-1] ) ;
+        A[2*j][4] = 0;
+        b[2*j] = 0;
+    }
+    A[2*J][0] = 0;
+    A[2*J][1] = - edgePhi0[J] / phi_0[J-1];
+    A[2*J][2] = 1;
+    b[2*J] = 0;*/
+    
+    if( Sth_next != Sth ){
+        Sah = sigma_a[region] * h[J-2];
+        Qh = Q[region] * h[J-2];
+        Sth = Sth_next;
+    }
+    if( within_region_counter >= discret[region] ){
+        region++;
+        within_region_counter = 0;
+        Sth_next = sigma_t[region] * h[region];
+    }
     
     //=========================================================================
     //=========================================================================
@@ -1167,14 +1192,14 @@ void SourceIteration::accelerate_MB3(){
     
     //Subtract the old phi_{|2|}'s from the Qhat_edges:
     // j = 1/2:
-    Qhat_edge[0] += 3 * ( phi_abs2[0] - phi_abs2e[0] ) / h[0] ;
+    Qhat_edge[0] += 6 * ( phi_abs2[0] - phi_abs2e[0] ) / h[0] ;
     // j = 3/2,...,J-1/2
     for(unsigned int j = 1; j < J; j++){
         Qhat_edge[j] -= 3 * ( ( phi_abs2e[j] - phi_abs2[j-1] ) / h[j-1] \
                              - ( phi_abs2[j] - phi_abs2e[j] ) / h[j] );
     }
     // j = J+1/2
-    Qhat_edge[J] -= 3 * ( phi_abs2e[J] - phi_abs2[J-1] ) / h[J-1] ;
+    Qhat_edge[J] -= 6 * ( phi_abs2e[J] - phi_abs2[J-1] ) / h[J-1] ;
     
     //Accelerate the phi_{|2|}'s:
     region = 0;
@@ -1213,34 +1238,33 @@ void SourceIteration::accelerate_MB3(){
                                                        
     //Add back the updated phi_{|2|}'s:
     // j = 1/2:
-    Qhat_edge[0] -= 3 * ( phi_abs2[0] - phi_abs2e[0] ) / h[0] ;
+    Qhat_edge[0] -= 6 * ( phi_abs2[0] - phi_abs2e[0] ) / h[0] - 1.5 * zeta_1 * sigma_s0[0] * ( edgePhi0[0] - preaccel_edgePhi0[0] );
     // j = 3/2,...,J-1/2
     for(unsigned int j = 1; j < J; j++){
         Qhat_edge[j] += 3 * ( ( phi_abs2e[j] - phi_abs2[j-1] ) / h[j-1] - ( phi_abs2[j] - phi_abs2e[j] ) / h[j] );
     }
     // j = J+1/2
-    Qhat_edge[J] += 3 * ( phi_abs2e[J] - phi_abs2[J-1] ) / h[J-1] ;
+    Qhat_edge[J] += 6 * ( phi_abs2e[J] - phi_abs2[J-1] ) / h[J-1] - 1.5 * zeta_1 * sigma_s0[sigma_t.size()-1] * ( edgePhi0[J] - preaccel_edgePhi0[J] );
     
-    Qhat_edge = preaccel_Qhat_edge;
-    cout << "---" << endl;
-    Utilities::print_dmatrix(A);
-    cout << "preaccel_all_phi0 = "; Utilities::print_dvector(Utilities::combine_Phi(preaccel_edgePhi0, preaccel_phi_0));
-    cout << "b = " ; Utilities::print_dvector(b);
-    cout << "L_tilde = "; Utilities::print_dvector(L_tilde);
-    cout << "Sth_avg = "; Utilities::print_dvector(Sth_avg);
-    cout << "preaccel_phi_0 = "; Utilities::print_dvector(preaccel_phi_0);
-    cout << "phi_0 = "; Utilities::print_dvector(phi_0);
-    cout << "phi_1 = "; Utilities::print_dvector(phi_1);
-    cout << "preaccel_edgePhi0 = "; Utilities::print_dvector(preaccel_edgePhi0);
-    cout << "edgePhi0 = "; Utilities::print_dvector(edgePhi0);
-    cout << "edgePhi1 = "; Utilities::print_dvector(edgePhi1);
-    cout << "eddington = "; Utilities::print_dvector(eddington);
-    cout << "eddington_edge = "; Utilities::print_dvector(eddington_edge);
-    cout << "preaccelphi_abs2 = "; Utilities::print_dvector(preaccel_phi_abs2);
-    cout << "phi_abs2 = "; Utilities::print_dvector(phi_abs2);
-    cout << "preaccelphi_abs2e = "; Utilities::print_dvector(preaccel_phi_abs2e);
-    cout << "phi_abs2e = "; Utilities::print_dvector(phi_abs2e);
-    cout << "preaccel_Qhat = "; Utilities::print_dvector(preaccel_Qhat_edge); //YYYY
+//     cout << "---" << endl;  Diagnostics:
+//     Utilities::print_dmatrix_matlab(A);
+//     cout << "preaccel_all_phi0 = "; Utilities::print_dvector(Utilities::combine_Phi(preaccel_edgePhi0, preaccel_phi_0));
+//     cout << "b = " ; Utilities::print_dvector(b);
+//     cout << "L_tilde = "; Utilities::print_dvector(L_tilde);
+//     cout << "Sth_avg = "; Utilities::print_dvector(Sth_avg);
+//     cout << "preaccel_phi_0 = "; Utilities::print_dvector(preaccel_phi_0);
+//     cout << "phi_0 = "; Utilities::print_dvector(phi_0);
+//     cout << "phi_1 = "; Utilities::print_dvector(phi_1);
+//     cout << "preaccel_edgePhi0 = "; Utilities::print_dvector(preaccel_edgePhi0);
+//     cout << "edgePhi0 = "; Utilities::print_dvector(edgePhi0);
+//     cout << "edgePhi1 = "; Utilities::print_dvector(edgePhi1);
+//     cout << "eddington = "; Utilities::print_dvector(eddington);
+//     cout << "eddington_edge = "; Utilities::print_dvector(eddington_edge);
+//     cout << "preaccelphi_abs2 = "; Utilities::print_dvector(preaccel_phi_abs2);
+//     cout << "phi_abs2 = "; Utilities::print_dvector(phi_abs2);
+//     cout << "preaccelphi_abs2e = "; Utilities::print_dvector(preaccel_phi_abs2e);
+//     cout << "phi_abs2e = "; Utilities::print_dvector(phi_abs2e);
+//     cout << "preaccel_Qhat = "; Utilities::print_dvector(preaccel_Qhat_edge); 
 }
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
 //-------------------ACCELERATION FOR MB3-------------------------------------//
