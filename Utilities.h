@@ -35,6 +35,7 @@ public:
     static void print_ivector(vector<int> input_vector,char space = ' ');
     static void print_dvector(vector<double> input_vector,char space = ' ');
     static void print_dmatrix(vector<vector<double> > A,char space = ' ');
+    static void print_dmatrix_matlab(vector<vector<double> > A, char space = ' ');
 
     //Norms:
     static double inf_norm(vector<double> &v1, vector<double> &v2);

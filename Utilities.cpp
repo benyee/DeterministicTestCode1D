@@ -107,6 +107,17 @@ void Utilities::print_dmatrix(vector<vector<double> > A, char space){
     }
     cout<<"======End   matrix output ========"<<endl;
 }
+void Utilities::print_dmatrix_matlab(vector<vector<double> > A, char space){
+    cout<<"======Begin matrix output ========"<<endl;
+    cout << "[";
+    for(unsigned int i = 0; i<A.size();i++){
+        for(unsigned int j = 0; j < A[i].size(); j++)
+    		cout << space << A[i][j] ;
+    	cout << "; "; 
+	}
+    cout << "]";
+    cout<<"======End   matrix output ========"<<endl;
+}
 double Utilities::inf_norm(vector<double> &v1, vector<double> &v2){
     double inf_norm = 0;
     double temp;
