@@ -211,7 +211,7 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         
         //CMFD acceleration:
         if(accel_mode == 1){
-//            old_phi_0 = phi_0; //YYYY
+            old_phi_0 = phi_0; //YYYY
             if(alpha_mode >= 40)
                 accelerate_MB3();
             else
@@ -998,7 +998,8 @@ void SourceIteration::accelerate_MB3(){
     for( unsigned int m = 0; m < N/2 ; m++ )
         L_tilde[0] += w_n[m] * psi_e[0][m];
     L_tilde[0] *= - h[0] * sigma_t[0] ;
-    L_tilde[0] -= 2 * ( j_plus[0] - je_plus[0] );
+    L_tilde[0] -= ( j_plus[0] - j_minus[0] - je_plus[0] + je_minus[0] );
+    L_tilde[0] += zeta_1 * ( phi_0[0] - edgePhi0[0] );
     
     // 3/2, 5/2, .... , J-1/2:
     for(unsigned int j = 1; j < J; j++){
@@ -1011,7 +1012,7 @@ void SourceIteration::accelerate_MB3(){
         //L_tilde = Q_tilde - temp
         double temp = ( edgePhi0[j] - phi_0[j-1] ) / h[j-1] - \
             ( phi_0[j] - edgePhi0[j] ) / h[j];
-        temp *= 2 * zeta_1 * h_avg[j];
+        temp *= zeta_1 * h_avg[j];
         L_tilde[j] -= temp;
     }
     
@@ -1020,7 +1021,8 @@ void SourceIteration::accelerate_MB3(){
     for( unsigned int m = N/2; m < N ; m++ )
         L_tilde[J] += w_n[m] * psi_e[J][m];
     L_tilde[J] *= - h[J-1] * sigma_t[sigma_t.size()-1] ;
-    L_tilde[J] -= 2 * ( je_minus[J] - j_minus[J-1] );
+    L_tilde[J] += ( je_plus[J] - je_minus[J] - j_plus[J-1] + j_minus[J-1] );
+    L_tilde[J] -= zeta_1 * ( edgePhi0[J] - phi_0[J-1] );
     
     //========Set up acceleration matrix.======================================
     //=========================================================================
@@ -1049,10 +1051,10 @@ void SourceIteration::accelerate_MB3(){
     
     //Assign values:
     //j = 1/2:
-    A[0][2] = - eddington_edge[0] * 2. / Sth \
-                + (sigma_t[0] - sigma_s0[0]/2) * h[0];
-    A[0][3] = 4 * eddington[0] / Sth;
-    A[0][4] = - 2 * eddington_edge[1] / Sth;
+    A[0][2] = - eddington_edge[0] / Sth \
+                + (sigma_t[0] - sigma_s0[0]/2) * h[0] + zeta_1;
+    A[0][3] = 2 * eddington[0] / Sth - zeta_1;
+    A[0][4] = - eddington_edge[1] / Sth;
     b[0] = ( Qh - zeta_1 * Qhat_edge[0] * h[0] ) / 2 - L_tilde[0];
     
     //j = 1:
@@ -1133,10 +1135,10 @@ void SourceIteration::accelerate_MB3(){
     
     mat_row = 2 * J;
     //j = J+1/2:
-    A[mat_row][0] = - 2 * eddington_edge[J-1] / Sth;
-    A[mat_row][1] = 4 * eddington[J-1] / Sth;
-    A[mat_row][2] = - eddington_edge[J] * 2. / h[J-1] \
-        + (sigma_t[region] - sigma_s0[region]/2) * h[J-1];
+    A[mat_row][0] = -  eddington_edge[J-1] / Sth;
+    A[mat_row][1] = 2 * eddington[J-1] / Sth - zeta_1;
+    A[mat_row][2] = - eddington_edge[J] / h[J-1] \
+        + (sigma_t[region] - sigma_s0[region]/2) * h[J-1] + zeta_1;
     b[mat_row] = ( Qh + zeta_1 * Qhat_edge[J]  * h[J-1] ) / 2 - L_tilde[J];
     
     //=========================================================================
@@ -1221,6 +1223,9 @@ void SourceIteration::accelerate_MB3(){
     
     Qhat_edge = preaccel_Qhat_edge;
     cout << "---" << endl;
+    Utilities::print_dmatrix(A);
+    cout << "preaccel_all_phi0 = "; Utilities::print_dvector(Utilities::combine_Phi(preaccel_edgePhi0, preaccel_phi_0));
+    cout << "b = " ; Utilities::print_dvector(b);
     cout << "L_tilde = "; Utilities::print_dvector(L_tilde);
     cout << "Sth_avg = "; Utilities::print_dvector(Sth_avg);
     cout << "preaccel_phi_0 = "; Utilities::print_dvector(preaccel_phi_0);
