@@ -115,7 +115,7 @@ void Utilities::print_dmatrix_matlab(vector<vector<double> > A, char space){
     		cout << space << A[i][j] ;
     	cout << "; "; 
 	}
-    cout << "]";
+    cout << "]"<<endl;
     cout<<"======End   matrix output ========"<<endl;
 }
 double Utilities::inf_norm(vector<double> &v1, vector<double> &v2){
