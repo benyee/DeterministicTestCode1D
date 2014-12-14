@@ -1062,17 +1062,17 @@ void SourceIteration::accelerate_MB3(){
     mat_row = 2;
     //j = 3/2 through J-1
     for(unsigned int j = 1; j < J-1 ; j++){
-        if( Sth_next != Sth ){
-            Sah = sigma_a[region] * h[j];
-            Qh = Q[region] * h[j];
+        if( within_region_counter == 1 ){
             Sth = Sth_next;
         }
         if( within_region_counter >= discret[region] ){
             region++;
             within_region_counter = 0;
-            Sth_next = sigma_t[region] * h[region];
+            Sth_next = sigma_t[region] * h[j];
+            Sah = sigma_a[region] * h[j];
+            Qh = Q[region] * h[j];
         }
-        
+					        
         //j = j + 1/2
         A[mat_row][0] = - eddington_edge[j-1] / Sth;
         A[mat_row][1] = - zeta_1 * h_avg[j] / h[j-1];
@@ -1094,8 +1094,17 @@ void SourceIteration::accelerate_MB3(){
         mat_row++;
         within_region_counter++; // counter is at cell j+1
         
-    }
-    
+    }    
+    	
+	if( within_region_counter == 1 ){
+		Sth = Sth_next;
+	}
+	if( within_region_counter >= discret[region] ){
+		region++;
+		within_region_counter = 0;
+		Sth_next = sigma_t[region] * h[J-1];
+	}
+	
     //j = J-1/2:
     A[mat_row][0] = - eddington_edge[J-2] / Sth;
     A[mat_row][1] = - zeta_1 * h_avg[J-1] / h[J-2];
@@ -1177,7 +1186,7 @@ void SourceIteration::accelerate_MB3(){
     
     //Accelerate the phi_{|2|}'s:
     region = 0;
-    within_region_counter = 1;
+    within_region_counter = 0;
     Sth = sigma_t[0] * h[0];
     //j = 1/2:
     phi_abs2e[0] -= zeta_3 * edgePhi1[0];
@@ -1190,13 +1199,13 @@ void SourceIteration::accelerate_MB3(){
             within_region_counter = 0;
             Sth = sigma_t[region] * h[j];
         }
-        
+
         phi_abs2[j] -= zeta_3 * phi_1[j];
         phi_abs2[j] -= zeta_3 / Sth * ( eddington_edge[j+1] * edgePhi0[j+1] \
                                        - eddington_edge[j] * edgePhi0[j] );
         
         phi_abs2e[j+1] -= zeta_3 * edgePhi1[j+1];
-        phi_abs2e[j+1] -= zeta_3 / Sth_avg[j] * ( eddington[j+1] * phi_0[j+1] \
+        phi_abs2e[j+1] -= zeta_3 / Sth_avg[j+1] * ( eddington[j+1] * phi_0[j+1] \
                                   - eddington[j] * phi_0[j] );
         
         within_region_counter++;
@@ -1219,6 +1228,7 @@ void SourceIteration::accelerate_MB3(){
     }
     // j = J+1/2
     Qhat_edge[J] += 6 * ( phi_abs2e[J] - phi_abs2[J-1] ) / h[J-1] - 1.5 * zeta_1 * sigma_s0[sigma_t.size()-1] * ( edgePhi0[J] - preaccel_edgePhi0[J] );
+    
     
 }
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
@@ -1780,7 +1790,7 @@ void SourceIteration::initializeGrid(){
     Sah_avg.push_back( (sigma_t[0]-sigma_s0[0]) * h[0] );
     Sth_avg.push_back(sigma_t[0]*h[0]);
     Q_avg.push_back(Q[0]*h[0]);
-    for(unsigned int i = 1; i < h.size()-1; i++){
+    for(unsigned int i = 0; i < h.size()-1; i++){
         h_avg.push_back( ( h[i] + h[i+1] ) / 2 );
         
         Sah_avg.push_back( ( (sigma_t[region_L]-sigma_s0[region_L]) *h[i] \
@@ -1964,9 +1974,9 @@ void SourceIteration::leftIteration(){
                 psi_e[j][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
             }else if(alpha_mode==40  || alpha_mode == 42){
-                double tau = sigma_t[region]*h[j]/mu_n[m];
-                double numerator = psi_e[j+1][m] - source[j][m]*tau/2/sigma_t[region] + ( source_edge[j][m] + mu_n[m]*Qhat_edge[j] )*rho[j]*tau*tau/4./sigma_t[region];
-                double denominator = 1 - tau + rho[j]*tau*tau/2;
+            	double numerator = h[j] * ( source_edge[j][m] + mu_n[m] * Qhat_edge[j] ) / 4 ;
+            	numerator -=  mu_n[m] / sigma_t[region] * ( source[j][m] / 2 - mu_n[m] / h[j] * psi_e[j+1][m] );
+                double denominator = Sth_avg[j] * h[j] / h_avg[j] / 2 - mu_n[m] + mu_n[m] * mu_n[m] / sigma_t[region] / h[j];
                 psi_e[j][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
             }else if(alpha_mode==41){
@@ -2063,9 +2073,9 @@ void SourceIteration::rightIteration(){
                 psi_e[j+1][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
             }else if(alpha_mode==40 || alpha_mode == 42){
-                double tau = sigma_t[region]*h[j]/mu_n[m];
-                double numerator = psi_e[j][m] + source[j][m]*h[j]/mu_n[m]/2. + (source_edge[j+1][m]+mu_n[m]*Qhat_edge[j+1])*rho[j]*h[j]/mu_n[m]*tau/4.;
-                double denominator = 1 + tau + rho[j]*tau*tau/2.;
+            	double numerator = h[j] * ( source_edge[j+1][m] + mu_n[m] * Qhat_edge[j+1] ) / 4;
+            	numerator += mu_n[m] / sigma_t[region] * ( source[j][m] / 2 + mu_n[m] / h[j] * psi_e[j][m] );
+                double denominator = Sth_avg[j+1] * h[j] / h_avg[j+1] / 2 + mu_n[m] + mu_n[m] * mu_n[m] / sigma_t[region] / h[j];
                 psi_e[j+1][m] = numerator/denominator;
                 psi_c[j][m] = (source[j][m]/2- mu_n[m]/h[j]*(psi_e[j+1][m]-psi_e[j][m]))/sigma_t[region];
             }else if(alpha_mode==41){
@@ -2206,7 +2216,18 @@ double SourceIteration::updatePhi_calcSource(bool usePsi){
                 for(unsigned int m = N/2; m<N;m++){
                     source_edge[j][m] = sigma_s0[region]*edgePhi0_MB2_L[j]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j] + Q[region] + Q_lin[region]*(x_e[j]);
                 }
-            }else{
+			}else if( alpha_mode == 40 || alpha_mode == 42 ){
+                for(unsigned int m = 0; m < N/2;m++){ //ZZZZ sigma_s1[region] and Q_lin[region needs to be converted to an average for non-isotropic problems
+                    source_edge[j+1][m] = ( Sth_avg[j+1] - Sah_avg[j+1] ) * edgePhi0[j+1] / h_avg[j+1] ;
+                    source_edge[j+1][m] += 3 * mu_n[m] * sigma_s1[region] * edgePhi1[j+1] ;
+                    source_edge[j+1][m] += Q_avg[j+1] / h_avg[j+1] + Q_lin[region]*(x_e[j+1]);
+                }
+                for(unsigned int m = N/2; m<N;m++){
+                    source_edge[j][m] = ( Sth_avg[j] - Sah_avg[j] ) * edgePhi0[j] / h_avg[j] ;
+                    source_edge[j][m] += 3 * mu_n[m] * sigma_s1[region] * edgePhi1[j] ;
+                    source_edge[j][m] += Q_avg[j] / h_avg[j] + Q_lin[region]*(x_e[j]);
+                }
+			}else{
                 for(unsigned int m = 0; m < N/2;m++){
                     source_edge[j+1][m] = sigma_s0[region]*edgePhi0[j+1]+3*mu_n[m]*sigma_s1[region]*edgePhi1[j+1] + Q[region] + Q_lin[region]*(x_e[j+1]);
                 }
