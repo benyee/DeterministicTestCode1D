@@ -205,9 +205,6 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         error=updatePhi_calcSource();
         it_num += 0.5;
         
-        cout << "Before acceleration..." << endl;
-        cout << "old_phi_0 = "; Utilities::print_dvector(old_phi_0);
-        cout << "phi_0 = "; Utilities::print_dvector(phi_0);
         
         //CMFD acceleration:
         if(accel_mode == 1){
@@ -242,15 +239,11 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
         }
         
         it_num += 0.5;
-        cout << "When calculating the error..." << endl;
-        cout << "old_phi_0 = "; Utilities::print_dvector(old_phi_0);
-        cout << "phi_0 = "; Utilities::print_dvector(phi_0);
         
         error = Utilities::p_norm_of_rel_error(old_phi_0,phi_0,2 , tol * tol);
 //        error = Utilities::p_norm(old_phi_0,phi_0,2) / (Utilities::p_norm(phi_0,2) + tol*tol);
         // If we're using MB3, make sure the Qhats are converged too:
         if( alpha_mode >= 40 && alpha_mode < 50 && alpha_mode != 41 ){
-            cout << "Qhat_edge = "; Utilities::print_dvector(Qhat_edge); //YYYY
             double Qhat_error = Utilities::p_norm_of_rel_error(old_Qhat_edge,Qhat_edge, edgePhi0, 2 , tol * tol );
             if( Utilities::p_norm(Qhat_edge,2) / (Utilities::p_norm(phi_0,2) + tol*tol) > tol*10)
                 error = max( error , Qhat_error );
@@ -315,26 +308,26 @@ int SourceIteration::iterate(bool isPrintingToWindow,bool isPrintingToFile, bool
             break;
         }else if(error <= tol){ //if converged
             if(checkNegativeFlux()){ //Convergence to unphysical solution
-                cout<<"Source iteration converged to a negative solution with " << checkNegativeFlux() << " negative scalar fluxes in "<<it_num<<" iterations"<<endl;
+                cout<<"# Source iteration converged to a negative solution with " << checkNegativeFlux() << " negative scalar fluxes in "<<it_num<<" iterations"<<endl;
                 it_num += 0.25;
             }else{  //Convergence to real solution
-                cout<<"Source iteration converged in "<<it_num<<" iterations"<<endl;
+                cout<<"# Source iteration converged in "<<it_num<<" iterations"<<endl;
                 isConverged = 1;
             }
             break;
         }else if(it_num >= MAX_IT){
             //Max. # of iterations reached.  Did not converge.
-            cout<<"Source iteration did NOT converge in "<<MAX_IT<<" iterations"<<endl;
-            cout<<"The final error was "<<error<<endl;
+            cout<<"# Source iteration did NOT converge in "<<MAX_IT<<" iterations"<<endl;
+            cout<<"# The final error was "<<error<<endl;
             break;
         }else if(it_num >= MAX_IT_accel && accel_mode){
             //Max. # of iterations reached.  Did not converge.
-            cout<<"Source iteration did NOT converge in "<<MAX_IT_accel<<" iterations"<<endl;
-            cout<<"The final error was "<<error<<endl;
+            cout<<"# Source iteration did NOT converge in "<<MAX_IT_accel<<" iterations"<<endl;
+            cout<<"# The final error was "<<error<<endl;
             break;
         }else if(it_num >= 5 && (error/init_error) >= diverge){
             //Solution has diverged significantly.
-            cout<<"Source iteration diverged in "<<it_num<<" iterations"<<endl;
+            cout<<"# Source iteration diverged in "<<it_num<<" iterations"<<endl;
             break;
         }
         
@@ -1136,25 +1129,6 @@ void SourceIteration::accelerate_MB3(){
         - 3 * zeta_1 * zeta_3 * ( edgePhi1[J] - phi_1[J-1] ) \
     + 3 * zeta_1 * zeta_1 * h[J-1] * sigma_s0[region] * edgePhi0[J] / 4 ;
     
-    /*
-    //Overwrite complciated stuff with average acceleration for edge fluxes: YYYY
-    A[0][2] = 1;
-    A[0][3] = - edgePhi0[0] / phi_0[0];;
-    A[0][4] = 0;
-    b[0] = 0;
-    for(unsigned int j = 1; j < J ; j++){
-        A[2*j][0] = 0;
-        A[2*j][1] = -edgePhi0[j] / ( phi_0[j] + phi_0[j-1] ) ;
-        A[2*j][2] = 1;
-        A[2*j][3] = -edgePhi0[j] / ( phi_0[j] + phi_0[j-1] ) ;
-        A[2*j][4] = 0;
-        b[2*j] = 0;
-    }
-    A[2*J][0] = 0;
-    A[2*J][1] = - edgePhi0[J] / phi_0[J-1];
-    A[2*J][2] = 1;
-    b[2*J] = 0;*/
-    
     if( Sth_next != Sth ){
         Sah = sigma_a[region] * h[J-2];
         Qh = Q[region] * h[J-2];
@@ -1246,25 +1220,6 @@ void SourceIteration::accelerate_MB3(){
     // j = J+1/2
     Qhat_edge[J] += 6 * ( phi_abs2e[J] - phi_abs2[J-1] ) / h[J-1] - 1.5 * zeta_1 * sigma_s0[sigma_t.size()-1] * ( edgePhi0[J] - preaccel_edgePhi0[J] );
     
-//     cout << "---" << endl;  Diagnostics:
-//     Utilities::print_dmatrix_matlab(A);
-//     cout << "preaccel_all_phi0 = "; Utilities::print_dvector(Utilities::combine_Phi(preaccel_edgePhi0, preaccel_phi_0));
-//     cout << "b = " ; Utilities::print_dvector(b);
-//     cout << "L_tilde = "; Utilities::print_dvector(L_tilde);
-//     cout << "Sth_avg = "; Utilities::print_dvector(Sth_avg);
-//     cout << "preaccel_phi_0 = "; Utilities::print_dvector(preaccel_phi_0);
-//     cout << "phi_0 = "; Utilities::print_dvector(phi_0);
-//     cout << "phi_1 = "; Utilities::print_dvector(phi_1);
-//     cout << "preaccel_edgePhi0 = "; Utilities::print_dvector(preaccel_edgePhi0);
-//     cout << "edgePhi0 = "; Utilities::print_dvector(edgePhi0);
-//     cout << "edgePhi1 = "; Utilities::print_dvector(edgePhi1);
-//     cout << "eddington = "; Utilities::print_dvector(eddington);
-//     cout << "eddington_edge = "; Utilities::print_dvector(eddington_edge);
-//     cout << "preaccelphi_abs2 = "; Utilities::print_dvector(preaccel_phi_abs2);
-//     cout << "phi_abs2 = "; Utilities::print_dvector(phi_abs2);
-//     cout << "preaccelphi_abs2e = "; Utilities::print_dvector(preaccel_phi_abs2e);
-//     cout << "phi_abs2e = "; Utilities::print_dvector(phi_abs2e);
-//     cout << "preaccel_Qhat = "; Utilities::print_dvector(preaccel_Qhat_edge); 
 }
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^//
 //-------------------ACCELERATION FOR MB3-------------------------------------//
